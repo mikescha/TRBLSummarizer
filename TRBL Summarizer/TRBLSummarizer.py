@@ -114,6 +114,7 @@ def show_error(msg: str):
 #File handling and setup
 #
 #
+@st.experimental_singleton(suppress_st_warning=True)
 def get_target_sites() -> dict:
     file_summary = {}
     for t in file_types:
@@ -275,21 +276,23 @@ def set_global_theme():
                   style = 'white',
                   rc = custom_params)
 
-def get_date_range(site:str) -> dict:
-    date_range_dict = {start_str : '02/01/2022', end_str : '09/01/2022'}
-    months = {'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
+def get_date_range(df:pd.DataFrame) -> dict:
+    df.sort_index(inplace=True)
+    #Set the default date range to the first and last dates that we have data
+    date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+    
+    months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
+    months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
+    start_month = st.sidebar.selectbox("Start month", months1.keys(), index=0)
+    end_month = st.sidebar.selectbox("End month", months2.keys(), index=0)
 
-    start_month = st.sidebar.selectbox("Start month", months.keys(), index=1)
-    end_month = st.sidebar.selectbox("End month", months.keys(), index=5)
-
-    #Get the date range for the selected site, first four chars are the year name
-    site_year = site[0:4]
-    if site_year[0].isdigit():
-        date_range_dict[start_str] = '{}-01-{}'.format(months[start_month], site_year)
-        last_day = calendar.monthrange(int(site_year), int(months[end_month]))[1]
-        date_range_dict[end_str] = '{}-{}-{}'.format(months[end_month], last_day, site_year)
-    else:
-        show_error("Site doesn't start with the year: {}".format(site))
+    #Update the date range if needed
+    site_year = df.index[0].year
+    if start_month != 'First':
+        date_range_dict[start_str] = '{}-01-{}'.format(months1[start_month], site_year)
+    if end_month != 'Last':
+        last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
+        date_range_dict[end_str] = '{}-{}-{}'.format(months2[end_month], last_day, site_year)
     
     return date_range_dict
 
@@ -426,24 +429,26 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_
 #
 st.title('TRBL Summary')
 
-#Get the list of sites that we're going to do reports for
-site_list = get_target_sites()
-site = get_site_to_analyze(site_list[site_str])
-date_range_dict = get_date_range(site)
-st.subheader(site)
-
 #Load all the data for most of the graphs
 df_original = load_data()
+
+#Get the list of sites that we're going to do reports for, and then remove all the other data
+site_list = get_target_sites()
+site = get_site_to_analyze(site_list[site_str])
 df = clean_data(df_original, site_list[site_str])
 
 #nuke the original data, hopefully this frees up memory
 df_original = pd.DataFrame()
 
-# Set format shared by all graphs
-set_global_theme()
-
 # Select the site matching the one of interest
 site_df = df[df[columns[site_str]] == site]
+st.subheader(site)
+
+#Using the site of interest, get the first & last dates and give the user the option to customize the range
+date_range_dict = get_date_range(site_df)
+
+# Set format shared by all graphs
+set_global_theme()
 
 # Pivot that site
 sitesummary_pt = make_pivot_table(site_df, songs, False, date_range_dict)

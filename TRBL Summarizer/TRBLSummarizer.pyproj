@@ -12,6 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>TRBLSummarizer</Name>
     <RootNamespace>TRBL Summarizer</RootNamespace>
+    <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
