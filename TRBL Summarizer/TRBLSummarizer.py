@@ -199,15 +199,15 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
                 break
 
         df_clean = pd.concat([df_clean, df_site])
-
     
-    # Interpret the "---" as zero
-    df_clean = df_clean.replace('---', 0)
-
-    # For each type of song, convert its column to be numeric instead of a string
+    # We need to preserve the diff between no data and 0 tags. But, we have to also make everything integers for
+    # later processing. So, we'll replace the hyphens with -100 and then just realize that we can't do math on this
+    # column any more without excluding the -100s. Picked -100 because if we do do math then the answer will be obviously wrong!
+    df_clean = df_clean.replace('---', -100)
+    
+    # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in songs:
         df_clean[columns[s]] = pd.to_numeric(df_clean[columns[s]])
-
     return df_clean
 
 
@@ -241,7 +241,6 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict) -
 # UI and other setup
 # 
 #  
-
 def get_site_to_analyze(site_list:list) -> str:
     return st.sidebar.selectbox('Site to summarize', site_list)
 
@@ -315,7 +314,7 @@ def format_xdateticks(date_axis:plt.Axes):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_overlays(month_lengths:dict, date_axis:plt.Axes, gap:float):
+def draw_axis_labels(month_lengths:dict, date_axis:plt.Axes, gap:float):
     max = len(month_lengths)
     n = 0
     x = 0
@@ -328,21 +327,13 @@ def draw_overlays(month_lengths:dict, date_axis:plt.Axes, gap:float):
             
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, draw_vertical_rects=False, title='') -> plt.figure:
-# Problems:
-# How to get the rectangle to draw entirely around the graphic, including the axis labels
-# Figure DPI doesn't seem to work
-
+def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, draw_vert_rects=False, title='') -> plt.figure:
     max = len(items)
     # Set figure size, values in inches
     w = 16
     h = 3
     top_gap = 0.8 if title != '' else 1
     tick_spacing = 7
-
-    #Set a mask on the zero values so that we can force them to display as white
-    for col in df:
-        df[col] = df[col].mask(df[col] == 0)
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = max, 
@@ -356,12 +347,19 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     if len(title)>0:
         plt.suptitle(title, fontsize=36, fontweight='bold')
 
+
+    #Set a mask on the zero values so that we can force them to display as white. Keep the original data as we
+    #need it for drawing later. Use '<=0' because -100 is use to differentiate no data from data with zero value
+    df_clean = pd.DataFrame()
+    for col in df:
+        df_clean[col] = df[col].mask(df[col] <= 0)
+
     i=0
     for item in items:
         # plotting the heatmap
-        max_count = df.loc[item].max()
+        max_count = df_clean.loc[item].max()
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
-        df_to_graph = df.loc[item].to_frame().transpose()
+        df_to_graph = df_clean.loc[item].to_frame().transpose()
         axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
                         cmap = cmap[item] if len(cmap) > 1 else cmap[0],
@@ -379,12 +377,16 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
             axs[i].set_xticks([])
             axs[i].tick_params(bottom = False)
 
-        if draw_vertical_rects:
-            box_pos = df.loc[item].fillna(0).to_numpy().nonzero()
+        if draw_vert_rects and len(raw_data)>0:
+            tagged_rows = filter_site(raw_data, mini_manual_tags)
+            date_list = tagged_rows.index.unique()
+            first = raw_data.index[0]
+            box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
+
             _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
             _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
             trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
-            for px in box_pos[0]:
+            for px in box_pos:
                 rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
                                  fc='none', ec='C0', lw=0.5)
                 fig.add_artist(rect)
@@ -415,7 +417,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     # Set the ticks on the axis we're going to use
     format_xdateticks(axs[max-1])
     month_counts = get_days_per_month(df_to_graph)
-    draw_overlays(month_counts, axs[max-1], top_gap)
+    draw_axis_labels(month_counts, axs[max-1], top_gap)
 
     # draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
@@ -498,7 +500,8 @@ if save_files:
 graph = create_graph(df = mini_manual_pt, 
                      items = song_columns, 
                      cmap = cmap, 
-                     draw_vertical_rects = True,
+                     raw_data = site_df,
+                     draw_vert_rects = True,
                      title = site + ' Mini Manual Analysis')
 st.write(graph)
 if save_files:
