@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.transforms as transforms
 from matplotlib import cm
 from pathlib import Path
 import os
@@ -26,10 +27,11 @@ courtsong = 'courtsong'
 date_str = 'date'
 hour_str = 'hour'
 tag_wse = 'tag_edge'
-tag_mhh = 'tag_fs'
-tag_wsm = 'tag_m'
-tag_mhe = 'tag_mc'
+tag_wsm = 'tag_wsm'
 tag_wsh = 'tag_wsh'
+tag_mhe = 'tag_mhe'
+tag_mhm = 'tag_mhm'
+tag_mhh = 'tag_mhh'
 tag_mhe2= 'tag_mhe2'
 tag_ws  = 'tag_ws'
 tag_mh  = 'tag_mh'
@@ -37,8 +39,6 @@ tag_    = 'tag_'
 
 start_str = 'start'
 end_str = 'end'
-songs = [malesong, courtsong, altsong2, altsong1]
-tags = [tag_wse, tag_wsm, tag_mhe, tag_mhh, tag_wsh, tag_mhe2, tag_ws, tag_mh, tag_]
 
 columns = {filename_str  : 'filename', 
            site_str      : 'site', 
@@ -49,9 +49,10 @@ columns = {filename_str  : 'filename',
            date_str      : 'date',
            tag_wse       : 'tag<reviewed-WS-e>',
            tag_wsm       : 'tag<reviewed-WS-m>',
-           tag_mhe       : 'tag<reviewed-MH-e>',
-           tag_mhh       : 'tag<reviewed-MH-h>',
            tag_wsh       : 'tag<reviewed-WS-h>',
+           tag_mhe       : 'tag<reviewed-MH-e>',
+           tag_mhm       : 'tag<reviewed-MH-m>',
+           tag_mhh       : 'tag<reviewed-MH-h>',
            tag_mhe2      : 'tag<reviewed-MH-e2>',
            tag_ws        : 'tag<reviewed-WS>',
            tag_mh        : 'tag<reviewed-MH>',
@@ -61,33 +62,12 @@ columns = {filename_str  : 'filename',
            altsong2      : 'val<Agelaius tricolor/Alternative Song 2>',
            courtsong     : 'val<Agelaius tricolor/Courtship Song>'}
 
-friendly_names = {malesong : 'Male', 
-                  courtsong: 'Chorus',
-                  altsong2 : 'Female', 
-                  altsong1 : 'Nestling',
-                  tag_wsm  : 'WS MM',
-                  tag_wse  : 'WS Edge',              
-                  tag_mhh  : 'MH MM',
-                  tag_mhe  : 'MH Edge',
-                  tag_wsh  : 'WS-h',
-                  tag_mhe2 : 'MH-e2',
-                  tag_ws   : 'WS',
-                  tag_mh   : 'MH',
-                  tag_     : 'WS orig'}
+songs = [malesong, courtsong, altsong2, altsong1]
+song_columns = [columns[malesong], columns[courtsong], columns[altsong2], columns[altsong1]]
+tags = [tag_wse, tag_wsm, tag_wsh, tag_mhe, tag_mhm, tag_mhh, tag_mhe2, tag_ws, tag_mh, tag_]
+manual_tags = [columns[tag_mh], columns[tag_ws], columns[tag_]]
+mini_manual_tags = [columns[tag_mhh], columns[tag_wsh], columns[tag_mhm], columns[tag_wsm]]
 
-
-#Make the map of column names to friendly names
-col_map = {}
-for song in songs:
-    col_map[columns[song]] = friendly_names[song]
-
-for song in songs:
-    col_map[columns[song]] = friendly_names[song]
-
-#Make the map of column names to friendly names
-col_tag_map = {}
-for tag in tags:
-    col_tag_map[columns[tag]] = friendly_names[tag]
 
 data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
@@ -205,7 +185,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
-                #found a match, need to drop everything after this
+                #found a match, need to keep only what's after this
                 df_site = df_site.query("date <= '{}'".format(x.strftime('%Y-%m-%d')))
                 break
 
@@ -214,20 +194,20 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
-                #found a match, need to drop everything before this
+                #found a match, need to keep only what's after this
                 df_site = df_site.query("date >= '{}'".format(x.strftime('%Y-%m-%d')))
                 break
 
         df_clean = pd.concat([df_clean, df_site])
-
     
-    # Interpret the "---" as zero
-    df_clean = df_clean.replace('---', 0)
-
-    # For each type of song, convert its column to be numeric instead of a string
+    # We need to preserve the diff between no data and 0 tags. But, we have to also make everything integers for
+    # later processing. So, we'll replace the hyphens with -100 and then just realize that we can't do math on this
+    # column any more without excluding the -100s. Picked -100 because if we do do math then the answer will be obviously wrong!
+    df_clean = df_clean.replace('---', -100)
+    
+    # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in songs:
         df_clean[columns[s]] = pd.to_numeric(df_clean[columns[s]])
-
     return df_clean
 
 
@@ -237,46 +217,30 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # 
 #  
 
+# Get the subset of rows where there's at least one tag, i.e. the count of tags is greater than zero
+# See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
+def filter_site(site_df:pd.DataFrame, target_tags:list) -> pd.DataFrame:
+    # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
+    query = ' | '.join([f'`{tag}`>0' for tag in target_tags])
+    filtered_df = site_df.query(query)
+    return filtered_df
 
 # Generate the pivot table for the site
-def make_pivot_table(site_df: pd.DataFrame, labels:list, show_count:bool, date_range_dict:dict) -> pd.DataFrame:
-    summary = dict()
-    for label in labels:
-        summary[label] = pd.pivot_table(site_df, 
-                                        values = columns[label],  
-                                        index = [columns[date_str]], 
-                                        aggfunc = (lambda x: (x>0).sum()) if show_count else sum)
+def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict) -> pd.DataFrame:
+    summary = pd.pivot_table(site_df, values = labels, index = [columns[date_str]], 
+                              aggfunc = lambda x: (x>=1).sum()) #if the value in a column is >1, count it
 
     # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
-    date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
-    summary_pt = dict()
-    for label in labels: 
-        summary_pt[label] = summary[label].reindex(date_range).fillna(0)
-    
-    return summary_pt
-
-
-# Generate the table that's a union of all data
-def union_the_data(sitesummary_pt: pd.DataFrame) -> pd.DataFrame:
-    union_pt = pd.DataFrame()
-    for song in songs:
-        union_pt = pd.concat([union_pt, sitesummary_pt[song]], axis=1)
-    # rename columns to friendly names
-    union_pt.rename(columns = col_map, inplace=True)
-    # convert float to int
-    for song in songs:
-        union_pt[friendly_names[song]] = union_pt[friendly_names[song]].astype(int)
-
-    return union_pt
-
-
+    date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+    summary = summary.reindex(date_range).fillna(0)
+    summary = summary.transpose()
+    return summary
 
 #
 #
 # UI and other setup
 # 
 #  
-
 def get_site_to_analyze(site_list:list) -> str:
     return st.sidebar.selectbox('Site to summarize', site_list)
 
@@ -350,34 +314,26 @@ def format_xdateticks(date_axis:plt.Axes):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_overlays(month_lengths:dict, date_axis:plt.Axes):
+def draw_axis_labels(month_lengths:dict, date_axis:plt.Axes, gap:float):
     max = len(month_lengths)
     n = 0
     x = 0
     for month in month_lengths:
         mid = x + int(month_lengths[month]/2)
-        date_axis.text(x=mid, y=1.55, s=month, size='x-large')
+        date_axis.text(x=mid, y=gap*2.5, s=month, size='x-large')
         x += month_lengths[month]
         if n<max:
             date_axis.axvline(x=x, color='black', lw=0.5)
             
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_rows:bool, use_color_blocks:bool, title='') -> plt.figure:
-# Problems:
-# How to get the rectangle to draw entirely around the graphic, including the axis labels
-# Figure DPI doesn't seem to work
-
+def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, draw_vert_rects=False, title='') -> plt.figure:
     max = len(items)
     # Set figure size, values in inches
     w = 16
-    h = 5
-    top_gap = 0.85 if title != '' else 1
+    h = 3
+    top_gap = 0.8 if title != '' else 1
     tick_spacing = 7
-
-    #Set a mask on the zero values so that we can force them to display as white
-    for col in df:
-        df[col] = df[col].mask(df[col] == 0)
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = max, 
@@ -391,11 +347,20 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_
     if len(title)>0:
         plt.suptitle(title, fontsize=36, fontweight='bold')
 
+
+    #Set a mask on the zero values so that we can force them to display as white. Keep the original data as we
+    #need it for drawing later. Use '<=0' because -100 is use to differentiate no data from data with zero value
+    df_clean = pd.DataFrame()
+    for col in df:
+        df_clean[col] = df[col].mask(df[col] <= 0)
+
     i=0
     for item in items:
         # plotting the heatmap
-        max_count = df[item].max(axis=1).values[0]
-        axs[i] = sns.heatmap(data = df[item],
+        max_count = df_clean.loc[item].max()
+        # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
+        df_to_graph = df_clean.loc[item].to_frame().transpose()
+        axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
                         cmap = cmap[item] if len(cmap) > 1 else cmap[0],
                         vmin = 0, vmax = max_count if max_count > 0 else 1,
@@ -407,42 +372,59 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_
         if max_count == 0:
             axs[i].set_visible(False)
         
-        format_xdateticks(axs[i])
-        month_counts = get_days_per_month(df[item])
-        draw_overlays(month_counts, axs[i])
         # clear the ticks on the top graphs, only show them on the bottom one
         if i < max-1:
             axs[i].set_xticks([])
             axs[i].tick_params(bottom = False)
 
-        # draw a bounding rectangle around everything except the caption
-        rect = plt.Rectangle(
-            # (lower-left corner), width, height
-            (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
-            zorder=1000, transform=fig.transFigure, figure=fig)
-        fig.patches.extend([rect])
+        if draw_vert_rects and len(raw_data)>0:
+            tagged_rows = filter_site(raw_data, mini_manual_tags)
+            date_list = tagged_rows.index.unique()
+            first = raw_data.index[0]
+            box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
 
-        #Add a rectangle around the data from the first non-zero day to the last
-        #df[item] = the row of data we're currently graphing. want to find the first and last non-zero value in this vector
-#        df_col = df[item].transpose()  #pivot to be vertical so the values are in rows instead of columns
-#        df_col = df_col.reset_index()  #index by ints for easy graphing
-#        df_col_nonzero = df_col[df_col[columns[item]]>0]  #get only the non-zero values
+            _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
+            _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
+            trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
+            for px in box_pos:
+                rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
+                                 fc='none', ec='C0', lw=0.5)
+                fig.add_artist(rect)
+                
+            #Add a rectangle around the data from the first non-zero day to the last
+            #df[item] = the row of data we're currently graphing. want to find the first and last non-zero value in this vector
+    #        df_col = df[item].transpose()  #pivot to be vertical so the values are in rows instead of columns
+    #        df_col = df_col.reset_index()  #index by ints for easy graphing
+    #        df_col_nonzero = df_col[df_col[columns[item]]>0]  #get only the non-zero values
 
-#        if len(df_col_nonzero):
-#            c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
-#            first = df_col_nonzero.index[0]
-#            last  = df_col_nonzero.index[len(df_col_nonzero)-1]
-#            axs[i][0].add_patch(patches.Rectangle((first,0), last-first, 0.99, 
-#                                                  ec=c, 
-#                                                  fc=c, fill=use_color_blocks)) 
-#            axs[i][0].add_patch(patches.Rectangle((first,0.48), last-first, 0.04, 
-#                                                  ec='r', 
-#                                                  fc='r', fill=True)) 
-#            axs[i][0].add_patch(patches.Ellipse((first,0.5), 10, 0.5, 
-#                                                  ec='b', 
-#                                                  fc='b', fill=True)) 
+    #        if len(df_col_nonzero):
+    #            c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
+    #            first = df_col_nonzero.index[0]
+    #            last  = df_col_nonzero.index[len(df_col_nonzero)-1]
+    #            axs[i][0].add_patch(patches.Rectangle((first,0), last-first, 0.99, 
+    #                                                  ec=c, 
+    #                                                  fc=c, fill=use_color_blocks)) 
+    #            axs[i][0].add_patch(patches.Rectangle((first,0.48), last-first, 0.04, 
+    #                                                  ec='r', 
+    #                                                  fc='r', fill=True)) 
+    #            axs[i][0].add_patch(patches.Ellipse((first,0.5), 10, 0.5, 
+    #                                                  ec='b', 
+    #                                                  fc='b', fill=True)) 
 
         i += 1
+    
+        
+    # Set the ticks on the axis we're going to use
+    format_xdateticks(axs[max-1])
+    month_counts = get_days_per_month(df_to_graph)
+    draw_axis_labels(month_counts, axs[max-1], top_gap)
+
+    # draw a bounding rectangle around everything except the caption
+    rect = plt.Rectangle(
+        # (lower-left corner), width, height
+        (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
+        zorder=1000, transform=fig.transFigure, figure=fig)
+    fig.patches.extend([rect])
 
     # return the final plotted heatmap
     return fig
@@ -471,7 +453,7 @@ site = get_site_to_analyze(site_list[site_str])
 df = clean_data(df_original, site_list[site_str])
 
 #nuke the original data, hopefully this frees up memory
-df_original = pd.DataFrame()
+df_original = ''
 
 # Select the site matching the one of interest
 site_df = df[df[columns[site_str]] == site]
@@ -482,43 +464,22 @@ date_range_dict = get_date_range(site_df)
 #Decide if we're going to save the graphs as pics or not
 save_files = st.sidebar.checkbox('Save as picture', value=False)
 
-# Pivot that site
-sitesummary_pt = make_pivot_table(site_df, songs, False, date_range_dict)
+#
+# Data Analysis
+# -------------
+# We want a series of charts. The first chart is:
+#   1. Select all rows where one of the following tags
+#       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
+#   2. Make a pivot table with the following columns:
+#       The number of recordings from that set that have Common Song >= 1
+#       The number of recordings from that set that have Courtship Song >= 1
+#       The number of recordings from that set that have AltSong2 >= 1
+#       The number of recordings from that set that have AltSong >= 1 
+df_manual = filter_site(site_df, manual_tags)
+manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
-# Create the summary of all data
-union_pt = union_the_data(sitesummary_pt)
-
-# Flip rows and columns so that we're running horizontally
-sitesummary_wide = dict()
-for song in songs:
-    sitesummary_wide[song] = sitesummary_pt[song].transpose()
-
-# Analyze the tags
-# Get the subset of rows where there's at least one tag, i.e. the count of tags is greater than zero
-# See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
-# This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-query = ' | '.join([f'`{columns[tag]}`>0' for tag in tags])
-tagged_rows = site_df.query(query)
-
-rowsummary_wide = dict()
-if len(tagged_rows):
-    rowsummary_pt = make_pivot_table(tagged_rows, tags, False, date_range_dict)    
-    for tag in tags:
-        rowsummary_wide[tag] = rowsummary_pt[tag].transpose()
-
-    # Add a column where the count of recordings that contain at least one tag
-    # So if a recording at 10a has two tags, that only counts as 1, because we're counting recordings not tags
-    #Make a pivot table out of it
-    tagged2_pt = pd.pivot_table(tagged_rows, values = columns[filename_str], 
-                    index = [columns[date_str]], 
-                    aggfunc = 'count')
-    date_range = pd.date_range(date_range_dict['start'], date_range_dict['end'])
-    tagged2_pt = tagged2_pt.reindex(date_range).fillna(0)
-    #Rename the columns from the strings in the file to the friendly names
-    tagged2_pt.rename(columns = {columns[filename_str]:'Tagged Files'}, inplace=True)
-    #Concat this column to the original raw data
-    union_pt = pd.concat([union_pt, tagged2_pt.astype(int)], axis=1)
-
+df_mini_manual = filter_site(site_df, mini_manual_tags)
+mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
 # ------------------------------------------------------------------------------------------------
 # DISPLAY
@@ -527,29 +488,24 @@ if len(tagged_rows):
 # Set format shared by all graphs
 set_global_theme()
 
-cmap = {malesong:'Greens', courtsong:'Oranges', altsong2:'Purples', altsong1:'Blues', 'bad':'Black'}
-graph = create_graph(df = sitesummary_wide, 
-                     items = songs, 
+cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
+graph = create_graph(df = manual_pt, 
+                     items = song_columns, 
                      cmap = cmap, 
-                     row_names = friendly_names,
-                     short_rows = False,
-                     use_color_blocks = False,
                      title = site + ' Manual Analysis')
 st.write(graph)
-
 if save_files:
     save_figure(site, 'Manual')
 
-#If there are any tags, then plot them, otherwise don't
-#if len(rowsummary_wide) > 0:
-#    st.write(create_graph(df = rowsummary_wide, 
-#                            items = tags,
-#                            cmap = ['Greys'],
-#                            row_names = friendly_names,
-#                            short_rows = True,
-#                            use_color_blocks = False))
-#else:
-#    st.write('No tags to plot')
+graph = create_graph(df = mini_manual_pt, 
+                     items = song_columns, 
+                     cmap = cmap, 
+                     raw_data = site_df,
+                     draw_vert_rects = True,
+                     title = site + ' Mini Manual Analysis')
+st.write(graph)
+if save_files:
+    save_figure(site, 'Mini_Manual')
 
 
 if len(site_list[bad_files]) > 0:
