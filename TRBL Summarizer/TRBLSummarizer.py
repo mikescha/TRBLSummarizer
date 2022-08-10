@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.transforms as transforms
 from matplotlib import cm
 from pathlib import Path
 import os
@@ -26,10 +27,11 @@ courtsong = 'courtsong'
 date_str = 'date'
 hour_str = 'hour'
 tag_wse = 'tag_edge'
-tag_mhh = 'tag_fs'
-tag_wsm = 'tag_m'
-tag_mhe = 'tag_mc'
+tag_wsm = 'tag_wsm'
 tag_wsh = 'tag_wsh'
+tag_mhe = 'tag_mhe'
+tag_mhm = 'tag_mhm'
+tag_mhh = 'tag_mhh'
 tag_mhe2= 'tag_mhe2'
 tag_ws  = 'tag_ws'
 tag_mh  = 'tag_mh'
@@ -47,9 +49,10 @@ columns = {filename_str  : 'filename',
            date_str      : 'date',
            tag_wse       : 'tag<reviewed-WS-e>',
            tag_wsm       : 'tag<reviewed-WS-m>',
-           tag_mhe       : 'tag<reviewed-MH-e>',
-           tag_mhh       : 'tag<reviewed-MH-h>',
            tag_wsh       : 'tag<reviewed-WS-h>',
+           tag_mhe       : 'tag<reviewed-MH-e>',
+           tag_mhm       : 'tag<reviewed-MH-m>',
+           tag_mhh       : 'tag<reviewed-MH-h>',
            tag_mhe2      : 'tag<reviewed-MH-e2>',
            tag_ws        : 'tag<reviewed-WS>',
            tag_mh        : 'tag<reviewed-MH>',
@@ -61,35 +64,10 @@ columns = {filename_str  : 'filename',
 
 songs = [malesong, courtsong, altsong2, altsong1]
 song_columns = [columns[malesong], columns[courtsong], columns[altsong2], columns[altsong1]]
-tags = [tag_wse, tag_wsm, tag_mhe, tag_mhh, tag_wsh, tag_mhe2, tag_ws, tag_mh, tag_]
+tags = [tag_wse, tag_wsm, tag_wsh, tag_mhe, tag_mhm, tag_mhh, tag_mhe2, tag_ws, tag_mh, tag_]
 manual_tags = [columns[tag_mh], columns[tag_ws], columns[tag_]]
-friendly_names = {malesong : 'Male', 
-                  courtsong: 'Chorus',
-                  altsong2 : 'Female', 
-                  altsong1 : 'Nestling',
-                  tag_wsm  : 'WS MM',
-                  tag_wse  : 'WS Edge',              
-                  tag_mhh  : 'MH MM',
-                  tag_mhe  : 'MH Edge',
-                  tag_wsh  : 'WS-h',
-                  tag_mhe2 : 'MH-e2',
-                  tag_ws   : 'WS',
-                  tag_mh   : 'MH',
-                  tag_     : 'WS orig'}
+mini_manual_tags = [columns[tag_mhh], columns[tag_wsh], columns[tag_mhm], columns[tag_wsm]]
 
-
-#Make the map of column names to friendly names
-col_map = {}
-for song in songs:
-    col_map[columns[song]] = friendly_names[song]
-
-for song in songs:
-    col_map[columns[song]] = friendly_names[song]
-
-#Make the map of column names to friendly names
-col_tag_map = {}
-for tag in tags:
-    col_tag_map[columns[tag]] = friendly_names[tag]
 
 data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
@@ -337,20 +315,20 @@ def format_xdateticks(date_axis:plt.Axes):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_overlays(month_lengths:dict, date_axis:plt.Axes):
+def draw_overlays(month_lengths:dict, date_axis:plt.Axes, gap:float):
     max = len(month_lengths)
     n = 0
     x = 0
     for month in month_lengths:
         mid = x + int(month_lengths[month]/2)
-        date_axis.text(x=mid, y=1.55, s=month, size='x-large')
+        date_axis.text(x=mid, y=gap*2.5, s=month, size='x-large')
         x += month_lengths[month]
         if n<max:
             date_axis.axvline(x=x, color='black', lw=0.5)
             
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, items:list, cmap:dict, short_rows:bool, use_color_blocks:bool, title='') -> plt.figure:
+def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, draw_vertical_rects=False, title='') -> plt.figure:
 # Problems:
 # How to get the rectangle to draw entirely around the graphic, including the axis labels
 # Figure DPI doesn't seem to work
@@ -358,8 +336,8 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, short_rows:bool, use_c
     max = len(items)
     # Set figure size, values in inches
     w = 16
-    h = 5
-    top_gap = 0.85 if title != '' else 1
+    h = 3
+    top_gap = 0.8 if title != '' else 1
     tick_spacing = 7
 
     #Set a mask on the zero values so that we can force them to display as white
@@ -396,42 +374,55 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, short_rows:bool, use_c
         if max_count == 0:
             axs[i].set_visible(False)
         
-        format_xdateticks(axs[i])
-        month_counts = get_days_per_month(df_to_graph)
-        draw_overlays(month_counts, axs[i])
         # clear the ticks on the top graphs, only show them on the bottom one
         if i < max-1:
             axs[i].set_xticks([])
             axs[i].tick_params(bottom = False)
 
-        # draw a bounding rectangle around everything except the caption
-        rect = plt.Rectangle(
-            # (lower-left corner), width, height
-            (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
-            zorder=1000, transform=fig.transFigure, figure=fig)
-        fig.patches.extend([rect])
+        if draw_vertical_rects:
+            box_pos = df.loc[item].fillna(0).to_numpy().nonzero()
+            _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
+            _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
+            trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
+            for px in box_pos[0]:
+                rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
+                                 fc='none', ec='C0', lw=0.5)
+                fig.add_artist(rect)
+                
+            #Add a rectangle around the data from the first non-zero day to the last
+            #df[item] = the row of data we're currently graphing. want to find the first and last non-zero value in this vector
+    #        df_col = df[item].transpose()  #pivot to be vertical so the values are in rows instead of columns
+    #        df_col = df_col.reset_index()  #index by ints for easy graphing
+    #        df_col_nonzero = df_col[df_col[columns[item]]>0]  #get only the non-zero values
 
-        #Add a rectangle around the data from the first non-zero day to the last
-        #df[item] = the row of data we're currently graphing. want to find the first and last non-zero value in this vector
-#        df_col = df[item].transpose()  #pivot to be vertical so the values are in rows instead of columns
-#        df_col = df_col.reset_index()  #index by ints for easy graphing
-#        df_col_nonzero = df_col[df_col[columns[item]]>0]  #get only the non-zero values
-
-#        if len(df_col_nonzero):
-#            c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
-#            first = df_col_nonzero.index[0]
-#            last  = df_col_nonzero.index[len(df_col_nonzero)-1]
-#            axs[i][0].add_patch(patches.Rectangle((first,0), last-first, 0.99, 
-#                                                  ec=c, 
-#                                                  fc=c, fill=use_color_blocks)) 
-#            axs[i][0].add_patch(patches.Rectangle((first,0.48), last-first, 0.04, 
-#                                                  ec='r', 
-#                                                  fc='r', fill=True)) 
-#            axs[i][0].add_patch(patches.Ellipse((first,0.5), 10, 0.5, 
-#                                                  ec='b', 
-#                                                  fc='b', fill=True)) 
+    #        if len(df_col_nonzero):
+    #            c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
+    #            first = df_col_nonzero.index[0]
+    #            last  = df_col_nonzero.index[len(df_col_nonzero)-1]
+    #            axs[i][0].add_patch(patches.Rectangle((first,0), last-first, 0.99, 
+    #                                                  ec=c, 
+    #                                                  fc=c, fill=use_color_blocks)) 
+    #            axs[i][0].add_patch(patches.Rectangle((first,0.48), last-first, 0.04, 
+    #                                                  ec='r', 
+    #                                                  fc='r', fill=True)) 
+    #            axs[i][0].add_patch(patches.Ellipse((first,0.5), 10, 0.5, 
+    #                                                  ec='b', 
+    #                                                  fc='b', fill=True)) 
 
         i += 1
+    
+        
+    # Set the ticks on the axis we're going to use
+    format_xdateticks(axs[max-1])
+    month_counts = get_days_per_month(df_to_graph)
+    draw_overlays(month_counts, axs[max-1], top_gap)
+
+    # draw a bounding rectangle around everything except the caption
+    rect = plt.Rectangle(
+        # (lower-left corner), width, height
+        (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
+        zorder=1000, transform=fig.transFigure, figure=fig)
+    fig.patches.extend([rect])
 
     # return the final plotted heatmap
     return fig
@@ -485,6 +476,8 @@ save_files = st.sidebar.checkbox('Save as picture', value=False)
 df_manual = filter_site(site_df, manual_tags)
 manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
+df_mini_manual = filter_site(site_df, mini_manual_tags)
+mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
 # ------------------------------------------------------------------------------------------------
 # DISPLAY
@@ -497,12 +490,20 @@ cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altson
 graph = create_graph(df = manual_pt, 
                      items = song_columns, 
                      cmap = cmap, 
-                     short_rows = False,
-                     use_color_blocks = False,
                      title = site + ' Manual Analysis')
 st.write(graph)
 if save_files:
     save_figure(site, 'Manual')
+
+graph = create_graph(df = mini_manual_pt, 
+                     items = song_columns, 
+                     cmap = cmap, 
+                     draw_vertical_rects = True,
+                     title = site + ' Mini Manual Analysis')
+st.write(graph)
+if save_files:
+    save_figure(site, 'Mini_Manual')
+
 
 if len(site_list[bad_files]) > 0:
     with st.expander("See possibly bad filenames"):  
