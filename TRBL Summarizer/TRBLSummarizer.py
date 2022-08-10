@@ -37,8 +37,6 @@ tag_    = 'tag_'
 
 start_str = 'start'
 end_str = 'end'
-songs = [malesong, courtsong, altsong2, altsong1]
-tags = [tag_wse, tag_wsm, tag_mhe, tag_mhh, tag_wsh, tag_mhe2, tag_ws, tag_mh, tag_]
 
 columns = {filename_str  : 'filename', 
            site_str      : 'site', 
@@ -61,6 +59,10 @@ columns = {filename_str  : 'filename',
            altsong2      : 'val<Agelaius tricolor/Alternative Song 2>',
            courtsong     : 'val<Agelaius tricolor/Courtship Song>'}
 
+songs = [malesong, courtsong, altsong2, altsong1]
+song_columns = [columns[malesong], columns[courtsong], columns[altsong2], columns[altsong1]]
+tags = [tag_wse, tag_wsm, tag_mhe, tag_mhh, tag_wsh, tag_mhe2, tag_ws, tag_mh, tag_]
+manual_tags = [columns[tag_mh], columns[tag_ws], columns[tag_]]
 friendly_names = {malesong : 'Male', 
                   courtsong: 'Chorus',
                   altsong2 : 'Female', 
@@ -205,7 +207,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
-                #found a match, need to drop everything after this
+                #found a match, need to keep only what's after this
                 df_site = df_site.query("date <= '{}'".format(x.strftime('%Y-%m-%d')))
                 break
 
@@ -214,7 +216,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
-                #found a match, need to drop everything before this
+                #found a match, need to keep only what's after this
                 df_site = df_site.query("date >= '{}'".format(x.strftime('%Y-%m-%d')))
                 break
 
@@ -237,39 +239,24 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # 
 #  
 
+# Get the subset of rows where there's at least one tag, i.e. the count of tags is greater than zero
+# See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
+def filter_site(site_df:pd.DataFrame, target_tags:list) -> pd.DataFrame:
+    # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
+    query = ' | '.join([f'`{tag}`>0' for tag in target_tags])
+    filtered_df = site_df.query(query)
+    return filtered_df
 
 # Generate the pivot table for the site
-def make_pivot_table(site_df: pd.DataFrame, labels:list, show_count:bool, date_range_dict:dict) -> pd.DataFrame:
-    summary = dict()
-    for label in labels:
-        summary[label] = pd.pivot_table(site_df, 
-                                        values = columns[label],  
-                                        index = [columns[date_str]], 
-                                        aggfunc = (lambda x: (x>0).sum()) if show_count else sum)
+def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict) -> pd.DataFrame:
+    summary = pd.pivot_table(site_df, values = labels, index = [columns[date_str]], 
+                              aggfunc = lambda x: (x>=1).sum()) #if the value in a column is >1, count it
 
     # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
-    date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
-    summary_pt = dict()
-    for label in labels: 
-        summary_pt[label] = summary[label].reindex(date_range).fillna(0)
-    
-    return summary_pt
-
-
-# Generate the table that's a union of all data
-def union_the_data(sitesummary_pt: pd.DataFrame) -> pd.DataFrame:
-    union_pt = pd.DataFrame()
-    for song in songs:
-        union_pt = pd.concat([union_pt, sitesummary_pt[song]], axis=1)
-    # rename columns to friendly names
-    union_pt.rename(columns = col_map, inplace=True)
-    # convert float to int
-    for song in songs:
-        union_pt[friendly_names[song]] = union_pt[friendly_names[song]].astype(int)
-
-    return union_pt
-
-
+    date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+    summary = summary.reindex(date_range).fillna(0)
+    summary = summary.transpose()
+    return summary
 
 #
 #
@@ -363,7 +350,7 @@ def draw_overlays(month_lengths:dict, date_axis:plt.Axes):
             
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_rows:bool, use_color_blocks:bool, title='') -> plt.figure:
+def create_graph(df: pd.DataFrame, items:list, cmap:dict, short_rows:bool, use_color_blocks:bool, title='') -> plt.figure:
 # Problems:
 # How to get the rectangle to draw entirely around the graphic, including the axis labels
 # Figure DPI doesn't seem to work
@@ -394,8 +381,10 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_
     i=0
     for item in items:
         # plotting the heatmap
-        max_count = df[item].max(axis=1).values[0]
-        axs[i] = sns.heatmap(data = df[item],
+        max_count = df.loc[item].max()
+        # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
+        df_to_graph = df.loc[item].to_frame().transpose()
+        axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
                         cmap = cmap[item] if len(cmap) > 1 else cmap[0],
                         vmin = 0, vmax = max_count if max_count > 0 else 1,
@@ -408,7 +397,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, row_names:dict, short_
             axs[i].set_visible(False)
         
         format_xdateticks(axs[i])
-        month_counts = get_days_per_month(df[item])
+        month_counts = get_days_per_month(df_to_graph)
         draw_overlays(month_counts, axs[i])
         # clear the ticks on the top graphs, only show them on the bottom one
         if i < max-1:
@@ -471,7 +460,7 @@ site = get_site_to_analyze(site_list[site_str])
 df = clean_data(df_original, site_list[site_str])
 
 #nuke the original data, hopefully this frees up memory
-df_original = pd.DataFrame()
+df_original = ''
 
 # Select the site matching the one of interest
 site_df = df[df[columns[site_str]] == site]
@@ -482,42 +471,19 @@ date_range_dict = get_date_range(site_df)
 #Decide if we're going to save the graphs as pics or not
 save_files = st.sidebar.checkbox('Save as picture', value=False)
 
-# Pivot that site
-sitesummary_pt = make_pivot_table(site_df, songs, False, date_range_dict)
-
-# Create the summary of all data
-union_pt = union_the_data(sitesummary_pt)
-
-# Flip rows and columns so that we're running horizontally
-sitesummary_wide = dict()
-for song in songs:
-    sitesummary_wide[song] = sitesummary_pt[song].transpose()
-
-# Analyze the tags
-# Get the subset of rows where there's at least one tag, i.e. the count of tags is greater than zero
-# See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
-# This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-query = ' | '.join([f'`{columns[tag]}`>0' for tag in tags])
-tagged_rows = site_df.query(query)
-
-rowsummary_wide = dict()
-if len(tagged_rows):
-    rowsummary_pt = make_pivot_table(tagged_rows, tags, False, date_range_dict)    
-    for tag in tags:
-        rowsummary_wide[tag] = rowsummary_pt[tag].transpose()
-
-    # Add a column where the count of recordings that contain at least one tag
-    # So if a recording at 10a has two tags, that only counts as 1, because we're counting recordings not tags
-    #Make a pivot table out of it
-    tagged2_pt = pd.pivot_table(tagged_rows, values = columns[filename_str], 
-                    index = [columns[date_str]], 
-                    aggfunc = 'count')
-    date_range = pd.date_range(date_range_dict['start'], date_range_dict['end'])
-    tagged2_pt = tagged2_pt.reindex(date_range).fillna(0)
-    #Rename the columns from the strings in the file to the friendly names
-    tagged2_pt.rename(columns = {columns[filename_str]:'Tagged Files'}, inplace=True)
-    #Concat this column to the original raw data
-    union_pt = pd.concat([union_pt, tagged2_pt.astype(int)], axis=1)
+#
+# Data Analysis
+# -------------
+# We want a series of charts. The first chart is:
+#   1. Select all rows where one of the following tags
+#       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
+#   2. Make a pivot table with the following columns:
+#       The number of recordings from that set that have Common Song >= 1
+#       The number of recordings from that set that have Courtship Song >= 1
+#       The number of recordings from that set that have AltSong2 >= 1
+#       The number of recordings from that set that have AltSong >= 1 
+df_manual = filter_site(site_df, manual_tags)
+manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
 
 # ------------------------------------------------------------------------------------------------
@@ -527,30 +493,16 @@ if len(tagged_rows):
 # Set format shared by all graphs
 set_global_theme()
 
-cmap = {malesong:'Greens', courtsong:'Oranges', altsong2:'Purples', altsong1:'Blues', 'bad':'Black'}
-graph = create_graph(df = sitesummary_wide, 
-                     items = songs, 
+cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
+graph = create_graph(df = manual_pt, 
+                     items = song_columns, 
                      cmap = cmap, 
-                     row_names = friendly_names,
                      short_rows = False,
                      use_color_blocks = False,
                      title = site + ' Manual Analysis')
 st.write(graph)
-
 if save_files:
     save_figure(site, 'Manual')
-
-#If there are any tags, then plot them, otherwise don't
-#if len(rowsummary_wide) > 0:
-#    st.write(create_graph(df = rowsummary_wide, 
-#                            items = tags,
-#                            cmap = ['Greys'],
-#                            row_names = friendly_names,
-#                            short_rows = True,
-#                            use_color_blocks = False))
-#else:
-#    st.write('No tags to plot')
-
 
 if len(site_list[bad_files]) > 0:
     with st.expander("See possibly bad filenames"):  
