@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\" />
+    <Folder Include="Figures\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Data\data.csv" />
