@@ -586,7 +586,8 @@ graph = create_graph(df = edge_pt,
                      draw_horiz_rects = True,
                      title = site + ' Mini Manual Analysis')
 st.write(graph)
-
+if save_files:
+    save_figure(site, 'Edge')
 
 
 if len(site_list[bad_files]) > 0:
