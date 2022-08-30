@@ -1,3 +1,4 @@
+from re import A
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -38,52 +39,67 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
+tag_p1bc = 'tag_p1bc'
+tag_p1bn = 'tag_p1bn'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
+tag_p2bc = 'tag_p2bc' 
+tag_p2bn = 'tag_p2bn'
 tag_wsmc = 'tag_wsmc'
+
 
 start_str = 'start'
 end_str = 'end'
 
-columns = {filename_str  : 'filename', 
-           site_str      : 'site', 
-           'day'         : 'day',
-           'month'       : 'month',
-           'year'        : 'year',
-           hour_str      : 'hour', 
-           date_str      : 'date',
+columns = {filename_str : 'filename', 
+           site_str     : 'site', 
+           'day'        : 'day',
+           'month'      : 'month',
+           'year'       : 'year',
+           hour_str     : 'hour', 
+           date_str     : 'date',
 #           tag_wse       : 'tag<reviewed-WS-e>',
-           tag_wsm       : 'tag<reviewed-WS-m>',
-           tag_wsh       : 'tag<reviewed-WS-h>',
+           tag_wsm      : 'tag<reviewed-WS-m>',
+           tag_wsh      : 'tag<reviewed-WS-h>',
 #           tag_mhe       : 'tag<reviewed-MH-e>',
-           tag_mhm       : 'tag<reviewed-MH-m>',
-           tag_mhh       : 'tag<reviewed-MH-h>',
+           tag_mhm      : 'tag<reviewed-MH-m>',
+           tag_mhh      : 'tag<reviewed-MH-h>',
 #           tag_mhe2      : 'tag<reviewed-MH-e2>',
-           tag_ws        : 'tag<reviewed-WS>',
-           tag_mh        : 'tag<reviewed-MH>',
-           tag_          : 'tag<reviewed>',
-           tag_p1c       : 'tag<p1c>',
-           tag_p1n       : 'tag<p1n>',
-           tag_p2c       : 'tag<p2c>',
-           tag_p2n       : 'tag<p2n>',
+           tag_ws       : 'tag<reviewed-WS>',
+           tag_mh       : 'tag<reviewed-MH>',
+           tag_         : 'tag<reviewed>',
+           tag_p1c      : 'tag<p1c>',
+           tag_p1n      : 'tag<p1n>',
+           tag_p2c      : 'tag<p2c>',
+           tag_p2n      : 'tag<p2n>',
 #           tag_wsmc      : 'tag<reviewed-WS-mc>',
-  
-
-
-           malesong      : 'val<Agelaius tricolor/Common Song>',
-           altsong1      : 'val<Agelaius tricolor/Alternative Song>',
-           altsong2      : 'val<Agelaius tricolor/Alternative Song 2>',
-           courtsong     : 'val<Agelaius tricolor/Courtship Song>'}
+           tag_p1bc     : 'tag<p1bc>',
+           tag_p1bn     : 'tag<p1bn>',
+           tag_p2bc     : 'tag<p2bc>',
+           tag_p2bn     : 'tag<p2bn>',
+           malesong     : 'val<Agelaius tricolor/Common Song>',
+           altsong1     : 'val<Agelaius tricolor/Alternative Song>',
+           altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
+           courtsong    : 'val<Agelaius tricolor/Courtship Song>'}
 
 songs = [malesong, courtsong, altsong2, altsong1]
-song_columns = [columns[malesong], columns[courtsong], columns[altsong2], columns[altsong1]]
-#old version: tags = [tag_wse, tag_wsm, tag_wsh, tag_mhe, tag_mhm, tag_mhh, tag_mhe2, tag_ws, tag_mh, tag_, tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_wsmc]
-tags = [tag_wsm, tag_wsh, tag_mhm, tag_mhh, tag_ws, tag_mh, tag_, tag_p1c, tag_p1n, tag_p2c, tag_p2n]
-manual_tags = [columns[tag_mh], columns[tag_ws], columns[tag_]]
-mini_manual_tags = [columns[tag_mhh], columns[tag_wsh], columns[tag_mhm], columns[tag_wsm]]
-edge_tags = [columns[tag_p1c], columns[tag_p1n], columns[tag_p2c], columns[tag_p2n]]
-edge_c_tags = [columns[tag_p1c], columns[tag_p2c]]
-edge_n_tags = [columns[tag_p1n], columns[tag_p2n]]
+song_columns = [columns[s] for s in songs]
+
+manual_tags = [tag_mh, tag_ws, tag_]
+mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
+edge_c_tags = [tag_p1c, tag_p1bc, tag_p2c, tag_p2bc]
+edge_n_tags = [tag_p1n, tag_p1bn, tag_p2n, tag_p2bn]
+tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
+
+manual_cols = [columns[t] for t in manual_tags]
+mini_manual_cols = [columns[t] for t in mini_manual_tags]
+edge_c_cols = [columns[t] for t in edge_c_tags]
+edge_n_cols = [columns[t] for t in edge_n_tags]
+
+edge_cols = edge_c_cols + edge_n_cols #make list of the right length
+edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
+edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
+
 
 data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
@@ -355,7 +371,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
     x = 0
     for month in month_lengths:
         mid = x + int(month_lengths[month]/2)
-        axs[len(axs)-1].text(x=mid, y=gap*2.5, s=month, size='x-large')
+        axs[len(axs)-1].text(x=mid, y=gap, s=month, size='x-large')
         x += month_lengths[month]
         if n<max:
             for ax in axs:
@@ -422,7 +438,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
 
             if len(df_col_nonzero):
                 c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
-                if item in edge_c_tags: #these tags get a box around the whole block
+                if item in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
@@ -448,7 +464,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
         
     # add a rect around each day that has some data
     if draw_vert_rects and len(raw_data)>0:
-        tagged_rows = filter_site(raw_data, mini_manual_tags)
+        tagged_rows = filter_site(raw_data, mini_manual_cols)
         if len(tagged_rows):
             date_list = tagged_rows.index.unique()
             first = raw_data.index[0]
@@ -459,19 +475,17 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
             trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
             for px in box_pos:
                 rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
-                                    fc='none', ec='C0', lw=0.5)
+                                         fc='none', ec='C0', lw=0.5)
                 fig.add_artist(rect)
     
     if len(graph_drawn):
         # Clean up the ticks on the axis we're going to use
         format_xdateticks(axs[len(items)-1])
         month_counts = get_days_per_month(df)
-        draw_axis_labels(month_counts, axs, top_gap)
+        draw_axis_labels(month_counts, axs, 2 if max==4 else 3)
 
         #Hide the ticks on the top graphs
         for i in range(0,len(items)-1):
-            #if necessary, clear the ticks on the top graphs, only show them on the bottom one
-            #axs[i].set_xticks([])
             axs[i].tick_params(bottom = False)
     else: 
         #Need to hide the ticks, although I don't think this will get called anymore since I now create
@@ -535,13 +549,13 @@ save_files = st.sidebar.checkbox('Save as picture', value=False)
 #       The number of recordings from that set that have AltSong2 >= 1
 #       The number of recordings from that set that have AltSong >= 1 
 #     
-df_manual = filter_site(site_df, manual_tags)
+df_manual = filter_site(site_df, manual_cols)
 manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
 # 
 # COMMENT
 #  
-df_mini_manual = filter_site(site_df, mini_manual_tags)
+df_mini_manual = filter_site(site_df, mini_manual_cols)
 mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
 
@@ -555,9 +569,9 @@ mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 #   
 
 edge_pt = pd.DataFrame()
-for tag in edge_tags:
+for tag in edge_cols:
     df_for_tag = filter_site(site_df, [tag])
-    if tag in edge_c_tags:
+    if tag in edge_c_cols:
         target_col = columns[courtsong]
     else:
         target_col = columns[altsong1]
@@ -602,9 +616,9 @@ st.write(graph)
 if save_files:
     save_figure(site, 'Mini_Manual')
 
-cmap2 = {columns[tag_p1c]:'Oranges',columns[tag_p1n]:'Blues',columns[tag_p2c]:'Oranges',columns[tag_p2n]:'Blues'} 
+cmap2 = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
 graph = create_graph(df = edge_pt, 
-                     items = edge_tags,
+                     items = edge_cols,
                      cmap = cmap2, 
                      raw_data = site_df,
                      draw_horiz_rects = True,
