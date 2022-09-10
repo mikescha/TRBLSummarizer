@@ -1,3 +1,4 @@
+from re import A
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -38,48 +39,67 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
+tag_p1bc = 'tag_p1bc'
+tag_p1bn = 'tag_p1bn'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
+tag_p2bc = 'tag_p2bc' 
+tag_p2bn = 'tag_p2bn'
 tag_wsmc = 'tag_wsmc'
+
 
 start_str = 'start'
 end_str = 'end'
 
-columns = {filename_str  : 'filename', 
-           site_str      : 'site', 
-           'day'         : 'day',
-           'month'       : 'month',
-           'year'        : 'year',
-           hour_str      : 'hour', 
-           date_str      : 'date',
-           tag_wse       : 'tag<reviewed-WS-e>',
-           tag_wsm       : 'tag<reviewed-WS-m>',
-           tag_wsh       : 'tag<reviewed-WS-h>',
-           tag_mhe       : 'tag<reviewed-MH-e>',
-           tag_mhm       : 'tag<reviewed-MH-m>',
-           tag_mhh       : 'tag<reviewed-MH-h>',
-           tag_mhe2      : 'tag<reviewed-MH-e2>',
-           tag_ws        : 'tag<reviewed-WS>',
-           tag_mh        : 'tag<reviewed-MH>',
-           tag_          : 'tag<reviewed>',
-           tag_p1c       : 'tag<p1c>',
-           tag_p1n       : 'tag<p1n>',
-           tag_p2c       : 'tag<p2c>',
-           tag_p2n       : 'tag<p2n>',
-           tag_wsmc      : 'tag<reviewed-WS-mc>',
-           malesong      : 'val<Agelaius tricolor/Common Song>',
-           altsong1      : 'val<Agelaius tricolor/Alternative Song>',
-           altsong2      : 'val<Agelaius tricolor/Alternative Song 2>',
-           courtsong     : 'val<Agelaius tricolor/Courtship Song>'}
+columns = {filename_str : 'filename', 
+           site_str     : 'site', 
+           'day'        : 'day',
+           'month'      : 'month',
+           'year'       : 'year',
+           hour_str     : 'hour', 
+           date_str     : 'date',
+#           tag_wse       : 'tag<reviewed-WS-e>',
+           tag_wsm      : 'tag<reviewed-WS-m>',
+           tag_wsh      : 'tag<reviewed-WS-h>',
+#           tag_mhe       : 'tag<reviewed-MH-e>',
+           tag_mhm      : 'tag<reviewed-MH-m>',
+           tag_mhh      : 'tag<reviewed-MH-h>',
+#           tag_mhe2      : 'tag<reviewed-MH-e2>',
+           tag_ws       : 'tag<reviewed-WS>',
+           tag_mh       : 'tag<reviewed-MH>',
+           tag_         : 'tag<reviewed>',
+           tag_p1c      : 'tag<p1c>',
+           tag_p1n      : 'tag<p1n>',
+           tag_p2c      : 'tag<p2c>',
+           tag_p2n      : 'tag<p2n>',
+#           tag_wsmc      : 'tag<reviewed-WS-mc>',
+           tag_p1bc     : 'tag<p1bc>',
+           tag_p1bn     : 'tag<p1bn>',
+           tag_p2bc     : 'tag<p2bc>',
+           tag_p2bn     : 'tag<p2bn>',
+           malesong     : 'val<Agelaius tricolor/Common Song>',
+           altsong1     : 'val<Agelaius tricolor/Alternative Song>',
+           altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
+           courtsong    : 'val<Agelaius tricolor/Courtship Song>'}
 
 songs = [malesong, courtsong, altsong2, altsong1]
-song_columns = [columns[malesong], columns[courtsong], columns[altsong2], columns[altsong1]]
-tags = [tag_wse, tag_wsm, tag_wsh, tag_mhe, tag_mhm, tag_mhh, tag_mhe2, tag_ws, tag_mh, tag_, tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_wsmc]
-manual_tags = [columns[tag_mh], columns[tag_ws], columns[tag_]]
-mini_manual_tags = [columns[tag_mhh], columns[tag_wsh], columns[tag_mhm], columns[tag_wsm]]
-edge_tags = [columns[tag_p1c], columns[tag_p1n], columns[tag_p2c], columns[tag_p2n]]
-edge_c_tags = [columns[tag_p1c], columns[tag_p2c]]
-edge_n_tags = [columns[tag_p1n], columns[tag_p2n]]
+song_columns = [columns[s] for s in songs]
+
+manual_tags = [tag_mh, tag_ws, tag_]
+mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
+edge_c_tags = [tag_p1c, tag_p1bc, tag_p2c, tag_p2bc]
+edge_n_tags = [tag_p1n, tag_p1bn, tag_p2n, tag_p2bn]
+tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
+
+manual_cols = [columns[t] for t in manual_tags]
+mini_manual_cols = [columns[t] for t in mini_manual_tags]
+edge_c_cols = [columns[t] for t in edge_c_tags]
+edge_n_cols = [columns[t] for t in edge_n_tags]
+
+edge_cols = edge_c_cols + edge_n_cols #make list of the right length
+edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
+edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
+
 
 data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
@@ -123,7 +143,7 @@ def get_target_sites() -> dict:
     for s in site_list:
         if not s[0:3].isdigit():
             site_list.remove(s)
-
+    
     #Get a list of all files in the Data directory, scan for files that match our pattern
     for f in os.listdir(data_dir):
         found = False
@@ -138,7 +158,7 @@ def get_target_sites() -> dict:
                             found = True
                             break
         if not found:
-            if f != data_file and f != site_info_file: 
+            if f != data_file and f != site_info_file: #if the file we found isn't one of the two known exceptions to our pattern, then mark it as Bad
                 file_summary[bad_files].append(f)
     
     #Confirm that there are the same set of files for each type
@@ -265,7 +285,9 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
 # 
 #  
 def get_site_to_analyze(site_list:list) -> str:
-    return st.sidebar.selectbox('Site to summarize', site_list)
+    #return('2021 Colusa NWR 27-1')
+    site_list = sorted(site_list)
+    return st.sidebar.selectbox('Site to summarize', site_list, index=1)
 
 def get_date_range(df:pd.DataFrame) -> dict:
     df.sort_index(inplace=True)
@@ -305,11 +327,16 @@ def set_global_theme():
                      'font.weight':'600',
                      'font.stretch':'semi-condensed',
                      'xtick.labelsize':'medium',
-#                     'ytick.labelsize':'medium',
                      'xtick.major.size':'12',
                      'xtick.color':'black',
                      'xtick.bottom':'True',
-#                     'axes.labelsize':'large',
+                     'ytick.left':'False',
+                     'ytick.labelleft':'False',
+                     'figure.frameon':'False',
+                     'axes.spines.left':'False',
+                     'axes.spines.right':'False',
+                     'axes.spines.top':'False',
+                     'axes.spines.bottom':'False',
                      }
     #The base context is "notebook", and the other contexts are "paper", "talk", and "poster".
     sns.set_theme(context = 'paper', 
@@ -321,6 +348,7 @@ def get_days_per_month(df:pd.DataFrame) -> dict:
     #Make a list of all the values, but only use the month name. Then, count how many of each month names there are, to get the number of days/mo
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
+
 
 #The axis already has all the dates in it, but they need to be formatted. 
 def format_xdateticks(date_axis:plt.Axes):
@@ -335,6 +363,7 @@ def format_xdateticks(date_axis:plt.Axes):
     date_axis.tick_params(axis = 'x',labelrotation = 0)
     return
 
+
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
@@ -343,17 +372,18 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
     x = 0
     for month in month_lengths:
         mid = x + int(month_lengths[month]/2)
-        axs[len(axs)-1].text(x=mid, y=gap*2.5, s=month, size='x-large')
+        axs[len(axs)-1].text(x=mid, y=gap, s=month, size='x-large')
         x += month_lengths[month]
         if n<max:
             for ax in axs:
-                ax.axvline(x=x, color='black', lw=0.5)
+                ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
             
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
                  draw_vert_rects=False, draw_horiz_rects=False,title='') -> plt.figure:
     max = len(items)
+    graph_drawn = []
     # Set figure size, values in inches
     w = 16
     h = 3
@@ -371,7 +401,12 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     # Draw the title https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.suptitle.html#matplotlib.pyplot.suptitle
     if len(title)>0:
         plt.suptitle(title, fontsize=36, fontweight='bold')
-
+    
+    #Clean up the data, make sure that we have a row for each index.
+    for item in items:
+        if item not in df.index:
+            #Add the row and make it all zeroes
+            df.loc[item]=pd.Series(0,index=df.columns)
 
     #Set a mask on the zero values so that we can force them to display as white. Keep the original data as we
     #need it for drawing later. Use '<=0' because -100 is use to differentiate no data from data with zero value
@@ -382,6 +417,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     i=0
     for item in items:
         # plotting the heatmap
+        max_count = 0
         max_count = df_clean.loc[item].max()
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[item].to_frame().transpose()
@@ -392,25 +428,18 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
                         cbar = False,
                         xticklabels = tick_spacing,
                         yticklabels = False)
-
-        # hide the axis if there's nothing in the graph. but, we need to draw the graph so we have data for the tick labels
-        if max_count == 0:
-            axs[i].set_visible(False)
-        
-        # clear the ticks on the top graphs, only show them on the bottom one
-        if i < max-1:
-            axs[i].set_xticks([])
-            axs[i].tick_params(bottom = False)
-        
+        #track which graphs we drew, so we can put the proper ticks on later
+        graph_drawn.append(i)
+            
         #Add a rectangle around the regions of consective tags, and a line between non-consectutive if it's a N tag
-        if draw_horiz_rects and len(raw_data)>0:
+        if draw_horiz_rects and item in df_clean.index:
             df_col_nonzero = df.loc[item].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
             df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(item))  #get only the nonzero values. 
 
             if len(df_col_nonzero):
                 c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
-                if item in edge_c_tags: #these tags get a box around the whole block
+                if item in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
@@ -436,23 +465,33 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
         
     # add a rect around each day that has some data
     if draw_vert_rects and len(raw_data)>0:
-        tagged_rows = filter_site(raw_data, mini_manual_tags)
-        date_list = tagged_rows.index.unique()
-        first = raw_data.index[0]
-        box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
+        tagged_rows = filter_site(raw_data, mini_manual_cols)
+        if len(tagged_rows):
+            date_list = tagged_rows.index.unique()
+            first = raw_data.index[0]
+            box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
 
-        _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
-        _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
-        trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
-        for px in box_pos:
-            rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
-                                fc='none', ec='C0', lw=0.5)
-            fig.add_artist(rect)
+            _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
+            _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
+            trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
+            for px in box_pos:
+                rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
+                                         fc='none', ec='C0', lw=0.5)
+                fig.add_artist(rect)
+    
+    if len(graph_drawn):
+        # Clean up the ticks on the axis we're going to use
+        format_xdateticks(axs[len(items)-1])
+        month_counts = get_days_per_month(df)
+        draw_axis_labels(month_counts, axs, 2 if max==4 else 3)
 
-    # Set the ticks on the axis we're going to use
-    format_xdateticks(axs[max-1])
-    month_counts = get_days_per_month(df_to_graph)
-    draw_axis_labels(month_counts, axs, top_gap)
+        #Hide the ticks on the top graphs
+        for i in range(0,len(items)-1):
+            axs[i].tick_params(bottom = False)
+    else: 
+        #Need to hide the ticks, although I don't think this will get called anymore since I now create
+        #an empty row for each index, so we always have something to graph
+        axs[len(items)-1].tick_params(bottom = False, labelbottom = False)
 
     # draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
@@ -511,13 +550,13 @@ save_files = st.sidebar.checkbox('Save as picture', value=False)
 #       The number of recordings from that set that have AltSong2 >= 1
 #       The number of recordings from that set that have AltSong >= 1 
 #     
-df_manual = filter_site(site_df, manual_tags)
+df_manual = filter_site(site_df, manual_cols)
 manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
 # 
 # COMMENT
 #  
-df_mini_manual = filter_site(site_df, mini_manual_tags)
+df_mini_manual = filter_site(site_df, mini_manual_cols)
 mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
 
@@ -531,9 +570,9 @@ mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 #   
 
 edge_pt = pd.DataFrame()
-for tag in edge_tags:
+for tag in edge_cols:
     df_for_tag = filter_site(site_df, [tag])
-    if tag in edge_c_tags:
+    if tag in edge_c_cols:
         target_col = columns[courtsong]
     else:
         target_col = columns[altsong1]
@@ -578,13 +617,13 @@ st.write(graph)
 if save_files:
     save_figure(site, 'Mini_Manual')
 
-cmap2 = {columns[tag_p1c]:'Oranges',columns[tag_p1n]:'Blues',columns[tag_p2c]:'Oranges',columns[tag_p2n]:'Blues'} 
+cmap2 = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
 graph = create_graph(df = edge_pt, 
-                     items = edge_tags,
+                     items = edge_cols,
                      cmap = cmap2, 
                      raw_data = site_df,
                      draw_horiz_rects = True,
-                     title = site + ' Mini Manual Analysis')
+                     title = site + ' Edge Analysis')
 st.write(graph)
 if save_files:
     save_figure(site, 'Edge')
