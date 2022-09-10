@@ -144,10 +144,6 @@ def get_target_sites() -> dict:
         if not s[0:3].isdigit():
             site_list.remove(s)
     
-
-    file_summary[site_str] = site_list
-    return file_summary
-
     #Get a list of all files in the Data directory, scan for files that match our pattern
     for f in os.listdir(data_dir):
         found = False
@@ -162,7 +158,7 @@ def get_target_sites() -> dict:
                             found = True
                             break
         if not found:
-            if f != data_file and f != site_info_file: 
+            if f != data_file and f != site_info_file: #if the file we found isn't one of the two known exceptions to our pattern, then mark it as Bad
                 file_summary[bad_files].append(f)
     
     #Confirm that there are the same set of files for each type
