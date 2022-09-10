@@ -286,6 +286,7 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #return('2021 Colusa NWR 27-1')
+    site_list = sorted(site_list)
     return st.sidebar.selectbox('Site to summarize', site_list, index=1)
 
 def get_date_range(df:pd.DataFrame) -> dict:
