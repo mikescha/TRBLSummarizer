@@ -12,8 +12,8 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 5639,2019 Colusa NWR 27-1 telemetry station AM,39.137,-122.026,40,America/Los_Angeles,2597
 4553,2019 Colusa NWR 27-2,39.137386,-122.025869,35,America/Los_Angeles,0
 5643,2019 Colusa NWR 27-2 AM,39.137,-122.026,35,America/Los_Angeles,1853
-4455,2019 Creed Rd AM,38.241,-121.888,100,America/Los_Angeles,8258
-4456,2019 Hay Landfill AM,38.306,-121.825,100,America/Los_Angeles,6681
+4455,2019 Creed Rd,38.241,-121.888,100,America/Los_Angeles,8258
+4456,2019 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,6681
 4457,2019 Iron Point,38.647,-121.104,564,America/Los_Angeles,2149
 4979,2019 Iron Point AM,38.647,-121.104,564,America/Los_Angeles,7109
 4251,2019 Leguna Seca,36.584277,-121.755882,100,America/Los_Angeles,2123
@@ -25,24 +25,24 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 5637,2019 Markham Ravine AM,38.889,-121.468,100,America/Los_Angeles,4251
 4247,2019 Ohlone - Santa Lucia Preserve,36.5075,-121.8792,200,America/Los_Angeles,2774
 5609,2019 Ohlone - Santa Lucia Preserve - AM,36.508,-121.879,200,America/Los_Angeles,199
-28863,2019 Ohlone - Santa Lucia Preserve try 2,36.508,-121.879,200,America/Los_Angeles,3829
-4188,2019 Rush Ranch,38.208,-122.014,30,America/Los_Angeles,6618
-5638,2019 Rush Ranch AM,38.208,-122.014,30,America/Los_Angeles,10399
+28863,2019 Ohlone - Santa Lucia Preserve try 2,36.508,-121.879,200,America/Los_Angeles,3828
+5638,2019 Rush Ranch,38.208,-122.014,30,America/Los_Angeles,10399
+4188,2019 Rush Ranch LG,38.208,-122.014,30,America/Los_Angeles,6618
 7657,2020 Conway Ranch,38,-121,0,America/Los_Angeles,1901
-2908,2020 Creed Rd AM,38.241,-121.888,100,America/Los_Angeles,5534
+2908,2020 Creed Rd,38.241,-121.888,100,America/Los_Angeles,5524
 16223,2020 Fort Ord,36.589841,-121.714311,100,America/Los_Angeles,2732
-6199,2020 Hay Landfill AM,38.306,-121.825,100,America/Los_Angeles,5533
+6199,2020 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,5499
 7650,2020 Iron Point,38.647,-121.104,564,America/Los_Angeles,4014
 6404,2020 Markham Ravine,38.872,-121.454,100,America/Los_Angeles,1808
-18572,2020 Ohlone -Santa Lucia Preserve,36.508,-121.879,200,America/Los_Angeles,5524
-2915,2020 Rush Ranch,38.208,-121.014,30,America/Los_Angeles,5533
-24130,2021 Colusa NWR 27-1,39.144,-122.028,40,America/Los_Angeles,8733
+18572,2020 Ohlone - Santa Lucia Preserve,36.508,-121.879,200,America/Los_Angeles,5524
+2915,2020 Rush Ranch,38.208,-121.014,30,America/Los_Angeles,5497
+24130,2021 Colusa NWR 27-1,39.144,-122.028,40,America/Los_Angeles,8731
 24221,2021 Colusa NWR 27-2,39.137,-122.026,564,America/Los_Angeles,8621
 21652,2021 Conaway East,38.6386,-121.7072,100,America/Los_Angeles,3297
 24652,2021 Conaway South,38.6376,-121.7086,100,America/Los_Angeles,3298
 21591,2021 Conaway West,38.639,-121.7103,100,America/Los_Angeles,3387
 21681,2021 Creed Rd,38.241,-121.888,100,America/Los_Angeles,6874
-24122,2021 Dagnino Pond,37.745881,-121.743742,100,America/Los_Angeles,5325
+24122,2021 Dagnino Pond,37.745881,-121.743742,100,America/Los_Angeles,5324
 21668,2021 Foley Ranch latlon?,39.07692,-121.49425,1,America/Los_Angeles,2958
 21688,2021 Hale Rd 2,39.08391,-121.5157,100,America/Los_Angeles,2957
 11101,2021 Hay Landfill,38.306,-121.825,20,America/Los_Angeles,5970
@@ -60,8 +60,8 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 24232,2021 Panoche Creek Preserve 2E,36.59072,-120.764981,100,America/Los_Angeles,7507
 21537,2021 Plumas Arboga,39.0296,-121.537,100,America/Los_Angeles,1515
 24119,2021 Rancho Jamul,32.684586,-116.85644,235.13,America/Los_Angeles,4997
+24651,2021 Reed's Creek North,39.1079,-121.507,100,America/Los_Angeles,1155
 24653,2021 Reed's Creek South,39.1049,-121.507,100,America/Los_Angeles,1155
-24651,2021 Reed’s Creek North,39.1079,-121.507,100,America/Los_Angeles,1155
 24252,2021 Rodeo Grounds 1,38.8627,-121.287,100,America/Los_Angeles,5465
 24549,2021 Rush Ranch,38.208,-122.014,30,America/Los_Angeles,6857
 11100,2021 Sedgwick,34.695,-120.042,1120,America/Los_Angeles,3941
@@ -72,3 +72,6 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 24790,2021 Wind Wolves Preserve fixlatlon,34.9574,-119.132,100,America/Los_Angeles,6481
 25861,2022 WC-WR1,38.661948,-121.177157,100,America/Los_Angeles,4608
 8066,testing,0,0,0,Etc/GMT,230
+32016,Testing Data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
+32010,Training Data 2021 PA,39.03,-121.537,100,America/Los_Angeles,21
+32015,Training data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
