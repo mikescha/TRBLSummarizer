@@ -1,4 +1,3 @@
-from re import A
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -46,7 +45,9 @@ tag_p2n = 'tag_p2n'
 tag_p2bc = 'tag_p2bc' 
 tag_p2bn = 'tag_p2bn'
 tag_wsmc = 'tag_wsmc'
+validated = 'validated'
 
+present = 'present'
 
 start_str = 'start'
 end_str = 'end'
@@ -80,7 +81,9 @@ columns = {filename_str : 'filename',
            malesong     : 'val<Agelaius tricolor/Common Song>',
            altsong1     : 'val<Agelaius tricolor/Alternative Song>',
            altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
-           courtsong    : 'val<Agelaius tricolor/Courtship Song>'}
+           courtsong    : 'val<Agelaius tricolor/Courtship Song>',
+           validated    : 'validated',
+           }
 
 songs = [malesong, courtsong, altsong2, altsong1]
 song_columns = [columns[s] for s in songs]
@@ -107,7 +110,8 @@ data_file = 'data.csv'
 site_info_file = 'sites.csv'
 data_fullfilename = data_dir / data_file
 site_info_fullfilename = data_dir / site_info_file
-file_types = ["Young Nestling", "Mid Nestling", "Old Nestling", "Female", "Male"]
+file_types = ['Male', 'Female', 'Mid Nestling', 'Old Nestling']
+#file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
 #
 #
@@ -121,6 +125,9 @@ def pairwise(iterable):
     a, b = tee(iterable) # Note that tee is from itertools
     next(b, None)
     return zip(a, b)
+
+def is_non_zero_file(fpath):  
+    return os.path.isfile(fpath) and os.path.getsize(fpath) > 10  #the 'empty' files seem to have a few bytes, so just being safe by using 10 as a min length 
 
 #
 #
@@ -201,6 +208,42 @@ def load_data() -> pd.DataFrame:
                      index_col = [columns[date_str]])
     return df
 
+
+def make_date(row):
+    s = '{}-{}-{}'.format(row['year'], format(row['month'],'02'), format(row['day'],'02'))
+#    s = '{}-{}-{}T{}:{}'.format(row['year'], 
+#                                format(row['month'],'02'), 
+#                                format(row['day'],'02'), 
+#                                format(row['hour'],'02'), 
+#                                format(row['minute'],'02'))
+    return np.datetime64(s)
+
+
+# Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
+#@st.experimental_singleton(suppress_st_warning=True)
+def load_pm_data(site:str) -> pd.DataFrame:
+
+    # For each type of file for this site (which has already been validated that they exist, but should
+    # probably check here, too, eventually), load the file. Add a column to indicate which type it is. 
+    # Then append it to the dataframe we're building.
+    df = pd.DataFrame()
+
+    for t in file_types:
+        fname = site + ' ' + t + '.csv'
+        full_file_name = data_dir / fname
+        usecols = [site_str, 'year', 'month', 'day', validated] #'hour', 'minute', 
+    
+        #TODO Validate the data file format
+
+        if is_non_zero_file(full_file_name):
+            df_temp = pd.read_csv(full_file_name, usecols=usecols)
+            df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+            df_temp['type'] = t
+            df = pd.concat([df, df_temp])
+
+    return df
+
+
 #Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
 #   - Exclude any data where the year of the data doesn't match the target year
@@ -212,8 +255,8 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     for site in site_list:
         df_site = df[df[site_str] == site]
 
-        #Sort descending, find first two consecutive items and drop everything after. CHECK THIS: Next line gives this error: A value is trying to be set on a copy of a slice from a DataFrame
-        df_site.sort_index(inplace=True, ascending=False)
+        #Sort descending, find first two consecutive items and drop everything after.
+        df_site = df_site.sort_index(ascending=False)
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
@@ -222,7 +265,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
                 break
 
         #Sort ascending, find first two consecutive items and drop everything before
-        df_site.sort_index(inplace=True, ascending=True)
+        df_site = df_site.sort_index(ascending=True)
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
@@ -278,6 +321,15 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
         summary = summary.replace(to_replace=0, value=-1)
 
     return normalize_pt(summary, date_range_dict)
+
+
+def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
+    #If the value in 'validated' column is 'Present', count it.
+    summary = pd.pivot_table(site_df, values=[columns[validated]], index = [columns[date_str]], 
+                              aggfunc = lambda x: (x==present).sum())
+    summary = summary.rename(columns={validated:type_name})
+    return normalize_pt(summary, date_range_dict)
+
 
 #
 #
@@ -587,6 +639,17 @@ for tag in edge_cols:
     edge_pt = pd.concat([edge_pt, pt_for_tag])
 
 
+#Load and process the pattern matching tag files
+df_pattern_match = load_pm_data(site)
+pm_pt = pd.DataFrame()
+for t in file_types:
+    #For each file type, get the filtered range of just that type
+    df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
+    #Build the pivot table for it
+    pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
+    #Concat as above
+    pm_pt = pd.concat([pm_pt, pt_for_file_type])
+
 
 
 # ------------------------------------------------------------------------------------------------
@@ -617,16 +680,30 @@ st.write(graph)
 if save_files:
     save_figure(site, 'Mini_Manual')
 
-cmap2 = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
 graph = create_graph(df = edge_pt, 
                      items = edge_cols,
-                     cmap = cmap2, 
+                     cmap = cmap_edge, 
                      raw_data = site_df,
                      draw_horiz_rects = True,
                      title = site + ' Edge Analysis')
 st.write(graph)
 if save_files:
     save_figure(site, 'Edge')
+
+
+st.subheader('Pattern Matching Analysis')
+cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
+graph = create_graph(df = pm_pt, 
+                     items = file_types, 
+                     cmap = cmap_pm, 
+                     title = site + ' Pattern Matching Analysis')
+st.write(graph)
+if save_files:
+    save_figure(site, 'Pattern_Matching')
+
+
+
 
 
 if len(site_list[bad_files]) > 0:
