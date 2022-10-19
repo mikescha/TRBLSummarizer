@@ -43,7 +43,7 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 21591,2021 Conaway West,38.639,-121.7103,100,America/Los_Angeles,3387
 21681,2021 Creed Rd,38.241,-121.888,100,America/Los_Angeles,6874
 24122,2021 Dagnino Pond,37.745881,-121.743742,100,America/Los_Angeles,5324
-21668,2021 Foley Ranch latlon?,39.07692,-121.49425,1,America/Los_Angeles,2958
+21668,2021 Foley Ranch,39.07692,-121.49425,1,America/Los_Angeles,2958
 21688,2021 Hale Rd 2,39.08391,-121.5157,100,America/Los_Angeles,2957
 11101,2021 Hay Landfill,38.306,-121.825,20,America/Los_Angeles,5970
 24658,2021 Iron Point,38.647,-121.104,564,America/Los_Angeles,6708
@@ -70,7 +70,44 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 24261,2021 Willey Wetlands 2,38.77505,-121.56391,100,America/Los_Angeles,4914
 24263,2021 Willey Wetlands 3,38.77433,-121.56355,100,America/Los_Angeles,4523
 24790,2021 Wind Wolves Preserve fixlatlon,34.9574,-119.132,100,America/Los_Angeles,6481
+34485,2022 Baja 1,32.53798,-116.31848,100,America/Tijuana,7507
+34486,2022 Baja 2,32.53799,-116.31814,100,America/Tijuana,0
+34044,2022 Colusa NWR 27.1,39.137332,-122.025965,100,America/Los_Angeles,7178
+34079,2022 Colusa NWR T27.2,39.137406,-122.025967,100,America/Los_Angeles,7736
+34115,2022 Conaway East,38.646,-121.694,100,America/Los_Angeles,7183
+34111,2022 Conaway New Easement Pond West,38.63886,-121.70872,100,America/Los_Angeles,4743
+34112,2022 Conaway North,38.6547,-121.686,100,America/Los_Angeles,7898
+34113,2022 Conaway North A,38.6547,-121.686,100,America/Los_Angeles,7900
+34078,2022 Creed Rd,38.241,-121.888,100,America/Los_Angeles,13273
+34040,2022 Foley Ranch,39.077,-121.494,100,America/Los_Angeles,0
+34118,2022 Foley Ranch A,39.07692,-121.49425,100,America/Los_Angeles,3105
+34119,2022 Foley Ranch B,39.07692,-121.49425,100,America/Los_Angeles,3109
+33966,2022 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,14543
+34133,2022 Hulen Levee - Silveira Fix lat lon,37.1442,-120.994,100,America/Los_Angeles,932
+34132,2022 Hulen Levvee - Thistle fix lat lon,37.1442,-120.994,100,America/Los_Angeles,3229
+34077,2022 Leguna Seca,36.571767,-121.767517,100,America/Los_Angeles,8113
+34117,2022 Los Vaqueros Reservoir,37.837688,-121.695629,100,America/Los_Angeles,3902
+34076,2022 Marsh Creek Reservoir,37.8884,-121.726,100,America/Los_Angeles,3910
+34075,2022 Newberry Springs - Lake Wainani,34.877332,-116.606036,100,America/Los_Angeles,609
+34090,2022 Ohlone - Santa Lucia Preserve,36.508,-121.879,100,America/Los_Angeles,10662
+33851,2022 OR1,44.772737,-121.237908,100,America/Los_Angeles,7373
+34073,2022 OR2,44.374056,-121.930472,100,America/Los_Angeles,5785
+34071,2022 Paicines Ranch - Teal Pond,36.713547,-121.295711,100,America/Los_Angeles,8369
+34072,2022 Paicines Ranch Teal Pond b,36.713547,-121.295711,100,America/Los_Angeles,7665
+34129,2022 Panoche Creek Loc 3 fix lat lon,36.591,-120.591,100,America/Los_Angeles,6992
+34130,2022 Panoche Creek Loc 4 fix lat lon,36.591,-120.769,100,America/Los_Angeles,6685
+33981,2022 Plumas Arboga 6,39.0375,-121.5352,57,America/Los_Angeles,0
+34012,2022 Plumas Arboga East,39.037433,-121.534099,100,America/Los_Angeles,7896
+34013,2022 Plumas Arboga West,39.037372,-121.536708,100,America/Los_Angeles,6897
+34045,2022 Rancho Jamul,32.685,-116.856,235.13,America/Los_Angeles,8552
+34131,2022 Sandy Mush S Gurr fix lat lon,37.1807,-120.504,100,America/Los_Angeles,3240
+33985,2022 Sedgwick,34.695,-120.042,1120,America/Los_Angeles,7703
+34046,2022 SJWA,33.862743,-117.073278,100,America/Los_Angeles,3461
+33984,2022 WA Harder Spring,46.6572,-118.4994,100,America/Los_Angeles,7989
+33845,2022 WA1,46.8521,-119.1825,100,America/Los_Angeles,4754
 25861,2022 WC-WR1,38.661948,-121.177157,100,America/Los_Angeles,4608
+34088,2022 Wind Wolves Preserve Pleitito Creek,34.953601,-119.140696,100,America/Los_Angeles,5477
+34087,2022 Wind Wolves Preserve Santiago Wetlands,34.939095,-119.296404,100,America/Los_Angeles,12618
 8066,testing,0,0,0,Etc/GMT,230
 32016,Testing Data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
 32010,Training Data 2021 PA,39.03,-121.537,100,America/Los_Angeles,21
