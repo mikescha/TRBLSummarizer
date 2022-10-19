@@ -38,12 +38,12 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
-tag_p1bc = 'tag_p1bc'
-tag_p1bn = 'tag_p1bn'
+#tag_p1bc = 'tag_p1bc'
+#tag_p1bn = 'tag_p1bn'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
-tag_p2bc = 'tag_p2bc' 
-tag_p2bn = 'tag_p2bn'
+#tag_p2bc = 'tag_p2bc' 
+#tag_p2bn = 'tag_p2bn'
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 
@@ -74,10 +74,10 @@ columns = {filename_str : 'filename',
            tag_p2c      : 'tag<p2c>',
            tag_p2n      : 'tag<p2n>',
 #           tag_wsmc      : 'tag<reviewed-WS-mc>',
-           tag_p1bc     : 'tag<p1bc>',
-           tag_p1bn     : 'tag<p1bn>',
-           tag_p2bc     : 'tag<p2bc>',
-           tag_p2bn     : 'tag<p2bn>',
+#           tag_p1bc     : 'tag<p1bc>',
+#           tag_p1bn     : 'tag<p1bn>',
+#           tag_p2bc     : 'tag<p2bc>',
+#           tag_p2bn     : 'tag<p2bn>',
            malesong     : 'val<Agelaius tricolor/Common Song>',
            altsong1     : 'val<Agelaius tricolor/Alternative Song>',
            altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
@@ -90,8 +90,11 @@ song_columns = [columns[s] for s in songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-edge_c_tags = [tag_p1c, tag_p1bc, tag_p2c, tag_p2bc]
-edge_n_tags = [tag_p1n, tag_p1bn, tag_p2n, tag_p2bn]
+#old version is the next two lines:
+#edge_c_tags = [tag_p1c, tag_p1bc, tag_p2c, tag_p2bc]
+#edge_n_tags = [tag_p1n, tag_p1bn, tag_p2n, tag_p2bn]
+edge_c_tags = [tag_p1c, tag_p2c]
+edge_n_tags = [tag_p1n,  tag_p2n]
 tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
 
 manual_cols = [columns[t] for t in manual_tags]
