@@ -52,6 +52,7 @@ present = 'present'
 start_str = 'start'
 end_str = 'end'
 
+#Master list of all the columns I need. If columns get added/removed then this needs to update
 columns = {filename_str : 'filename', 
            site_str     : 'site', 
            'day'        : 'day',
