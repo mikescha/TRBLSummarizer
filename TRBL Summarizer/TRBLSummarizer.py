@@ -443,7 +443,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     w = 16
     h = 3
     top_gap = 0.8 if title != '' else 1
-    tick_spacing = 7
+    tick_spacing = 2
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = max, 
@@ -487,6 +487,9 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
         graph_drawn.append(i)
             
         #Add a rectangle around the regions of consective tags, and a line between non-consectutive if it's a N tag
+
+        #The first orange row starts 1 square too early
+        #The first blue row ends 1 square too late
         if draw_horiz_rects and item in df_clean.index:
             df_col_nonzero = df.loc[item].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
@@ -494,10 +497,15 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
 
             if len(df_col_nonzero):
                 c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
+                #for debug
+                #c = cm.get_cmap('prism',1)(1)
                 if item in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
+                    #st.error("MC First: " + str(df_col_nonzero.loc[first].values[0].date()) + 
+                    #         ", MC Last: " + str(df_col_nonzero.loc[last-1].values[0].date()))
+                    
                 else: #n tags get boxes around each consecutive block
                     borders = []
                     borders.append(df_col_nonzero.index[0]) #block always starts with the first point
@@ -507,10 +515,17 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
                             borders.append(x)
                             borders.append(y)
                     borders.append(df_col_nonzero.index[len(df_col_nonzero)-1]+1) #always ends with the last one
+                    #debug code -- show the dates
+                    #for x in range(0,len(borders),2):
+                    #    d1 = borders[x]
+                    #    d2 = borders[x+1] if borders[x+1] < df_col_nonzero.index[len(df_col_nonzero)-1] else borders[x+1]-1
+                    #    st.error("Blue: " + str(df_col_nonzero.loc[d1].values[0].date()) + "->" + str(df_col_nonzero.loc[d2].values[0].date()))
+                    
 
                     # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
                     for x in range(0,len(borders),2):
-                        axs[i].add_patch(patches.Rectangle((borders[x],0), borders[x+1]-borders[x], 0.99, ec=c, fc=c, fill=False))
+                        extra = 1 if x != ((len(borders)/2)-1)*2 else 0
+                        axs[i].add_patch(patches.Rectangle((borders[x],0), borders[x+1]-borders[x] + extra, 0.99, ec=c, fc=c, fill=False))
                     # For each pair of rects, draw a line between them.
                     for x in range(1,len(borders)-1,2):
                         # The +1/-1 are because we don't want to draw on top of the days, just between the days
