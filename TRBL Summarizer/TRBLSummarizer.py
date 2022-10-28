@@ -340,6 +340,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 # 
 #  
 def get_site_to_analyze(site_list:list) -> str:
+    #debug: to get a specific site, put the name of the site below and uncomment
     #return('2021 Colusa NWR 27-1')
     site_list = sorted(site_list)
     return st.sidebar.selectbox('Site to summarize', site_list, index=1)
@@ -426,7 +427,10 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
     n = 0
     x = 0
     for month in month_lengths:
-        mid = x + int(month_lengths[month]/2)
+        center_pt = int(month_lengths[month]/2)
+        #The line below shifts the label to the left a little bit to better center it on the month space. 
+        center_pt -= len(month)/4
+        mid = x + center_pt
         axs[len(axs)-1].text(x=mid, y=gap, s=month, size='x-large')
         x += month_lengths[month]
         if n<max:
@@ -443,7 +447,8 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     w = 16
     h = 3
     top_gap = 0.8 if title != '' else 1
-    tick_spacing = 2
+    #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
+    tick_spacing = 0
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = max, 
@@ -487,9 +492,6 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
         graph_drawn.append(i)
             
         #Add a rectangle around the regions of consective tags, and a line between non-consectutive if it's a N tag
-
-        #The first orange row starts 1 square too early
-        #The first blue row ends 1 square too late
         if draw_horiz_rects and item in df_clean.index:
             df_col_nonzero = df.loc[item].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
@@ -577,7 +579,11 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
 def save_figure(site:str, graph_type:str):
     filename = site + ' - ' + graph_type + '.png'
     figure_path = Path(__file__).parents[0] / 'Figures/' / filename
+    #If the file exists then delete it, so that we make sure a new one is written
+    if os.path.isfile(figure_path):
+        os.remove(figure_path)
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+    plt.close()
 
 
 
