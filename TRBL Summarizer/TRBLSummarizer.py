@@ -1,3 +1,5 @@
+from asyncio.windows_events import NULL
+import gc
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -114,8 +116,7 @@ data_file = 'data.csv'
 site_info_file = 'sites.csv'
 data_fullfilename = data_dir / data_file
 site_info_fullfilename = data_dir / site_info_file
-file_types = ['Male', 'Female', 'Mid Nestling', 'Old Nestling']
-#file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
+file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
 #
 #
@@ -133,6 +134,12 @@ def pairwise(iterable):
 def is_non_zero_file(fpath):  
     return os.path.isfile(fpath) and os.path.getsize(fpath) > 10  #the 'empty' files seem to have a few bytes, so just being safe by using 10 as a min length 
 
+def count_files_in_folder(fpath):
+    i = 0
+    for item in os.scandir(fpath):
+        if item.is_file():
+            i += 1
+    return i
 #
 #
 #File handling and setup
@@ -155,22 +162,58 @@ def get_target_sites() -> dict:
         if not s[0:3].isdigit():
             site_list.remove(s)
     
-    #Get a list of all files in the Data directory, scan for files that match our pattern
-    for f in os.listdir(data_dir):
-        found = False
-        if f[-4:] == '.csv':  #must be CSV
-            for s in site_list:
-                if s.lower() == f[0:len(s)].lower() and not found: # If the first part of the filename matches a site
-                    f_type = f[len(s)+1:len(f)] # Cut off the site name
-                    for t in file_types:
-                        if t.lower() == f_type[0:len(t)].lower():
-                            file_summary[t].append(f)
-                            file_summary[site_str].add(s)
-                            found = True
-                            break
-        if not found:
-            if f != data_file and f != site_info_file: #if the file we found isn't one of the two known exceptions to our pattern, then mark it as Bad
-                file_summary[bad_files].append(f)
+    #Get a list of all items in the directory, then check each folder we find
+    top_items = os.scandir(data_dir)
+    if any(top_items):
+        for item in top_items:
+            if item.is_dir():
+                #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
+                if item.name in site_list:
+                    s = item.name
+                    #Get a list of all files in that directory, scan for files that match our pattern
+                    if any(os.scandir(item)):
+                        #Check that each type of expected file is there:
+
+                        if len(file_types) != count_files_in_folder(item):
+                            file_summary[bad_files].append('Wrong number of files: ' + item.name)
+
+                        for t in file_types:
+                            found_file = False
+                            found_dir_in_subfolder = False
+                            sub_items = os.scandir(item)
+                            for f in sub_items:
+                                empty_dir = False #if the sub_items constructor is empty, we won't get here
+
+                                if f.is_file():
+                                    f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
+                                    if t.lower() == f_type[0:len(t)].lower():
+                                        file_summary[t].append(f.name)
+                                        file_summary[site_str].add(s)
+                                        found_file = True
+                                        break
+                                else:
+                                    if not found_dir_in_subfolder: # if this is the first time here, then log it
+                                        file_summary[bad_files].append('Found subfolder in data folder: ' + s)
+                                    found_dir_in_subfolder = True
+                    
+                            if not found_file and not empty_dir:
+                                file_summary[bad_files].append('Missing file: ' + s + ' ' + t)
+
+                    else:
+                        file_summary[bad_files].append('Empty folder: ' + item.name)
+
+                    sub_items.close()
+                
+                else:
+                    if item.name.lower() != 'hide':
+                        file_summary[bad_files].append('Bad folder name: ' + item.name)
+            
+            else: #If it's not a directory, it's a file. If the file we found isn't one of the exceptions to our pattern, then mark it as Bad.
+                if (item.name.lower() != data_file.lower() and item.name.lower() != site_info_file.lower() and
+                        item.name.lower() != 'data_old.csv'): 
+                    file_summary[bad_files].append(item.name)
+
+    top_items.close()
     
     #Confirm that there are the same set of files for each type
     if len(file_summary[site_str]) > 0:
@@ -182,6 +225,9 @@ def get_target_sites() -> dict:
                     show_error('Wrong number of files of type ' + t)
     else:
         show_error('No site files found')
+
+    if len(file_summary[bad_files]):
+        show_error('File errors were found')
 
     return file_summary
 
@@ -225,25 +271,33 @@ def make_date(row):
 
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 #@st.experimental_singleton(suppress_st_warning=True)
-def load_pm_data(site:str) -> pd.DataFrame:
+def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
     # For each type of file for this site (which has already been validated that they exist, but should
     # probably check here, too, eventually), load the file. Add a column to indicate which type it is. 
     # Then append it to the dataframe we're building.
     df = pd.DataFrame()
 
+    # Add the site name so we look into the appropriate folder
+    site_dir = data_dir / site
     for t in file_types:
         fname = site + ' ' + t + '.csv'
-        full_file_name = data_dir / fname
-        usecols = [site_str, 'year', 'month', 'day', validated] #'hour', 'minute', 
+        full_file_name = site_dir / fname
+        usecols = [site_str, 'year', 'month', 'day', validated] 
     
         #TODO Validate the data file format
 
+        df_temp = pd.DataFrame()
         if is_non_zero_file(full_file_name):
             df_temp = pd.read_csv(full_file_name, usecols=usecols)
             df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
-            df_temp['type'] = t
-            df = pd.concat([df, df_temp])
+        else: # if the file is non-zero, make an empty table so the graphing code has something to work with
+            df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
+            df_temp[validated] = 0
+            #pt = pt.reindex(date_range).fillna(0)
+
+        df_temp['type'] = t
+        df = pd.concat([df, df_temp])
 
     return df
 
@@ -342,27 +396,28 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2021 Colusa NWR 27-1')
+    #return('2021 Markham Ravine')
     site_list = sorted(site_list)
     return st.sidebar.selectbox('Site to summarize', site_list, index=1)
 
-def get_date_range(df:pd.DataFrame) -> dict:
+def get_date_range(df:pd.DataFrame, doing_all_sites:bool) -> dict:
     df.sort_index(inplace=True)
     #Set the default date range to the first and last dates that we have data
     date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
     
-    months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
-    months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
-    start_month = st.sidebar.selectbox("Start month", months1.keys(), index=0)
-    end_month = st.sidebar.selectbox("End month", months2.keys(), index=0)
+    if not doing_all_sites:
+        months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
+        months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
+        start_month = st.sidebar.selectbox("Start month", months1.keys(), index=0)
+        end_month = st.sidebar.selectbox("End month", months2.keys(), index=0)
 
-    #Update the date range if needed
-    site_year = df.index[0].year
-    if start_month != 'First':
-        date_range_dict[start_str] = '{}-01-{}'.format(months1[start_month], site_year)
-    if end_month != 'Last':
-        last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
-        date_range_dict[end_str] = '{}-{}-{}'.format(months2[end_month], last_day, site_year)
+        #Update the date range if needed
+        site_year = df.index[0].year
+        if start_month != 'First':
+            date_range_dict[start_str] = '{}-01-{}'.format(months1[start_month], site_year)
+        if end_month != 'Last':
+            last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
+            date_range_dict[end_str] = '{}-{}-{}'.format(months2[end_month], last_day, site_year)
     
     return date_range_dict
 
@@ -586,7 +641,26 @@ def save_figure(site:str, graph_type:str):
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
     plt.close()
 
+def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool):
+    if make_all_graphs:
+        st.write(graph_type)
+    else:
+        st.subheader(graph_type)
 
+    if not make_all_graphs:
+        st.write(graph)
+
+    if make_all_graphs or save_files:
+        graph_type = graph_type.replace(' ', '_')
+        save_figure(site, graph_type)
+
+def output_text(text:str, make_all_graphs:bool):
+    if make_all_graphs:
+        st.write(text)
+    else:
+        st.subheader(text)
+
+    
 
 #
 #
@@ -600,134 +674,143 @@ df_original = load_data()
 
 #Get the list of sites that we're going to do reports for, and then remove all the other data
 site_list = get_target_sites()
-site = get_site_to_analyze(site_list[site_str])
 df = clean_data(df_original, site_list[site_str])
 
-#nuke the original data, hopefully this frees up memory
-df_original = ''
+# Nuke the original data, hopefully this frees up memory
+del df_original
+gc.collect()
 
-# Select the site matching the one of interest
-site_df = df[df[columns[site_str]] == site]
+#TODO Make this a UI option
+make_all_graphs = False
+# If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
+if make_all_graphs:
+    target_sites = site_list[site_str]
+    save_files = False
+else:
+    target_sites = [get_site_to_analyze(site_list[site_str])]
 
-#Using the site of interest, get the first & last dates and give the user the option to customize the range
-date_range_dict = get_date_range(site_df)
+    #Decide if we're going to save the graphs as pics or not
+    save_files = st.sidebar.checkbox('Save as picture', value=False)
 
-#Decide if we're going to save the graphs as pics or not
-save_files = st.sidebar.checkbox('Save as picture', value=False)
+site_counter = 0
+for site in target_sites:
+    site_counter += 1
+    # Select the site matching the one of interest
+    site_df = df[df[columns[site_str]] == site]
 
-#
-# Data Analysis
-# -------------
-# We want a series of charts. The first chart is:
-#   1. Select all rows where one of the following tags
-#       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
-#   2. Make a pivot table with the following columns:
-#       The number of recordings from that set that have Common Song >= 1
-#       The number of recordings from that set that have Courtship Song >= 1
-#       The number of recordings from that set that have AltSong2 >= 1
-#       The number of recordings from that set that have AltSong >= 1 
-#     
-df_manual = filter_site(site_df, manual_cols)
-manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
+    #Using the site of interest, get the first & last dates and give the user the option to customize the range
+    date_range_dict = get_date_range(site_df, make_all_graphs)
 
-# 
-# COMMENT
-#  
-df_mini_manual = filter_site(site_df, mini_manual_cols)
-mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
+    #
+    # Data Analysis
+    # -------------
+    # We want a series of charts. The first chart is:
+    #   1. Select all rows where one of the following tags
+    #       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
+    #   2. Make a pivot table with the following columns:
+    #       The number of recordings from that set that have Common Song >= 1
+    #       The number of recordings from that set that have Courtship Song >= 1
+    #       The number of recordings from that set that have AltSong2 >= 1
+    #       The number of recordings from that set that have AltSong >= 1 
+    #     
+    df_manual = filter_site(site_df, manual_cols)
+    manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
-
-#   1. Select all rows where one of the following tags
-#       P1C, P1N, P2C, P2N
-#   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
-#      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
-#   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
-#   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
-#   5. Merge the tables together so we get one block of heatmaps
-#   
-
-edge_pt = pd.DataFrame()
-for tag in edge_cols:
-    df_for_tag = filter_site(site_df, [tag])
-    if tag in edge_c_cols:
-        target_col = columns[courtsong]
-    else:
-        target_col = columns[altsong1]
-
-    # Validate that all values in target_col are values and not --- or NaN
-    #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
-    #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
-
-    # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 for future graphing needs
-    pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
-    pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
-    edge_pt = pd.concat([edge_pt, pt_for_tag])
+    # 
+    # COMMENT
+    #  
+    df_mini_manual = filter_site(site_df, mini_manual_cols)
+    mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
 
-#Load and process the pattern matching tag files
-df_pattern_match = load_pm_data(site)
-pm_pt = pd.DataFrame()
-for t in file_types:
-    #For each file type, get the filtered range of just that type
-    df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
-    #Build the pivot table for it
-    pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
-    #Concat as above
-    pm_pt = pd.concat([pm_pt, pt_for_file_type])
+    #   1. Select all rows where one of the following tags
+    #       P1C, P1N, P2C, P2N
+    #   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
+    #      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
+    #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
+    #   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
+    #   5. Merge the tables together so we get one block of heatmaps
+    #   
+
+    edge_pt = pd.DataFrame()
+    for tag in edge_cols:
+        df_for_tag = filter_site(site_df, [tag])
+        if tag in edge_c_cols:
+            target_col = columns[courtsong]
+        else:
+            target_col = columns[altsong1]
+
+        # Validate that all values in target_col are values and not --- or NaN
+        #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
+        #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
+
+        # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 for future graphing needs
+        pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
+        pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
+        edge_pt = pd.concat([edge_pt, pt_for_tag])
+
+
+    # Load and process the pattern matching tag files
+    df_pattern_match = load_pm_data(site, date_range_dict)
+    pm_pt = pd.DataFrame()
+    # Check that we got some PM data before building the pivot tables. It's possible that there is zero data for some sites
+#    if len(df_pattern_match):
+    for t in file_types:
+        #For each file type, get the filtered range of just that type
+        df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
+        #Build the pivot table for it
+        pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
+        #Concat as above
+        pm_pt = pd.concat([pm_pt, pt_for_file_type])
 
 
 
-# ------------------------------------------------------------------------------------------------
-# DISPLAY
-#
-# See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
-# Set format shared by all graphs
-set_global_theme()
-st.header(site)
-st.subheader('Manual Analysis')
-cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
-graph = create_graph(df = manual_pt, 
-                     items = song_columns, 
-                     cmap = cmap, 
-                     title = site + ' Manual Analysis')
-st.write(graph)
-if save_files:
-    save_figure(site, 'Manual')
+    # ------------------------------------------------------------------------------------------------
+    # DISPLAY
+    #
+    # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
+    # Set format shared by all graphs
+    set_global_theme()
+    if make_all_graphs:
+        st.subheader(site + ' [' + str(site_counter) + ' of ' + str(len(target_sites)) + ']')
+    else: 
+        st.header(site)
 
-st.subheader('Computer Assisted Analysis')
-graph = create_graph(df = mini_manual_pt, 
-                     items = song_columns, 
-                     cmap = cmap, 
-                     raw_data = site_df,
-                     draw_vert_rects = True,
-                     title = site + ' Mini Manual Analysis')
-st.write(graph)
-if save_files:
-    save_figure(site, 'Mini_Manual')
+    # Manual analyisis graph
+    cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
+    graph = create_graph(df = manual_pt, 
+                         items = song_columns, 
+                         cmap = cmap, 
+                         title = site + ' Manual Analysis')
+    output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
 
-cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
-graph = create_graph(df = edge_pt, 
-                     items = edge_cols,
-                     cmap = cmap_edge, 
-                     raw_data = site_df,
-                     draw_horiz_rects = True,
-                     title = site + ' Edge Analysis')
-st.write(graph)
-if save_files:
-    save_figure(site, 'Edge')
+    # Computer Assisted Analysis
+    graph = create_graph(df = mini_manual_pt, 
+                         items = song_columns, 
+                         cmap = cmap, 
+                         raw_data = site_df,
+                         draw_vert_rects = True,
+                         title = site + ' Mini Manual Analysis')
+    output_graph(site, 'Mini Manual', save_files, make_all_graphs)
 
-
-st.subheader('Pattern Matching Analysis')
-cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
-graph = create_graph(df = pm_pt, 
-                     items = file_types, 
-                     cmap = cmap_pm, 
-                     title = site + ' Pattern Matching Analysis')
-st.write(graph)
-if save_files:
-    save_figure(site, 'Pattern_Matching')
+    # Edge Analysis
+    cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+    graph = create_graph(df = edge_pt, 
+                         items = edge_cols,
+                         cmap = cmap_edge, 
+                         raw_data = site_df,
+                         draw_horiz_rects = True,
+                         title = site + ' Edge Analysis')
+    output_graph(site, 'Edge Analysis', save_files, make_all_graphs)
 
 
+    # Pattern Matching Analysis
+    cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
+    graph = create_graph(df = pm_pt, 
+                         items = file_types, 
+                         cmap = cmap_pm, 
+                         title = site + ' Pattern Matching Analysis')
+    output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
 
 
 
