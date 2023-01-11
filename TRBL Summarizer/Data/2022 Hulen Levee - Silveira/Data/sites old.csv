@@ -1,0 +1,114 @@
+Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
+2059,2017 Rush Ranch,38.208,-122.0142,30,America/Los_Angeles,9978
+3150,2018 Iron Point,38.647,-121.104,564,America/Los_Angeles,2014
+3348,2018 Markham Ravine,38.871629,-121.453523,100,America/Los_Angeles,2165
+3366,2018 Markham Ravine westside,38.889,-121.468,100,America/Los_Angeles,818
+3281,2018 Red Wing Ranch,38.962415,-121.345724,100,America/Los_Angeles,2245
+2719,2018 Rush Ranch,38.208,-122.0142,30,America/Los_Angeles,9043
+3417,2018 SJWA-rose-1,33.688,-117.0882,100,America/Los_Angeles,242
+3682,2018 SJWA-rose-2,33.7,-117,20,America/Los_Angeles,1154
+4554,2019 Colusa NWR 27-1,39.143987,-122.028041,40,America/Los_Angeles,156
+5642,2019 Colusa NWR 27-1 AM,39.144,-122.028,40,America/Los_Angeles,5489
+5639,2019 Colusa NWR 27-1 telemetry station AM,39.137,-122.026,40,America/Los_Angeles,2597
+4553,2019 Colusa NWR 27-2,39.137386,-122.025869,35,America/Los_Angeles,0
+5643,2019 Colusa NWR 27-2 AM,39.137,-122.026,35,America/Los_Angeles,1853
+4455,2019 Creed Rd,38.241,-121.888,100,America/Los_Angeles,8258
+4456,2019 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,6681
+4457,2019 Iron Point,38.647,-121.104,564,America/Los_Angeles,2149
+4979,2019 Iron Point AM,38.647,-121.104,564,America/Los_Angeles,7109
+4251,2019 Leguna Seca,36.584277,-121.755882,100,America/Los_Angeles,2123
+5613,2019 Leguna Seca AM,36.584,-121.756,100,America/Los_Angeles,852
+4639,2019 Leisure Town AM,38.319944,-121.937731,90,America/Los_Angeles,8075
+4492,2019 Markham Ravine,38.889,-121.468,100,America/Los_Angeles,5164
+4491,2019 Markham Ravine 2,38.889,-121.441,100,America/Los_Angeles,1452
+5640,2019 Markham Ravine 2 AM,38.889,-121.441,100,America/Los_Angeles,4247
+5637,2019 Markham Ravine AM,38.889,-121.468,100,America/Los_Angeles,4251
+4247,2019 Ohlone - Santa Lucia Preserve,36.5075,-121.8792,200,America/Los_Angeles,2774
+5609,2019 Ohlone - Santa Lucia Preserve - AM,36.508,-121.879,200,America/Los_Angeles,199
+28863,2019 Ohlone - Santa Lucia Preserve try 2,36.508,-121.879,200,America/Los_Angeles,3828
+5638,2019 Rush Ranch,38.208,-122.014,30,America/Los_Angeles,10399
+4188,2019 Rush Ranch LG,38.208,-122.014,30,America/Los_Angeles,6618
+7657,2020 Conway Ranch,38,-121,0,America/Los_Angeles,1901
+2908,2020 Creed Rd,38.241,-121.888,100,America/Los_Angeles,5524
+16223,2020 Fort Ord,36.589841,-121.714311,100,America/Los_Angeles,2732
+6199,2020 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,5499
+7650,2020 Iron Point,38.647,-121.104,564,America/Los_Angeles,4014
+6404,2020 Markham Ravine,38.872,-121.454,100,America/Los_Angeles,1808
+18572,2020 Ohlone - Santa Lucia Preserve,36.508,-121.879,200,America/Los_Angeles,5524
+2915,2020 Rush Ranch,38.208,-121.014,30,America/Los_Angeles,5497
+24130,2021 Colusa NWR 27-1,39.144,-122.028,40,America/Los_Angeles,8731
+24221,2021 Colusa NWR 27-2,39.137,-122.026,564,America/Los_Angeles,8621
+21652,2021 Conaway East,38.6386,-121.7072,100,America/Los_Angeles,3297
+24652,2021 Conaway South,38.6376,-121.7086,100,America/Los_Angeles,3298
+21591,2021 Conaway West,38.639,-121.7103,100,America/Los_Angeles,3387
+21681,2021 Creed Rd,38.241,-121.888,100,America/Los_Angeles,6874
+24122,2021 Dagnino Pond,37.745881,-121.743742,100,America/Los_Angeles,5324
+21668,2021 Foley Ranch,39.07692,-121.49425,1,America/Los_Angeles,2958
+21688,2021 Hale Rd 2,39.08391,-121.5157,100,America/Los_Angeles,2957
+11101,2021 Hay Landfill,38.306,-121.825,20,America/Los_Angeles,5970
+24658,2021 Iron Point,38.647,-121.104,564,America/Los_Angeles,6708
+24606,2021 Kern 1,35.677,-118.27,100,America/Los_Angeles,8142
+24544,2021 Kern 2,35.62,-118.476,100,America/Los_Angeles,7882
+24641,2021 Kern 3,35.731,-118.172,100,America/Los_Angeles,8030
+24655,2021 Kern 4,35.666,-118.307,100,America/Los_Angeles,7854
+26534,2021 Kern 5,35.66,-118.312,100,America/Los_Angeles,7911
+26535,2021 Kern 6,35.39545,-118.44917,100,America/Los_Angeles,7880
+26536,2021 Kern 7,35.671,-118.29,100,America/Los_Angeles,7547
+26432,2021 Markham Ravine,38.872,-121.454,100,America/Los_Angeles,3894
+24231,2021 Orchard Creek fix latlon,38.86183,-121.371095,100,America/Los_Angeles,3954
+24233,2021 Panoche Creek Preserve 1W,36.590593,-120.768924,100,America/Los_Angeles,7507
+24232,2021 Panoche Creek Preserve 2E,36.59072,-120.764981,100,America/Los_Angeles,7507
+21537,2021 Plumas Arboga,39.0296,-121.537,100,America/Los_Angeles,1515
+24119,2021 Rancho Jamul,32.684586,-116.85644,235.13,America/Los_Angeles,4997
+24651,2021 Reed's Creek North,39.1079,-121.507,100,America/Los_Angeles,1155
+24653,2021 Reed's Creek South,39.1049,-121.507,100,America/Los_Angeles,1155
+24252,2021 Rodeo Grounds 1,38.8627,-121.287,100,America/Los_Angeles,5465
+24549,2021 Rush Ranch,38.208,-122.014,30,America/Los_Angeles,6857
+11100,2021 Sedgwick,34.695,-120.042,1120,America/Los_Angeles,3941
+25171,2021 SJWA,33.7,-117,100,America/Los_Angeles,2026
+24107,2021 Willey Wetlands 1,38.77773,-121.56389,100,America/Los_Angeles,4915
+24261,2021 Willey Wetlands 2,38.77505,-121.56391,100,America/Los_Angeles,4914
+24263,2021 Willey Wetlands 3,38.77433,-121.56355,100,America/Los_Angeles,4523
+24790,2021 Wind Wolves Preserve fixlatlon,34.9574,-119.132,100,America/Los_Angeles,6481
+34485,2022 Baja 1,32.53798,-116.31848,100,America/Tijuana,7507
+34486,2022 Baja 2,32.53799,-116.31814,100,America/Tijuana,0
+34044,2022 Colusa NWR 27.1,39.137332,-122.025965,100,America/Los_Angeles,7178
+34079,2022 Colusa NWR T27.2,39.137406,-122.025967,100,America/Los_Angeles,7736
+34115,2022 Conaway East,38.646,-121.694,100,America/Los_Angeles,7183
+34111,2022 Conaway New Easement Pond West,38.63886,-121.70872,100,America/Los_Angeles,4743
+34112,2022 Conaway North,38.6547,-121.686,100,America/Los_Angeles,7898
+34113,2022 Conaway North A,38.6547,-121.686,100,America/Los_Angeles,7900
+34078,2022 Creed Rd,38.241,-121.888,100,America/Los_Angeles,13273
+34040,2022 Foley Ranch,39.077,-121.494,100,America/Los_Angeles,0
+34118,2022 Foley Ranch A,39.07692,-121.49425,100,America/Los_Angeles,3105
+34119,2022 Foley Ranch B,39.07692,-121.49425,100,America/Los_Angeles,3109
+33966,2022 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,14543
+34133,2022 Hulen Levee - Silveira Fix lat lon,37.1442,-120.994,100,America/Los_Angeles,932
+34132,2022 Hulen Levvee - Thistle fix lat lon,37.1442,-120.994,100,America/Los_Angeles,3229
+34077,2022 Leguna Seca,36.571767,-121.767517,100,America/Los_Angeles,8113
+34117,2022 Los Vaqueros Reservoir,37.837688,-121.695629,100,America/Los_Angeles,3902
+34076,2022 Marsh Creek Reservoir,37.8884,-121.726,100,America/Los_Angeles,3910
+34075,2022 Newberry Springs - Lake Wainani,34.877332,-116.606036,100,America/Los_Angeles,609
+34090,2022 Ohlone - Santa Lucia Preserve,36.508,-121.879,100,America/Los_Angeles,10662
+33851,2022 OR1,44.772737,-121.237908,100,America/Los_Angeles,7373
+34073,2022 OR2,44.374056,-121.930472,100,America/Los_Angeles,5785
+34071,2022 Paicines Ranch - Teal Pond,36.713547,-121.295711,100,America/Los_Angeles,8369
+34072,2022 Paicines Ranch Teal Pond b,36.713547,-121.295711,100,America/Los_Angeles,7665
+34129,2022 Panoche Creek Loc 3 fix lat lon,36.591,-120.591,100,America/Los_Angeles,6992
+34130,2022 Panoche Creek Loc 4 fix lat lon,36.591,-120.769,100,America/Los_Angeles,6685
+33981,2022 Plumas Arboga 6,39.0375,-121.5352,57,America/Los_Angeles,0
+34012,2022 Plumas Arboga East,39.037433,-121.534099,100,America/Los_Angeles,7896
+34013,2022 Plumas Arboga West,39.037372,-121.536708,100,America/Los_Angeles,6897
+34045,2022 Rancho Jamul,32.685,-116.856,235.13,America/Los_Angeles,8552
+34131,2022 Sandy Mush S Gurr fix lat lon,37.1807,-120.504,100,America/Los_Angeles,3240
+33985,2022 Sedgwick,34.695,-120.042,1120,America/Los_Angeles,7703
+34046,2022 SJWA,33.862743,-117.073278,100,America/Los_Angeles,3461
+33984,2022 WA Harder Spring,46.6572,-118.4994,100,America/Los_Angeles,7989
+33845,2022 WA1,46.8521,-119.1825,100,America/Los_Angeles,4754
+25861,2022 WC-WR1,38.661948,-121.177157,100,America/Los_Angeles,4608
+34088,2022 Wind Wolves Preserve Pleitito Creek,34.953601,-119.140696,100,America/Los_Angeles,5477
+34087,2022 Wind Wolves Preserve Santiago Wetlands,34.939095,-119.296404,100,America/Los_Angeles,12618
+8066,testing,0,0,0,Etc/GMT,230
+32016,Testing Data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
+32010,Training Data 2021 PA,39.03,-121.537,100,America/Los_Angeles,21
+32015,Training data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
