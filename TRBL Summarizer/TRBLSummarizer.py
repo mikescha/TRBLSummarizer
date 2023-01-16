@@ -1,5 +1,3 @@
-from asyncio.windows_events import NULL
-import gc
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,6 +11,8 @@ import os
 import calendar
 from collections import Counter
 from itertools import tee
+#to force garbage collection and reduce memory use
+import gc
 
 #
 #
@@ -109,7 +109,11 @@ edge_cols = edge_c_cols + edge_n_cols #make list of the right length
 edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
 edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 
+#For setting figure width and height, values in inches
+fig_w = 16
+fig_h = 3
 
+#Files, paths, etc.
 data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
 data_file = 'data.csv'
@@ -117,6 +121,7 @@ site_info_file = 'sites.csv'
 data_fullfilename = data_dir / data_file
 site_info_fullfilename = data_dir / site_info_file
 file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
+weather_filename = data_foldername + '/' + 'weather_history.csv'
 
 #
 #
@@ -243,6 +248,8 @@ def load_data() -> pd.DataFrame:
                    format(data_fullfilename, len(headers), len(columns)))
     for col in columns:
         if not columns[col] in headers:
+            #TODO there is at least one column in the set of columns that does not exist in the 
+            #big data file -- 'validated'. Should I remove it from this dictionary or just ignore it?
             show_error('Column {} missing from the data file {}'.format(columns[col], data_fullfilename))
     
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
@@ -431,6 +438,8 @@ def get_date_range(df:pd.DataFrame, doing_all_sites:bool) -> dict:
 
 # Set up base theme
 # See https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
+#
+# See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
     custom_params = {'figure.dpi':'1200',
@@ -463,16 +472,25 @@ def get_days_per_month(df:pd.DataFrame) -> dict:
 
 
 #The axis already has all the dates in it, but they need to be formatted. 
-def format_xdateticks(date_axis:plt.Axes):
+def format_xdateticks(date_axis:plt.Axes,mmdd = False):
+    if mmdd:
+        fmt = '%d-%b'
+        rot = 30
+        weight = 'light'
+    else:
+        fmt = '%d'
+        rot = 0
+        weight = 'bold'
+
     #Make a list of all the values
     date_values = [value for value in date_axis.xaxis.get_major_formatter().func.args[0].values()]
 
     #Make a list of all the ticks where they have the day number only.
-    ticks = [pd.to_datetime(value).strftime('%d') for value in date_values]
+    ticks = [pd.to_datetime(value).strftime(fmt) for value in date_values]
 
     #Actually set the ticks and then format them as needed
-    date_axis.xaxis.set_ticklabels(ticks)
-    date_axis.tick_params(axis = 'x',labelrotation = 0)
+    date_axis.xaxis.set_ticklabels(ticks, fontweight=weight)
+    date_axis.tick_params(axis = 'x',labelrotation = rot)
     return
 
 
@@ -493,15 +511,13 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
             for ax in axs:
                 ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
             
-
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
                  draw_vert_rects=False, draw_horiz_rects=False,title='') -> plt.figure:
     max = len(items)
     graph_drawn = []
-    # Set figure size, values in inches
-    w = 16
-    h = 3
+
+    #distance between top of plot space and chart
     top_gap = 0.8 if title != '' else 1
     #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
     tick_spacing = 0
@@ -513,7 +529,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
                             gridspec_kw={'height_ratios': np.repeat(1,max), 
                                          'left':0, 'right':1, 'bottom':0, 'top':top_gap,
                                          'hspace':0},  #hspace is row spacing (gap between rows)
-                            figsize=(w,h))
+                            figsize=(fig_w,fig_h))
     # Draw the title https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.suptitle.html#matplotlib.pyplot.suptitle
     if len(title)>0:
         plt.suptitle(title, fontsize=36, fontweight='bold')
@@ -639,7 +655,7 @@ def save_figure(site:str, graph_type:str):
     if os.path.isfile(figure_path):
         os.remove(figure_path)
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
-    plt.close()
+    #plt.close()
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool):
     if make_all_graphs:
@@ -660,7 +676,89 @@ def output_text(text:str, make_all_graphs:bool):
     else:
         st.subheader(text)
 
+
+#
+#
+# Weather
+#
+#
+
+#Load weather data from file
+@st.experimental_singleton(suppress_st_warning=True)
+def load_weather_data_from_file() -> pd.DataFrame:
+    weather_csv = Path(__file__).parents[0] / weather_filename
+
+    #Validate the data file format
+    headers = pd.read_csv(weather_csv, nrows=0).columns.tolist()
+    weather_cols = {'date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
+                    'lat':'lat', 'lng':'lng', 'alt':'alt'}
+    if len(headers) != len(weather_cols):
+        show_error('File {} has an unexpected number of columns, {} instead of {}.'.
+                   format(weather_filename, len(headers), len(weather_cols)))
+    for col in weather_cols:
+        if not weather_cols[col] in headers:
+            show_error('Column {} missing from {}.'.format(weather_cols[col], weather_filename))
     
+    df = pd.read_csv(weather_csv, 
+                     parse_dates = [weather_cols['date']],
+                     index_col = [weather_cols['site']])
+    return df
+
+#Filter weather data down to just what we need for a site
+def get_weather_data(site_name:str, date_range_dict:dict) -> pd.DataFrame:
+    df = load_weather_data_from_file()    
+
+    #select only rows that are in our date range
+    mask = (df['date'] >= date_range_dict[start_str]) & (df['date'] <= date_range_dict[end_str])
+    df = df.loc[mask]
+    
+    #select only rows that match our site
+    site_weather = pd.DataFrame
+    if site_name in df.index:
+        site_weather = df.loc[[site_name]]
+        site_weather = site_weather.set_index('date')
+    else:
+        show_error('No weather available for ' + site_name)
+        
+    return site_weather
+
+def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
+    # Load and parse weather data
+    df = get_weather_data(site_name, date_range_dict)
+    
+    if not df.empty:
+        # Break into three groups for cleaner code
+        prcp = df.loc[df['datatype']=='PRCP']
+        tmax = df.loc[df['datatype']=='TMAX']
+        tmin = df.loc[df['datatype']=='TMIN']
+
+        # Build graph for data
+        fig, ax1 = plt.subplots(figsize=(fig_w,fig_h)) # initializes figure and plots
+        ax2 = ax1.twinx() # makes a second y axis on the same x axis 
+
+        # plots the first set of data, and sets it to ax1
+        ax1.bar(prcp.index.values.astype(str), prcp['value'], color = 'blue')
+        ax2.plot(tmax.index.values.astype(str), tmax['value'], color = 'red')
+        ax2.plot(tmin.index.values.astype(str), tmin['value'], color = 'pink')
+
+        #Add the annotations for the plot 
+        ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=16)
+        ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=16)
+
+        #Get the list of ticks and set them 
+        axis_dates = list(tmax.index.values.astype(str))
+        tick_pos = list(range(len(tmax)))
+        weather_tick_spacing = 14
+        ax1.axes.set_xticks(tick_pos[::weather_tick_spacing], axis_dates[::weather_tick_spacing])
+        format_xdateticks(ax1, mmdd=True)
+
+        #Turn on the graph borders, these are off by default for other charts
+        ax1.spines[:].set_visible(True)
+
+    return fig
+
+
+
 
 #
 #
@@ -691,6 +789,9 @@ else:
 
     #Decide if we're going to save the graphs as pics or not
     save_files = st.sidebar.checkbox('Save as picture', value=False)
+
+# Set format shared by all graphs
+set_global_theme()
 
 site_counter = 0
 for site in target_sites:
@@ -763,14 +864,8 @@ for site in target_sites:
         #Concat as above
         pm_pt = pd.concat([pm_pt, pt_for_file_type])
 
-
-
     # ------------------------------------------------------------------------------------------------
     # DISPLAY
-    #
-    # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
-    # Set format shared by all graphs
-    set_global_theme()
     if make_all_graphs:
         st.subheader(site + ' [' + str(site_counter) + ' of ' + str(len(target_sites)) + ']')
     else: 
@@ -779,38 +874,47 @@ for site in target_sites:
     # Manual analyisis graph
     cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = manual_pt, 
-                         items = song_columns, 
-                         cmap = cmap, 
-                         title = site + ' Manual Analysis')
+                        items = song_columns, 
+                        cmap = cmap, 
+                        title = site + ' Manual Analysis')
     output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
 
     # Computer Assisted Analysis
     graph = create_graph(df = mini_manual_pt, 
-                         items = song_columns, 
-                         cmap = cmap, 
-                         raw_data = site_df,
-                         draw_vert_rects = True,
-                         title = site + ' Mini Manual Analysis')
+                        items = song_columns, 
+                        cmap = cmap, 
+                        raw_data = site_df,
+                        draw_vert_rects = True,
+                        title = site + ' Mini Manual Analysis')
     output_graph(site, 'Mini Manual', save_files, make_all_graphs)
 
     # Edge Analysis
     cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
     graph = create_graph(df = edge_pt, 
-                         items = edge_cols,
-                         cmap = cmap_edge, 
-                         raw_data = site_df,
-                         draw_horiz_rects = True,
-                         title = site + ' Edge Analysis')
+                        items = edge_cols,
+                        cmap = cmap_edge, 
+                        raw_data = site_df,
+                        draw_horiz_rects = True,
+                        title = site + ' Edge Analysis')
     output_graph(site, 'Edge Analysis', save_files, make_all_graphs)
 
 
     # Pattern Matching Analysis
     cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
     graph = create_graph(df = pm_pt, 
-                         items = file_types, 
-                         cmap = cmap_pm, 
-                         title = site + ' Pattern Matching Analysis')
+                        items = file_types, 
+                        cmap = cmap_pm, 
+                        title = site + ' Pattern Matching Analysis')
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
+
+    #We are all done with graphs. This must be the last thing before weather and data tables
+    plt.close(graph)
+
+    #Show weather, as needed            
+    if st.sidebar.checkbox('Show station weather'):
+        st.subheader('Weather Data')
+        st.write(create_weather_graph(site, date_range_dict))
+
 
 
 
