@@ -40,14 +40,13 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
-#tag_p1bc = 'tag_p1bc'
-#tag_p1bn = 'tag_p1bn'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
-#tag_p2bc = 'tag_p2bc' 
-#tag_p2bn = 'tag_p2bn'
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
+tag_ONC_p1 = 'tag<ONC-p1>'
+tag_YNC_p1 = 'tag<YNC-p1>'
+tag_YNC_p2 = 'tag<YNC-p2>'
 
 present = 'present'
 
@@ -55,55 +54,73 @@ start_str = 'start'
 end_str = 'end'
 
 #Master list of all the columns I need. If columns get added/removed then this needs to update
-columns = {filename_str : 'filename', 
-           site_str     : 'site', 
-           'day'        : 'day',
-           'month'      : 'month',
-           'year'       : 'year',
-           hour_str     : 'hour', 
-           date_str     : 'date',
-#           tag_wse       : 'tag<reviewed-WS-e>',
-           tag_wsm      : 'tag<reviewed-WS-m>',
-           tag_wsh      : 'tag<reviewed-WS-h>',
-#           tag_mhe       : 'tag<reviewed-MH-e>',
-           tag_mhm      : 'tag<reviewed-MH-m>',
-           tag_mhh      : 'tag<reviewed-MH-h>',
-#           tag_mhe2      : 'tag<reviewed-MH-e2>',
-           tag_ws       : 'tag<reviewed-WS>',
-           tag_mh       : 'tag<reviewed-MH>',
-           tag_         : 'tag<reviewed>',
-           tag_p1c      : 'tag<p1c>',
-           tag_p1n      : 'tag<p1n>',
-           tag_p2c      : 'tag<p2c>',
-           tag_p2n      : 'tag<p2n>',
-#           tag_wsmc      : 'tag<reviewed-WS-mc>',
-#           tag_p1bc     : 'tag<p1bc>',
-#           tag_p1bn     : 'tag<p1bn>',
-#           tag_p2bc     : 'tag<p2bc>',
-#           tag_p2bn     : 'tag<p2bn>',
-           malesong     : 'val<Agelaius tricolor/Common Song>',
-           altsong1     : 'val<Agelaius tricolor/Alternative Song>',
-           altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
-           courtsong    : 'val<Agelaius tricolor/Courtship Song>',
-           validated    : 'validated',
-           }
+data_columns = {
+    filename_str : 'filename', 
+    site_str     : 'site', 
+    'day'        : 'day',
+    'month'      : 'month',
+    'year'       : 'year',
+    hour_str     : 'hour', 
+    date_str     : 'date',
+    tag_ONC_p1   : 'tag<ONC-p1>', #WENDY I'm not using these, what are they for
+    tag_YNC_p1   : 'tag<YNC-p1>',
+    tag_YNC_p2   : 'tag<YNC-p2>',
+    tag_p1c      : 'tag<p1c>',
+    tag_p1n      : 'tag<p1n>',
+    tag_p2c      : 'tag<p2c>',
+    tag_p2n      : 'tag<p2n>',
+    tag_mhe      : 'tag<reviewed-MH-e>', #WENDY this is still in the data file, should it be?
+    tag_mhe2     : 'tag<reviewed-MH-e2>', #WENDY this is still in the data file, should it be?
+    tag_mhh      : 'tag<reviewed-MH-h>',
+    tag_mhm      : 'tag<reviewed-MH-m>',
+    tag_mh       : 'tag<reviewed-MH>',
+    tag_wse      : 'tag<reviewed-WS-e>', #WENDY this is in DF but not being used
+    tag_wsh      : 'tag<reviewed-WS-h>',
+    tag_wsm      : 'tag<reviewed-WS-m>',
+    tag_wsmc     : 'tag<reviewed-WS-mc>', #WENDY this is in DF but not being used
+    tag_ws       : 'tag<reviewed-WS>',
+    tag_         : 'tag<reviewed>',
+    malesong     : 'val<Agelaius tricolor/Common Song>',
+    altsong1     : 'val<Agelaius tricolor/Alternative Song>',
+    altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
+    courtsong    : 'val<Agelaius tricolor/Courtship Song>',
+}
+
+site_columns = {
+    'id'        :'id',
+    'recording' :'recording',
+    site_str    : 'site', 
+    'day'       : 'day',
+    'month'     : 'month',
+    'year'      : 'year',
+    hour_str    : 'hour', 
+    'minute'    : 'minute',
+    'species'   : 'species',
+    'songtype'  : 'songtype',
+    'x1'        : 'x1',
+    'x2'        : 'x2',
+    'y1'        : 'y1',
+    'y2'        : 'y2',
+    'frequency' : 'frequency',
+    validated   : 'validated',
+    'url'       : 'url',
+    'score'     : 'score',
+    'site_id'   : 'site_id'
+}
 
 songs = [malesong, courtsong, altsong2, altsong1]
-song_columns = [columns[s] for s in songs]
+song_columns = [data_columns[s] for s in songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-#old version is the next two lines:
-#edge_c_tags = [tag_p1c, tag_p1bc, tag_p2c, tag_p2bc]
-#edge_n_tags = [tag_p1n, tag_p1bn, tag_p2n, tag_p2bn]
 edge_c_tags = [tag_p1c, tag_p2c]
 edge_n_tags = [tag_p1n,  tag_p2n]
 tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
 
-manual_cols = [columns[t] for t in manual_tags]
-mini_manual_cols = [columns[t] for t in mini_manual_tags]
-edge_c_cols = [columns[t] for t in edge_c_tags]
-edge_n_cols = [columns[t] for t in edge_n_tags]
+manual_cols = [data_columns[t] for t in manual_tags]
+mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
+edge_c_cols = [data_columns[t] for t in edge_c_tags]
+edge_n_cols = [data_columns[t] for t in edge_n_tags]
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
 edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
@@ -118,10 +135,16 @@ data_foldername = 'Data/'
 data_dir = Path(__file__).parents[0] / data_foldername
 data_file = 'data.csv'
 site_info_file = 'sites.csv'
-data_fullfilename = data_dir / data_file
-site_info_fullfilename = data_dir / site_info_file
-file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
-weather_filename = data_foldername + '/' + 'weather_history.csv'
+weather_file = 'weather_history.csv'
+data_old_file = 'data_old.csv'
+files = {
+    data_file : data_dir / data_file,
+    site_info_file : data_dir / site_info_file,
+    weather_file : data_dir / weather_file,
+    data_old_file : data_dir / data_old_file
+}
+
+PM_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
 #
 #
@@ -153,13 +176,13 @@ def count_files_in_folder(fpath):
 @st.experimental_singleton(suppress_st_warning=True)
 def get_target_sites() -> dict:
     file_summary = {}
-    for t in file_types:
+    for t in PM_file_types:
         file_summary[t] = []
     file_summary[bad_files] = []
     file_summary[site_str] = set()
 
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    site_list = pd.read_csv(site_info_fullfilename, usecols = ['Name'])
+    site_list = pd.read_csv(files[site_info_file], usecols = ['Name'])
     site_list = site_list['Name'].tolist()
 
     #Clean it up. Everything must start with a 4-digit number. More validation to be done?
@@ -179,10 +202,10 @@ def get_target_sites() -> dict:
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
 
-                        if len(file_types) != count_files_in_folder(item):
+                        if len(PM_file_types) != count_files_in_folder(item):
                             file_summary[bad_files].append('Wrong number of files: ' + item.name)
 
-                        for t in file_types:
+                        for t in PM_file_types:
                             found_file = False
                             found_dir_in_subfolder = False
                             sub_items = os.scandir(item)
@@ -214,15 +237,18 @@ def get_target_sites() -> dict:
                         file_summary[bad_files].append('Bad folder name: ' + item.name)
             
             else: #If it's not a directory, it's a file. If the file we found isn't one of the exceptions to our pattern, then mark it as Bad.
-                if (item.name.lower() != data_file.lower() and item.name.lower() != site_info_file.lower() and
-                        item.name.lower() != 'data_old.csv'): 
+                if not(item.name.lower() in files.keys()):
                     file_summary[bad_files].append(item.name)
+
+#                if (item.name.lower() != data_file.lower() and item.name.lower() != site_info_file.lower() and
+#                        item.name.lower() != 'data_old.csv' and item.name.lower() != weather_file.lower()): 
+#                    file_summary[bad_files].append(item.name)
 
     top_items.close()
     
     #Confirm that there are the same set of files for each type
     if len(file_summary[site_str]) > 0:
-        for t in file_types:
+        for t in PM_file_types:
             if len(file_summary[site_str]) != len(file_summary[t]):
                 if len(file_summary[t]) == 0:
                     show_error('Missing all files of type ' + t)
@@ -239,40 +265,33 @@ def get_target_sites() -> dict:
 # Load the CSV file into a dataframe, validate that the columns are what we expect
 @st.experimental_singleton(suppress_st_warning=True)
 def load_data() -> pd.DataFrame:
-    data_csv = Path(__file__).parents[0] / data_fullfilename
+    data_csv = Path(__file__).parents[0] / files[data_file]
 
     #Validate the data file format
-    headers = pd.read_csv(data_fullfilename, nrows=0).columns.tolist()
-    if len(headers) != len(columns):
+    headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
+    if len(headers) != len(data_columns):
         show_error('Data file {} has an unexpected number of columns, {} instead of {}'.
-                   format(data_fullfilename, len(headers), len(columns)))
-    for col in columns:
-        if not columns[col] in headers:
-            #TODO there is at least one column in the set of columns that does not exist in the 
-            #big data file -- 'validated'. Should I remove it from this dictionary or just ignore it?
-            show_error('Column {} missing from the data file {}'.format(columns[col], data_fullfilename))
+                   format(files[data_file], len(headers), len(data_columns)))
+    for col in data_columns:
+        if not data_columns[col] in headers:
+            show_error('Column {} missing from the data file {}'.format(data_columns[col], files[data_file]))
     
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-    usecols = [columns[filename_str], columns[site_str], columns[date_str]]
+    usecols = [data_columns[filename_str], data_columns[site_str], data_columns[date_str]]
     for song in songs:
-        usecols.append(columns[song])
+        usecols.append(data_columns[song])
     for tag in tags:
-        usecols.append(columns[tag])
+        usecols.append(data_columns[tag])
 
     df = pd.read_csv(data_csv, 
                      usecols = usecols,
-                     parse_dates = [columns[date_str]],
-                     index_col = [columns[date_str]])
+                     parse_dates = [data_columns[date_str]],
+                     index_col = [data_columns[date_str]])
     return df
 
 
 def make_date(row):
     s = '{}-{}-{}'.format(row['year'], format(row['month'],'02'), format(row['day'],'02'))
-#    s = '{}-{}-{}T{}:{}'.format(row['year'], 
-#                                format(row['month'],'02'), 
-#                                format(row['day'],'02'), 
-#                                format(row['hour'],'02'), 
-#                                format(row['minute'],'02'))
     return np.datetime64(s)
 
 
@@ -287,18 +306,19 @@ def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
     # Add the site name so we look into the appropriate folder
     site_dir = data_dir / site
-    for t in file_types:
+    for t in PM_file_types:
         fname = site + ' ' + t + '.csv'
         full_file_name = site_dir / fname
         usecols = [site_str, 'year', 'month', 'day', validated] 
-    
+
+        #TODO Validate that those columns exist
         #TODO Validate the data file format
 
         df_temp = pd.DataFrame()
         if is_non_zero_file(full_file_name):
             df_temp = pd.read_csv(full_file_name, usecols=usecols)
             df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
-        else: # if the file is non-zero, make an empty table so the graphing code has something to work with
+        else: # if the file is empty, make an empty table so the graphing code has something to work with
             df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
             df_temp[validated] = 0
             #pt = pt.reindex(date_range).fillna(0)
@@ -347,7 +367,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in songs:
-        df_clean[columns[s]] = pd.to_numeric(df_clean[columns[s]])
+        df_clean[data_columns[s]] = pd.to_numeric(df_clean[data_columns[s]])
     return df_clean
 
 
@@ -377,7 +397,7 @@ def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
 def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False) -> pd.DataFrame:
     #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
     #that the test 'x>=1' is true.
-    summary = pd.pivot_table(site_df, values = labels, index = [columns[date_str]], 
+    summary = pd.pivot_table(site_df, values = labels, index = [data_columns[date_str]], 
                               aggfunc = lambda x: (x>=1).sum()) 
 
     if preserve_edges:
@@ -390,7 +410,7 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
 
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
-    summary = pd.pivot_table(site_df, values=[columns[validated]], index = [columns[date_str]], 
+    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_columns[date_str]], 
                               aggfunc = lambda x: (x==present).sum())
     summary = summary.rename(columns={validated:type_name})
     return normalize_pt(summary, date_range_dict)
@@ -534,17 +554,15 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     if len(title)>0:
         plt.suptitle(title, fontsize=36, fontweight='bold')
     
-    #Clean up the data, make sure that we have a row for each index.
+    # Ensure that we have a row for each index. If a row is missing, add it with zero values
     for item in items:
         if item not in df.index:
-            #Add the row and make it all zeroes
             df.loc[item]=pd.Series(0,index=df.columns)
 
-    #Set a mask on the zero values so that we can force them to display as white. Keep the original data as we
-    #need it for drawing later. Use '<=0' because -100 is use to differentiate no data from data with zero value
-    df_clean = pd.DataFrame()
-    for col in df:
-        df_clean[col] = df[col].mask(df[col] <= 0)
+    # Set a mask ("NaN" since the value isn't specified) on the zero values so that we can force them to display as white. 
+    # Keep the original data as we need it for drawing later. Use '<=0' because -100 is used to differentiate no data 
+    # from data with zero value
+    df_clean = df.mask(df <= 0)
 
     i=0
     for item in items:
@@ -593,8 +611,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
                     #for x in range(0,len(borders),2):
                     #    d1 = borders[x]
                     #    d2 = borders[x+1] if borders[x+1] < df_col_nonzero.index[len(df_col_nonzero)-1] else borders[x+1]-1
-                    #    st.error("Blue: " + str(df_col_nonzero.loc[d1].values[0].date()) + "->" + str(df_col_nonzero.loc[d2].values[0].date()))
-                    
+                    #    st.error("Blue: " + str(df_col_nonzero.loc[d1].values[0].date()) + "->" + str(df_col_nonzero.loc[d2].values[0].date()))                    
 
                     # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
                     for x in range(0,len(borders),2):
@@ -686,20 +703,20 @@ def output_text(text:str, make_all_graphs:bool):
 #Load weather data from file
 @st.experimental_singleton(suppress_st_warning=True)
 def load_weather_data_from_file() -> pd.DataFrame:
-    weather_csv = Path(__file__).parents[0] / weather_filename
-
+    #weather_csv = Path(__file__).parents[0] / weather_fullfilename
+     
     #Validate the data file format
-    headers = pd.read_csv(weather_csv, nrows=0).columns.tolist()
+    headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
     weather_cols = {'date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
                     'lat':'lat', 'lng':'lng', 'alt':'alt'}
     if len(headers) != len(weather_cols):
         show_error('File {} has an unexpected number of columns, {} instead of {}.'.
-                   format(weather_filename, len(headers), len(weather_cols)))
+                   format(weather_file, len(headers), len(weather_cols)))
     for col in weather_cols:
         if not weather_cols[col] in headers:
-            show_error('Column {} missing from {}.'.format(weather_cols[col], weather_filename))
+            show_error('Column {} missing from {}.'.format(weather_cols[col], weather_file))
     
-    df = pd.read_csv(weather_csv, 
+    df = pd.read_csv(files[weather_file], 
                      parse_dates = [weather_cols['date']],
                      index_col = [weather_cols['site']])
     return df
@@ -754,6 +771,8 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
 
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_visible(True)
+    else:
+        fig = plt.figure()
 
     return fig
 
@@ -797,7 +816,7 @@ site_counter = 0
 for site in target_sites:
     site_counter += 1
     # Select the site matching the one of interest
-    site_df = df[df[columns[site_str]] == site]
+    site_df = df[df[data_columns[site_str]] == site]
 
     #Using the site of interest, get the first & last dates and give the user the option to customize the range
     date_range_dict = get_date_range(site_df, make_all_graphs)
@@ -837,9 +856,9 @@ for site in target_sites:
     for tag in edge_cols:
         df_for_tag = filter_site(site_df, [tag])
         if tag in edge_c_cols:
-            target_col = columns[courtsong]
+            target_col = data_columns[courtsong]
         else:
-            target_col = columns[altsong1]
+            target_col = data_columns[altsong1]
 
         # Validate that all values in target_col are values and not --- or NaN
         #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
@@ -856,7 +875,7 @@ for site in target_sites:
     pm_pt = pd.DataFrame()
     # Check that we got some PM data before building the pivot tables. It's possible that there is zero data for some sites
 #    if len(df_pattern_match):
-    for t in file_types:
+    for t in PM_file_types:
         #For each file type, get the filtered range of just that type
         df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
         #Build the pivot table for it
@@ -872,7 +891,7 @@ for site in target_sites:
         st.header(site)
 
     # Manual analyisis graph
-    cmap = {columns[malesong]:'Greens', columns[courtsong]:'Oranges', columns[altsong2]:'Purples', columns[altsong1]:'Blues', 'bad':'Black'}
+    cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = manual_pt, 
                         items = song_columns, 
                         cmap = cmap, 
@@ -902,7 +921,7 @@ for site in target_sites:
     # Pattern Matching Analysis
     cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
     graph = create_graph(df = pm_pt, 
-                        items = file_types, 
+                        items = PM_file_types, 
                         cmap = cmap_pm, 
                         title = site + ' Pattern Matching Analysis')
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
@@ -912,9 +931,10 @@ for site in target_sites:
 
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather'):
-        st.subheader('Weather Data')
-        st.write(create_weather_graph(site, date_range_dict))
-
+        graph = create_weather_graph(site, date_range_dict)
+        output_graph(site, "Weather Data", save_files, make_all_graphs)
+        #st.subheader('Weather Data')
+        #st.write()
 
 
 
