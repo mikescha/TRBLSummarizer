@@ -127,7 +127,7 @@ edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
 edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 
 #For setting figure width and height, values in inches
-fig_w = 16
+fig_w = 8
 fig_h = 3
 
 #Files, paths, etc.
@@ -265,15 +265,21 @@ def get_target_sites() -> dict:
 
     return file_summary
 
+#Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
+    error_found = False
     if len(target_cols) != len(file_cols):
+        error_found = True
         show_error('File {} has an unexpected number of columns, {} instead of {}'.
                    format(file, len(file_cols), len(target_cols)))
     for col in target_cols:
+        error_found = True
         if not target_cols[col] in file_cols:
             show_error('Column {} missing from file {}'.format(target_cols[col], file))
+    
+    return error_found
 
-# Load the CSV file into a dataframe, validate that the columns are what we expect
+# Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.experimental_singleton(suppress_st_warning=True)
 def load_data() -> pd.DataFrame:
     data_csv = Path(__file__).parents[0] / files[data_file]
@@ -295,12 +301,9 @@ def load_data() -> pd.DataFrame:
                      index_col = [data_columns[date_str]])
     return df
 
-
-
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 # These are the files from all the folders named by site. 
 # Note that if there is no data, then there will be an empty file
-#@st.experimental_singleton(suppress_st_warning=True)
 def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
     # For each type of file for this site (which has already been validated that they exist), load the file. 
@@ -434,12 +437,15 @@ def get_site_to_analyze(site_list:list) -> str:
     site_list = sorted(site_list)
     return st.sidebar.selectbox('Site to summarize', site_list, index=1)
 
-def get_date_range(df:pd.DataFrame, doing_all_sites:bool) -> dict:
+# Set the default date range to the first and last dates for which we have data. In the case that we're
+# automatically generating all the sites, then stop there. Otherwise, show the UI for the date selection
+# and if the user wants a specific range then update our range to reflect that.
+def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
     df.sort_index(inplace=True)
     #Set the default date range to the first and last dates that we have data
     date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
     
-    if not doing_all_sites:
+    if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
         months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
         start_month = st.sidebar.selectbox("Start month", months1.keys(), index=0)
@@ -469,7 +475,8 @@ def get_date_range(df:pd.DataFrame, doing_all_sites:bool) -> dict:
 # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
-    custom_params = {'figure.dpi':'1200',
+    #WENDY what DPI to use? also review all the other attributes of the graphs
+    custom_params = {'figure.dpi':'300', 
                      'font.family':'Corbel', #'sans-serif'
                      'font.size':'12',
                      'font.weight':'600',
@@ -493,13 +500,14 @@ def set_global_theme():
 
 def get_days_per_month(df:pd.DataFrame) -> dict:
     date_list = df.columns.tolist()
-    #Make a list of all the values, but only use the month name. Then, count how many of each month names there are, to get the number of days/mo
+    #Make a list of all the values, but only use the month name. Then, count how many of each month names there are, 
+    #to get the number of days/month
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
 
 
 #The axis already has all the dates in it, but they need to be formatted. 
-def format_xdateticks(date_axis:plt.Axes,mmdd = False):
+def format_xdateticks(date_axis:plt.Axes, mmdd = False):
     if mmdd:
         fmt = '%d-%b'
         rot = 30
@@ -509,13 +517,13 @@ def format_xdateticks(date_axis:plt.Axes,mmdd = False):
         rot = 0
         weight = 'bold'
 
-    #Make a list of all the values
+    #Make a list of all the values currently in the graph
     date_values = [value for value in date_axis.xaxis.get_major_formatter().func.args[0].values()]
 
-    #Make a list of all the ticks where they have the day number only.
+    #Make a list of all the possible ticks with their strings formatted correctly
     ticks = [pd.to_datetime(value).strftime(fmt) for value in date_values]
 
-    #Actually set the ticks and then format them as needed
+    #Actually set the ticks and then apply font format as needed
     date_axis.xaxis.set_ticklabels(ticks, fontweight=weight)
     date_axis.tick_params(axis = 'x',labelrotation = rot)
     return
@@ -539,32 +547,35 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
                 ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
             
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
+def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
                  draw_vert_rects=False, draw_horiz_rects=False,title='') -> plt.figure:
-    max = len(items)
+    row_count = len(row_names)
     graph_drawn = []
-
+    
     #distance between top of plot space and chart
     top_gap = 0.8 if title != '' else 1
     #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
     tick_spacing = 0
 
     # Create the base figure for the graphs
-    fig, axs = plt.subplots(nrows = max, 
+    fig, axs = plt.subplots(nrows = row_count, 
                             ncols = 1,
                             sharex = 'col', 
-                            gridspec_kw={'height_ratios': np.repeat(1,max), 
+                            gridspec_kw={'height_ratios': np.repeat(1,row_count), 
                                          'left':0, 'right':1, 'bottom':0, 'top':top_gap,
                                          'hspace':0},  #hspace is row spacing (gap between rows)
                             figsize=(fig_w,fig_h))
-    # Draw the title https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.suptitle.html#matplotlib.pyplot.suptitle
+
+    # If we have one, add the title for the graph and set appropriate formatting
     if len(title)>0:
-        plt.suptitle(title, fontsize=36, fontweight='bold')
+        #note that if the fontsize is too big, then the title will become the largest thing in the figure
+        #which causes the graph to shrink!
+        plt.suptitle(title, fontsize=20, fontweight='bold')
     
     # Ensure that we have a row for each index. If a row is missing, add it with zero values
-    for item in items:
-        if item not in df.index:
-            df.loc[item]=pd.Series(0,index=df.columns)
+    for row in row_names:
+        if row not in df.index:
+            df.loc[row]=pd.Series(0,index=df.columns)
 
     # Set a mask ("NaN" since the value isn't specified) on the zero values so that we can force them to display as white. 
     # Keep the original data as we need it for drawing later. Use '<=0' because -100 is used to differentiate no data 
@@ -572,16 +583,16 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     df_clean = df.mask(df <= 0)
 
     i=0
-    for item in items:
+    for row in row_names:
         # plotting the heatmap
-        max_count = 0
-        max_count = df_clean.loc[item].max()
+        data_points = df_clean.loc[row].max()
+
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
-        df_to_graph = df_clean.loc[item].to_frame().transpose()
+        df_to_graph = df_clean.loc[row].to_frame().transpose()
         axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
-                        cmap = cmap[item] if len(cmap) > 1 else cmap[0],
-                        vmin = 0, vmax = max_count if max_count > 0 else 1,
+                        cmap = cmap[row] if len(cmap) > 1 else cmap[0],
+                        vmin = 0, vmax = data_points if data_points > 0 else 1,
                         cbar = False,
                         xticklabels = tick_spacing,
                         yticklabels = False)
@@ -589,16 +600,16 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
         graph_drawn.append(i)
             
         #Add a rectangle around the regions of consective tags, and a line between non-consectutive if it's a N tag
-        if draw_horiz_rects and item in df_clean.index:
-            df_col_nonzero = df.loc[item].to_frame()  #pull out the row we want, it turns into a column as above
+        if draw_horiz_rects and row in df_clean.index:
+            df_col_nonzero = df.loc[row].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
-            df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(item))  #get only the nonzero values. 
+            df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(row))  #get only the nonzero values. 
 
             if len(df_col_nonzero):
-                c = cm.get_cmap(cmap[item] if len(cmap) > 1 else cmap[0], 1)(1)
+                c = cm.get_cmap(cmap[row] if len(cmap) > 1 else cmap[0], 1)(1)
                 #for debug
                 #c = cm.get_cmap('prism',1)(1)
-                if item in edge_c_cols: #these tags get a box around the whole block
+                if row in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
@@ -640,7 +651,7 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
             box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
 
             _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
-            _,bottom = fig.transFigure.inverted().transform(axs[max-1].transAxes.transform([0,0]))
+            _,bottom = fig.transFigure.inverted().transform(axs[row_count-1].transAxes.transform([0,0]))
             trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
             for px in box_pos:
                 rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
@@ -649,17 +660,17 @@ def create_graph(df: pd.DataFrame, items:list, cmap:dict, draw_connectors=False,
     
     if len(graph_drawn):
         # Clean up the ticks on the axis we're going to use
-        format_xdateticks(axs[len(items)-1])
+        format_xdateticks(axs[len(row_names)-1])
         month_counts = get_days_per_month(df)
-        draw_axis_labels(month_counts, axs, 2 if max==4 else 3)
+        draw_axis_labels(month_counts, axs, 2 if row_count==4 else 3)
 
         #Hide the ticks on the top graphs
-        for i in range(0,len(items)-1):
+        for i in range(0,len(row_names)-1):
             axs[i].tick_params(bottom = False)
     else: 
         #Need to hide the ticks, although I don't think this will get called anymore since I now create
         #an empty row for each index, so we always have something to graph
-        axs[len(items)-1].tick_params(bottom = False, labelbottom = False)
+        axs[len(row_names)-1].tick_params(bottom = False, labelbottom = False)
 
     # draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
@@ -679,15 +690,13 @@ def save_figure(site:str, graph_type:str):
     if os.path.isfile(figure_path):
         os.remove(figure_path)
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
-    #plt.close()
+    plt.close()
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool):
     if make_all_graphs:
         st.write(graph_type)
     else:
         st.subheader(graph_type)
-
-    if not make_all_graphs:
         st.write(graph)
 
     if make_all_graphs or save_files:
@@ -707,21 +716,19 @@ def output_text(text:str, make_all_graphs:bool):
 #
 #
 
+#WENDY Need to review the weather sites file, it has names that don't match the main list of sites
+#WENDY How important is Baja weather? NOAA doesn't have it since it's not in the USA
+
 #Load weather data from file
 @st.experimental_singleton(suppress_st_warning=True)
 def load_weather_data_from_file() -> pd.DataFrame:
-    #weather_csv = Path(__file__).parents[0] / weather_fullfilename
-     
     #Validate the data file format
     headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
     weather_cols = {'date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
                     'lat':'lat', 'lng':'lng', 'alt':'alt'}
-    if len(headers) != len(weather_cols):
-        show_error('File {} has an unexpected number of columns, {} instead of {}.'.
-                   format(weather_file, len(headers), len(weather_cols)))
-    for col in weather_cols:
-        if not weather_cols[col] in headers:
-            show_error('Column {} missing from {}.'.format(weather_cols[col], weather_file))
+    
+    #TODO what to do if the number of columns is wrong?
+    confirm_columns(weather_cols, headers, weather_file)
     
     df = pd.read_csv(files[weather_file], 
                      parse_dates = [weather_cols['date']],
@@ -749,6 +756,10 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> pd.DataFrame:
 def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
     # Load and parse weather data
     df = get_weather_data(site_name, date_range_dict)
+
+    #Defaults for the Y Axis labels
+    font_size = 14
+    label_pad = 20
     
     if not df.empty:
         # Break into three groups for cleaner code
@@ -757,17 +768,27 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
         tmin = df.loc[df['datatype']=='TMIN']
 
         # Build graph for data
-        fig, ax1 = plt.subplots(figsize=(fig_w,fig_h)) # initializes figure and plots
+        # Need to make it wider than the rest to accomodate the text on the vertical axes. 
+        weather_fig_w = fig_w #+ (label_pad)/300
+        
+        # The use of rows, cols, and gridspec is to force the graph to be drawn in the same proportions and size
+        # as the heatmaps
+        fig, ax1 = plt.subplots(nrows = 1, ncols = 1, 
+            gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
+            figsize=(weather_fig_w,fig_h)) # initializes figure and plots
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
 
-        # plots the first set of data, and sets it to ax1
+        plt.suptitle(site_name + ' Weather', fontsize=20, fontweight='bold')
+
+        # plot the data in the proper format on the correct axis.
         ax1.bar(prcp.index.values.astype(str), prcp['value'], color = 'blue')
         ax2.plot(tmax.index.values.astype(str), tmax['value'], color = 'red')
         ax2.plot(tmin.index.values.astype(str), tmin['value'], color = 'pink')
 
         #Add the annotations for the plot 
-        ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=16)
-        ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=16)
+        ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=font_size)
+        ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=font_size,
+                        rotation=270, labelpad=label_pad)
 
         #Get the list of ticks and set them 
         axis_dates = list(tmax.index.values.astype(str))
@@ -777,6 +798,7 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
         format_xdateticks(ax1, mmdd=True)
 
         #Turn on the graph borders, these are off by default for other charts
+        ax1.spines[:].set_linewidth(0.5)
         ax1.spines[:].set_visible(True)
     else:
         fig = plt.figure()
@@ -809,12 +831,10 @@ make_all_graphs = False
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
     target_sites = site_list[site_str]
-    save_files = False
+    save_files = False #True if we want to save all the image files
 else:
     target_sites = [get_site_to_analyze(site_list[site_str])]
-
-    #Decide if we're going to save the graphs as pics or not
-    save_files = st.sidebar.checkbox('Save as picture', value=False)
+    save_files = st.sidebar.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
 
 # Set format shared by all graphs
 set_global_theme()
@@ -844,11 +864,12 @@ for site in target_sites:
     manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
     # 
-    # COMMENT
-    #  
+    # 1. Select all rows with one of the following tags:
+    #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
+    # 2. Make a pivot table as above
+    #   
     df_mini_manual = filter_site(site_df, mini_manual_cols)
     mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
-
 
     #   1. Select all rows where one of the following tags
     #       P1C, P1N, P2C, P2N
@@ -871,17 +892,18 @@ for site in target_sites:
         #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
         #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
 
-        # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 for future graphing needs
+        # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
+        # for future graphing needs
         pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
         pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
         edge_pt = pd.concat([edge_pt, pt_for_tag])
 
-
-    # Load and process the pattern matching tag files
+    #
+    # Pattern Matching analysis
+    #
     df_pattern_match = load_pm_data(site, date_range_dict)
     pm_pt = pd.DataFrame()
-    # Check that we got some PM data before building the pivot tables. It's possible that there is zero data for some sites
-#    if len(df_pattern_match):
+
     for t in PM_file_types:
         #For each file type, get the filtered range of just that type
         df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
@@ -900,14 +922,14 @@ for site in target_sites:
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = manual_pt, 
-                        items = song_columns, 
+                        row_names = song_columns, 
                         cmap = cmap, 
                         title = site + ' Manual Analysis')
     output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
 
     # Computer Assisted Analysis
     graph = create_graph(df = mini_manual_pt, 
-                        items = song_columns, 
+                        row_names = song_columns, 
                         cmap = cmap, 
                         raw_data = site_df,
                         draw_vert_rects = True,
@@ -917,33 +939,30 @@ for site in target_sites:
     # Edge Analysis
     cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
     graph = create_graph(df = edge_pt, 
-                        items = edge_cols,
+                        row_names = edge_cols,
                         cmap = cmap_edge, 
                         raw_data = site_df,
                         draw_horiz_rects = True,
                         title = site + ' Edge Analysis')
     output_graph(site, 'Edge Analysis', save_files, make_all_graphs)
 
-
     # Pattern Matching Analysis
     cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
     graph = create_graph(df = pm_pt, 
-                        items = PM_file_types, 
+                        row_names = PM_file_types, 
                         cmap = cmap_pm, 
                         title = site + ' Pattern Matching Analysis')
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
 
-    #We are all done with graphs. This must be the last thing before weather and data tables
-    plt.close(graph)
-
     #Show weather, as needed            
-    if st.sidebar.checkbox('Show station weather'):
+    if st.sidebar.checkbox('Show station weather') or True:
         graph = create_weather_graph(site, date_range_dict)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
         #st.subheader('Weather Data')
         #st.write()
 
-
+# WENDY do you want the tables here like in the Visualizer? If so, for which charts or all? 
+# What other data to have available?
 
 if len(site_list[bad_files]) > 0:
     with st.expander("See possibly bad filenames"):  
