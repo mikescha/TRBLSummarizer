@@ -87,8 +87,8 @@ data_columns = {
 }
 
 site_columns = {
-    'id'        :'id',
-    'recording' :'recording',
+    'id'        : 'id',
+    'recording' : 'recording',
     site_str    : 'site', 
     'day'       : 'day',
     'month'     : 'month',
@@ -168,6 +168,11 @@ def count_files_in_folder(fpath):
         if item.is_file():
             i += 1
     return i
+
+def make_date(row):
+    s = '{}-{}-{}'.format(row['year'], format(row['month'],'02'), format(row['day'],'02'))
+    return np.datetime64(s)
+
 #
 #
 #File handling and setup
@@ -236,13 +241,11 @@ def get_target_sites() -> dict:
                     if item.name.lower() != 'hide':
                         file_summary[bad_files].append('Bad folder name: ' + item.name)
             
-            else: #If it's not a directory, it's a file. If the file we found isn't one of the exceptions to our pattern, then mark it as Bad.
+            else: 
+                # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
+                # our pattern, then mark it as Bad.
                 if not(item.name.lower() in files.keys()):
                     file_summary[bad_files].append(item.name)
-
-#                if (item.name.lower() != data_file.lower() and item.name.lower() != site_info_file.lower() and
-#                        item.name.lower() != 'data_old.csv' and item.name.lower() != weather_file.lower()): 
-#                    file_summary[bad_files].append(item.name)
 
     top_items.close()
     
@@ -262,6 +265,14 @@ def get_target_sites() -> dict:
 
     return file_summary
 
+def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
+    if len(target_cols) != len(file_cols):
+        show_error('File {} has an unexpected number of columns, {} instead of {}'.
+                   format(file, len(file_cols), len(target_cols)))
+    for col in target_cols:
+        if not target_cols[col] in file_cols:
+            show_error('Column {} missing from file {}'.format(target_cols[col], file))
+
 # Load the CSV file into a dataframe, validate that the columns are what we expect
 @st.experimental_singleton(suppress_st_warning=True)
 def load_data() -> pd.DataFrame:
@@ -269,12 +280,7 @@ def load_data() -> pd.DataFrame:
 
     #Validate the data file format
     headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
-    if len(headers) != len(data_columns):
-        show_error('Data file {} has an unexpected number of columns, {} instead of {}'.
-                   format(files[data_file], len(headers), len(data_columns)))
-    for col in data_columns:
-        if not data_columns[col] in headers:
-            show_error('Column {} missing from the data file {}'.format(data_columns[col], files[data_file]))
+    confirm_columns(data_columns, headers, data_file)
     
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
     usecols = [data_columns[filename_str], data_columns[site_str], data_columns[date_str]]
@@ -290,18 +296,15 @@ def load_data() -> pd.DataFrame:
     return df
 
 
-def make_date(row):
-    s = '{}-{}-{}'.format(row['year'], format(row['month'],'02'), format(row['day'],'02'))
-    return np.datetime64(s)
-
 
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
+# These are the files from all the folders named by site. 
+# Note that if there is no data, then there will be an empty file
 #@st.experimental_singleton(suppress_st_warning=True)
 def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
-    # For each type of file for this site (which has already been validated that they exist, but should
-    # probably check here, too, eventually), load the file. Add a column to indicate which type it is. 
-    # Then append it to the dataframe we're building.
+    # For each type of file for this site (which has already been validated that they exist), load the file. 
+    # Add a column to indicate which type it is. Then append it to the dataframe we're building.
     df = pd.DataFrame()
 
     # Add the site name so we look into the appropriate folder
@@ -309,15 +312,19 @@ def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
     for t in PM_file_types:
         fname = site + ' ' + t + '.csv'
         full_file_name = site_dir / fname
-        usecols = [site_str, 'year', 'month', 'day', validated] 
-
-        #TODO Validate that those columns exist
-        #TODO Validate the data file format
+        usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
+                site_columns['day'], site_columns[validated]]
 
         df_temp = pd.DataFrame()
         if is_non_zero_file(full_file_name):
+            #Validate that all columns exist
+            headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
+            #TODO: what if the number of columns is wrong, just continue and get an exception or somehow fail?
+            confirm_columns(site_columns, headers, fname)
+
             df_temp = pd.read_csv(full_file_name, usecols=usecols)
             df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+
         else: # if the file is empty, make an empty table so the graphing code has something to work with
             df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
             df_temp[validated] = 0
