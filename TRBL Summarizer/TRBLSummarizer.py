@@ -62,9 +62,8 @@ data_columns = {
     'year'       : 'year',
     hour_str     : 'hour', 
     date_str     : 'date',
-    tag_ONC_p1   : 'tag<ONC-p1>', #WENDY I'm not using these, what are they for
-    tag_YNC_p1   : 'tag<YNC-p1>',
-    tag_YNC_p2   : 'tag<YNC-p2>',
+    tag_ONC_p1   : 'tag<ONC-p1>', #Older nestling call pulse 1
+    tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
     tag_p1c      : 'tag<p1c>',
     tag_p1n      : 'tag<p1n>',
     tag_p2c      : 'tag<p2c>',
@@ -113,8 +112,8 @@ song_columns = [data_columns[s] for s in songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-edge_c_tags = [tag_p1c, tag_p2c]
-edge_n_tags = [tag_p1n,  tag_p2n]
+edge_c_tags = [tag_p1c, tag_p2c]  #male chorus
+edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
 tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
 
 manual_cols = [data_columns[t] for t in manual_tags]
@@ -127,8 +126,8 @@ edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
 edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 
 #For setting figure width and height, values in inches
-fig_w = 8
-fig_h = 3
+fig_w = 6.5
+fig_h = 1
 
 #Files, paths, etc.
 data_foldername = 'Data/'
@@ -192,7 +191,7 @@ def get_target_sites() -> dict:
 
     #Clean it up. Everything must start with a 4-digit number. More validation to be done?
     for s in site_list:
-        if not s[0:3].isdigit():
+        if not s[0:4].isdigit():
             site_list.remove(s)
     
     #Get a list of all items in the directory, then check each folder we find
@@ -475,12 +474,11 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
 # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
-    #WENDY what DPI to use? also review all the other attributes of the graphs
     custom_params = {'figure.dpi':'300', 
-                     'font.family':'Corbel', #'sans-serif'
+                     'font.family':'Arial', #'sans-serif'
                      'font.size':'12',
-                     'font.weight':'600',
-                     'font.stretch':'semi-condensed',
+                     'font.stretch':'normal',
+                     'font.weight':'light',
                      'xtick.labelsize':'medium',
                      'xtick.major.size':'12',
                      'xtick.color':'black',
@@ -505,18 +503,19 @@ def get_days_per_month(df:pd.DataFrame) -> dict:
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
 
-
 #The axis already has all the dates in it, but they need to be formatted. 
 def format_xdateticks(date_axis:plt.Axes, mmdd = False):
     if mmdd:
         fmt = '%d-%b'
         rot = 30
         weight = 'light'
+        fontsize = 10
     else:
         fmt = '%d'
         rot = 0
-        weight = 'bold'
-
+        weight = 'light'
+        fontsize = 10
+    
     #Make a list of all the values currently in the graph
     date_values = [value for value in date_axis.xaxis.get_major_formatter().func.args[0].values()]
 
@@ -524,7 +523,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
     ticks = [pd.to_datetime(value).strftime(fmt) for value in date_values]
 
     #Actually set the ticks and then apply font format as needed
-    date_axis.xaxis.set_ticklabels(ticks, fontweight=weight)
+    date_axis.xaxis.set_ticklabels(ticks, fontweight=weight, fontsize=fontsize)
     date_axis.tick_params(axis = 'x',labelrotation = rot)
     return
 
@@ -540,11 +539,12 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
         #The line below shifts the label to the left a little bit to better center it on the month space. 
         center_pt -= len(month)/4
         mid = x + center_pt
-        axs[len(axs)-1].text(x=mid, y=gap, s=month, size='x-large')
+        axs[len(axs)-1].text(x=mid, y=gap, s=month)
         x += month_lengths[month]
         if n<max:
             for ax in axs:
                 ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
+    
             
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
@@ -570,7 +570,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     if len(title)>0:
         #note that if the fontsize is too big, then the title will become the largest thing in the figure
         #which causes the graph to shrink!
-        plt.suptitle(title, fontsize=20, fontweight='bold')
+        plt.suptitle(title, fontsize=14, x=0, horizontalalignment='left')
     
     # Ensure that we have a row for each index. If a row is missing, add it with zero values
     for row in row_names:
@@ -693,10 +693,12 @@ def save_figure(site:str, graph_type:str):
     plt.close()
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool):
+    
     if make_all_graphs:
-        st.write(graph_type)
+        #st.write(graph_type)
+        pass
     else:
-        st.subheader(graph_type)
+        #st.subheader(graph_type)
         st.write(graph)
 
     if make_all_graphs or save_files:
@@ -716,8 +718,7 @@ def output_text(text:str, make_all_graphs:bool):
 #
 #
 
-#WENDY Need to review the weather sites file, it has names that don't match the main list of sites
-#WENDY How important is Baja weather? NOAA doesn't have it since it's not in the USA
+#TODO Use the sites file from here in the weather
 
 #Load weather data from file
 @st.experimental_singleton(suppress_st_warning=True)
@@ -806,6 +807,25 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
     return fig
 
 
+#
+# Bonus functions
+#
+def get_site_info(site_name:str, site_info_fields:list) -> dict:
+    site_info = {}
+    df = pd.read_csv(files[site_info_file])
+    for f in site_info_fields:
+        site_info[f] = df.loc[df['Name'] == site_name,f].values[0]
+    return site_info
+
+def show_station_info(site_name:str):
+    site_info_fields = ['Latitude', 'Longitude', 'Altitude', 'Recordings_Count']
+    site_info = get_site_info(site_name, site_info_fields)
+
+    #We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
+    #https://developers.google.com/maps/documentation/urls/get-started
+    map = 'https://www.google.com/maps/search/?api=1&query={}%2C{}'.format(site_info['Latitude'], site_info['Longitude'])
+    st.write('About this site: [Location in Google Maps]({}), Elevation {} ft, {} Recordings'.
+             format(map, site_info['Altitude'], site_info['Recordings_Count']))
 
 
 #
@@ -860,6 +880,8 @@ for site in target_sites:
     #       The number of recordings from that set that have AltSong2 >= 1
     #       The number of recordings from that set that have AltSong >= 1 
     #     
+    
+    #TODO If there is no data (this is only used for old sites), then don't output the graph
     df_manual = filter_site(site_df, manual_cols)
     manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
@@ -873,12 +895,17 @@ for site in target_sites:
 
     #   1. Select all rows where one of the following tags
     #       P1C, P1N, P2C, P2N
+    
+    #TODO We found at least one row that should have kicked up an error given the description
+    #   below, why didn't it?
+
     #   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
     #      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
     #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
     #   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
     #   5. Merge the tables together so we get one block of heatmaps
     #   
+    #TODO add the new things having to do with ONC and YNC tags
 
     edge_pt = pd.DataFrame()
     for tag in edge_cols:
@@ -917,7 +944,10 @@ for site in target_sites:
     if make_all_graphs:
         st.subheader(site + ' [' + str(site_counter) + ' of ' + str(len(target_sites)) + ']')
     else: 
-        st.header(site)
+        st.subheader(site)
+
+    if st.sidebar.checkbox('Show station info', value=True):
+        show_station_info(site)
 
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
