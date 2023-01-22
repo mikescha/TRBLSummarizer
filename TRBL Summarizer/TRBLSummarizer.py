@@ -63,6 +63,7 @@ data_columns = {
     hour_str     : 'hour', 
     date_str     : 'date',
     tag_ONC_p1   : 'tag<ONC-p1>', #Older nestling call pulse 1
+    "tag_ONC_p2"  : 'tag<YNC-p1>', #REMOVE WHEN WE GET A NEW DATAFILE
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
     tag_p1c      : 'tag<p1c>',
     tag_p1n      : 'tag<p1n>',
@@ -183,24 +184,30 @@ def get_target_sites() -> dict:
     for t in PM_file_types:
         file_summary[t] = []
     file_summary[bad_files] = []
-    file_summary[site_str] = set()
+    file_summary[site_str] = []
 
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    site_list = pd.read_csv(files[site_info_file], usecols = ['Name'])
-    site_list = site_list['Name'].tolist()
+    all_site_data = pd.read_csv(files[site_info_file], usecols = ['Name', 'Recordings_Count'])
 
-    #Clean it up. Everything must start with a 4-digit number. More validation to be done?
-    for s in site_list:
-        if not s[0:4].isdigit():
-            site_list.remove(s)
+    #Clean it up. Only keep names that start with a 4-digit number. More validation to be done?
+    all_sites = []
+    for s in all_site_data['Name'].tolist():
+        if s[0:4].isdigit():
+            all_sites.append(s)
     
-    #Get a list of all items in the directory, then check each folder we find
+    #Get a list of all items in the directory, then check whether a site has a matching folder. 
+    #If it doesn't, there is no Pattern Matching data available, so go ahead and add it.
+    for s in all_sites:
+        if not os.path.isdir(data_dir / s):
+            file_summary[site_str].append(s)
+
+    #Now, go through all the folders and check them
     top_items = os.scandir(data_dir)
     if any(top_items):
         for item in top_items:
             if item.is_dir():
                 #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
-                if item.name in site_list:
+                if item.name in all_sites:
                     s = item.name
                     #Get a list of all files in that directory, scan for files that match our pattern
                     if any(os.scandir(item)):
@@ -220,11 +227,12 @@ def get_target_sites() -> dict:
                                     f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
                                     if t.lower() == f_type[0:len(t)].lower():
                                         file_summary[t].append(f.name)
-                                        file_summary[site_str].add(s)
+                                        if s not in file_summary[site_str]: 
+                                            file_summary[site_str].append(s)
                                         found_file = True
                                         break
                                 else:
-                                    if not found_dir_in_subfolder: # if this is the first time here, then log it
+                                    if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
                                         file_summary[bad_files].append('Found subfolder in data folder: ' + s)
                                     found_dir_in_subfolder = True
                     
@@ -237,7 +245,7 @@ def get_target_sites() -> dict:
                     sub_items.close()
                 
                 else:
-                    if item.name.lower() != 'hide':
+                    if item.name.lower() != 'hide' and item.name.lower() != 'old files':
                         file_summary[bad_files].append('Bad folder name: ' + item.name)
             
             else: 
@@ -248,14 +256,8 @@ def get_target_sites() -> dict:
 
     top_items.close()
     
-    #Confirm that there are the same set of files for each type
-    if len(file_summary[site_str]) > 0:
-        for t in PM_file_types:
-            if len(file_summary[site_str]) != len(file_summary[t]):
-                if len(file_summary[t]) == 0:
-                    show_error('Missing all files of type ' + t)
-                else:
-                    show_error('Wrong number of files of type ' + t)
+    if len(file_summary[site_str]):
+        file_summary[site_str].sort()
     else:
         show_error('No site files found')
 
@@ -433,8 +435,12 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
     #return('2021 Markham Ravine')
-    site_list = sorted(site_list)
-    return st.sidebar.selectbox('Site to summarize', site_list, index=1)
+    
+    #TODO calculate the list of years
+    year_list = ['2022', '2021', '2020', '2019', '2018', '2017']
+    target_year = st.sidebar.selectbox('Site year', year_list)
+    filtered_sites = sorted([s for s in site_list if target_year in s])
+    return st.sidebar.selectbox('Site to summarize', filtered_sites)
 
 # Set the default date range to the first and last dates for which we have data. In the case that we're
 # automatically generating all the sites, then stop there. Otherwise, show the UI for the date selection
@@ -865,6 +871,10 @@ for site in target_sites:
     # Select the site matching the one of interest
     site_df = df[df[data_columns[site_str]] == site]
 
+    if site_df.empty:
+        st.write('Site {} has no recordings'.format(site))
+        break
+
     #Using the site of interest, get the first & last dates and give the user the option to customize the range
     date_range_dict = get_date_range(site_df, make_all_graphs)
 
@@ -948,6 +958,9 @@ for site in target_sites:
 
     if st.sidebar.checkbox('Show station info', value=True):
         show_station_info(site)
+
+    #TODO If there is data but the value is all zeroes, then show something nice instead of the empty
+    #graph, since the empty graph looks like a bug
 
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
