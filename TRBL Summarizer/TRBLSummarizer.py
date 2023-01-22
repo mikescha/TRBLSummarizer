@@ -115,12 +115,14 @@ manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
 edge_c_tags = [tag_p1c, tag_p2c]  #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
+all_tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
 
 manual_cols = [data_columns[t] for t in manual_tags]
 mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
 edge_c_cols = [data_columns[t] for t in edge_c_tags]
 edge_n_cols = [data_columns[t] for t in edge_n_tags]
+
+all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
 edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
@@ -293,7 +295,7 @@ def load_data() -> pd.DataFrame:
     usecols = [data_columns[filename_str], data_columns[site_str], data_columns[date_str]]
     for song in songs:
         usecols.append(data_columns[song])
-    for tag in tags:
+    for tag in all_tags:
         usecols.append(data_columns[tag])
 
     df = pd.read_csv(data_csv, 
@@ -390,9 +392,9 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 
 # Get the subset of rows where there's at least one tag, i.e. the count of any tag is greater than zero
 # See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
-def filter_site(site_df:pd.DataFrame, target_tags:list) -> pd.DataFrame:
+def filter_df_by_tags(site_df:pd.DataFrame, target_tags:list, filter_str='>0') -> pd.DataFrame:
     # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-    query = ' | '.join([f'`{tag}`>0' for tag in target_tags])
+    query = ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags])
     filtered_df = site_df.query(query)
     return filtered_df
 
@@ -435,9 +437,14 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
     #return('2021 Markham Ravine')
-    
-    #TODO calculate the list of years
-    year_list = ['2022', '2021', '2020', '2019', '2018', '2017']
+
+    #Calculate the list of years, sort it backwards so most recent is at the top
+    year_list = []
+    for s in site_list:
+        if s[0:4] not in year_list:
+            year_list.append(s[0:4])
+    year_list.sort(reverse=True)
+
     target_year = st.sidebar.selectbox('Site year', year_list)
     filtered_sites = sorted([s for s in site_list if target_year in s])
     return st.sidebar.selectbox('Site to summarize', filtered_sites)
@@ -650,7 +657,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         
     # add a rect around each day that has some data
     if draw_vert_rects and len(raw_data)>0:
-        tagged_rows = filter_site(raw_data, mini_manual_cols)
+        tagged_rows = filter_df_by_tags(raw_data, mini_manual_cols)
         if len(tagged_rows):
             date_list = tagged_rows.index.unique()
             first = raw_data.index[0]
@@ -834,6 +841,30 @@ def show_station_info(site_name:str):
              format(map, site_info['Altitude'], site_info['Recordings_Count']))
 
 
+# If any tag column has "reviewed" in the title AND the value for a row (a recording) is 1, then 
+#    check that all "val" columns have a number. 
+#    If any of them have a "---" or not a number then print out the filename of that row.
+def check_tags(df: pd.DataFrame):
+#    if st.sidebar.checkbox('Show errors'):
+    if True:
+        #This selects all rows where the tag cols are > 0 and the song columns have '---' in them
+
+        non_zero_rows = filter_df_by_tags(df, all_tag_cols)
+        bad_rows = filter_df_by_tags(non_zero_rows, song_columns, '==\'---\'')
+
+        #bad_rows = df[((df[data_columns[tag_wse]]>0) | (df[data_columns[tag_mhh]]>0) | (df[data_columns[tag_wsm]]>0) | (df[data_columns[tag_mhe]]>0)) & 
+        #              ((df[data_columns[malesong]]=='---') | (df[data_columns[altsong1]]=='---') | 
+        #               (df[data_columns[altsong2]]=='---') | (df[data_columns[courtsong]]=='---'))]
+
+        with st.expander('See errors'):
+            if not(bad_rows.empty):
+                bad = bad_rows.sort_values(by='filename')
+                st.write('Total errors: {}'.format(len(bad)))
+                st.write(bad_rows)
+            else:
+                st.write('No errors found')
+
+
 #
 #
 # Main
@@ -849,8 +880,8 @@ site_list = get_target_sites()
 df = clean_data(df_original, site_list[site_str])
 
 # Nuke the original data, hopefully this frees up memory
-del df_original
-gc.collect()
+#del df_original
+#gc.collect()
 
 #TODO Make this a UI option
 make_all_graphs = False
@@ -892,7 +923,7 @@ for site in target_sites:
     #     
     
     #TODO If there is no data (this is only used for old sites), then don't output the graph
-    df_manual = filter_site(site_df, manual_cols)
+    df_manual = filter_df_by_tags(site_df, manual_cols)
     manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
 
     # 
@@ -900,7 +931,7 @@ for site in target_sites:
     #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
     # 2. Make a pivot table as above
     #   
-    df_mini_manual = filter_site(site_df, mini_manual_cols)
+    df_mini_manual = filter_df_by_tags(site_df, mini_manual_cols)
     mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
 
     #   1. Select all rows where one of the following tags
@@ -919,12 +950,13 @@ for site in target_sites:
 
     edge_pt = pd.DataFrame()
     for tag in edge_cols:
-        df_for_tag = filter_site(site_df, [tag])
+        df_for_tag = filter_df_by_tags(site_df, [tag])
         if tag in edge_c_cols:
             target_col = data_columns[courtsong]
         else:
             target_col = data_columns[altsong1]
 
+        #TODO
         # Validate that all values in target_col are values and not --- or NaN
         #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
         #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
@@ -967,7 +999,7 @@ for site in target_sites:
     graph = create_graph(df = manual_pt, 
                         row_names = song_columns, 
                         cmap = cmap, 
-                        title = site + ' Manual Analysis')
+                        title = (site + ' ' if save_files else '') + 'Manual Analysis')
     output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
 
     # Computer Assisted Analysis
@@ -976,7 +1008,7 @@ for site in target_sites:
                         cmap = cmap, 
                         raw_data = site_df,
                         draw_vert_rects = True,
-                        title = site + ' Mini Manual Analysis')
+                        title = (site + ' ' if save_files else '') + 'Mini Manual Analysis')
     output_graph(site, 'Mini Manual', save_files, make_all_graphs)
 
     # Edge Analysis
@@ -986,7 +1018,7 @@ for site in target_sites:
                         cmap = cmap_edge, 
                         raw_data = site_df,
                         draw_horiz_rects = True,
-                        title = site + ' Edge Analysis')
+                        title = (site + ' ' if save_files else '') + 'Edge Analysis')
     output_graph(site, 'Edge Analysis', save_files, make_all_graphs)
 
     # Pattern Matching Analysis
@@ -994,20 +1026,26 @@ for site in target_sites:
     graph = create_graph(df = pm_pt, 
                         row_names = PM_file_types, 
                         cmap = cmap_pm, 
-                        title = site + ' Pattern Matching Analysis')
+                        title = (site + ' ' if save_files else '') + 'Pattern Matching Analysis')
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
 
     #Show weather, as needed            
-    if st.sidebar.checkbox('Show station weather') or True:
+    if st.sidebar.checkbox('Show station weather', True):
         graph = create_weather_graph(site, date_range_dict)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
         #st.subheader('Weather Data')
         #st.write()
 
-# WENDY do you want the tables here like in the Visualizer? If so, for which charts or all? 
-# What other data to have available?
 
 if len(site_list[bad_files]) > 0:
     with st.expander("See possibly bad filenames"):  
         st.write(site_list[bad_files])
+
+
+#Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
+#in the sidebar, and B) the expander for the errors is at the bottom of the body of the page.
+check_tags(df_original)
+
+if st.button('Clear cache'):
+     st.experimental_singleton.clear()
 
