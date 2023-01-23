@@ -109,13 +109,14 @@ site_columns = {
 }
 
 songs = [malesong, courtsong, altsong2, altsong1]
-song_columns = [data_columns[s] for s in songs]
+song_cols = [data_columns[s] for s in songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
 edge_c_tags = [tag_p1c, tag_p2c]  #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-all_tags = manual_tags + mini_manual_tags + edge_c_tags + edge_n_tags
+edge_tags = edge_c_tags + edge_n_tags
+all_tags = manual_tags + mini_manual_tags + edge_tags
 
 manual_cols = [data_columns[t] for t in manual_tags]
 mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
@@ -128,6 +129,8 @@ edge_cols = edge_c_cols + edge_n_cols #make list of the right length
 edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
 edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 
+
+#Constants for the graphing, so they can be shared across weather and blackbird graphs
 #For setting figure width and height, values in inches
 fig_w = 6.5
 fig_h = 1
@@ -146,7 +149,7 @@ files = {
     data_old_file : data_dir / data_old_file
 }
 
-PM_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
+pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
 #
 #
@@ -183,7 +186,7 @@ def make_date(row):
 @st.experimental_singleton(suppress_st_warning=True)
 def get_target_sites() -> dict:
     file_summary = {}
-    for t in PM_file_types:
+    for t in pm_file_types:
         file_summary[t] = []
     file_summary[bad_files] = []
     file_summary[site_str] = []
@@ -215,10 +218,10 @@ def get_target_sites() -> dict:
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
 
-                        if len(PM_file_types) != count_files_in_folder(item):
+                        if len(pm_file_types) != count_files_in_folder(item):
                             file_summary[bad_files].append('Wrong number of files: ' + item.name)
 
-                        for t in PM_file_types:
+                        for t in pm_file_types:
                             found_file = False
                             found_dir_in_subfolder = False
                             sub_items = os.scandir(item)
@@ -315,7 +318,7 @@ def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
     # Add the site name so we look into the appropriate folder
     site_dir = data_dir / site
-    for t in PM_file_types:
+    for t in pm_file_types:
         fname = site + ' ' + t + '.csv'
         full_file_name = site_dir / fname
         usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
@@ -416,7 +419,7 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
     if preserve_edges:
         # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
         # graph later, we'll use this to show where the edges of the analysis were
-        summary = summary.replace(to_replace=0, value=-1)
+        summary = summary.replace(to_replace=0, value=-99)
 
     return normalize_pt(summary, date_range_dict)
 
@@ -781,6 +784,10 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
         tmax = df.loc[df['datatype']=='TMAX']
         tmin = df.loc[df['datatype']=='TMIN']
 
+        #TODO Clean the data. For 2020 Hay Landfill, some of the precipitation data
+        #points are missing. So, need to add missing dates and set any values we added to 0
+
+
         # Build graph for data
         # Need to make it wider than the rest to accomodate the text on the vertical axes. 
         weather_fig_w = fig_w #+ (label_pad)/300
@@ -848,13 +855,8 @@ def check_tags(df: pd.DataFrame):
 #    if st.sidebar.checkbox('Show errors'):
     if True:
         #This selects all rows where the tag cols are > 0 and the song columns have '---' in them
-
         non_zero_rows = filter_df_by_tags(df, all_tag_cols)
-        bad_rows = filter_df_by_tags(non_zero_rows, song_columns, '==\'---\'')
-
-        #bad_rows = df[((df[data_columns[tag_wse]]>0) | (df[data_columns[tag_mhh]]>0) | (df[data_columns[tag_wsm]]>0) | (df[data_columns[tag_mhe]]>0)) & 
-        #              ((df[data_columns[malesong]]=='---') | (df[data_columns[altsong1]]=='---') | 
-        #               (df[data_columns[altsong2]]=='---') | (df[data_columns[courtsong]]=='---'))]
+        bad_rows = filter_df_by_tags(non_zero_rows, song_cols, '==\'---\'')
 
         with st.expander('See errors'):
             if not(bad_rows.empty):
@@ -864,7 +866,24 @@ def check_tags(df: pd.DataFrame):
             else:
                 st.write('No errors found')
 
+# Clean up a pivottable so we can display it as a table
+def make_friendly_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
+    pt = pd.DataFrame()
+    pt_temp = site_pt.transpose()
+    #Build the column name mapping (<ugly-tag-name> to 'My tag')
+    #While we're at it, copy the columns into a temp DF in the
+    #correct order (i.e. same order as the songs).
+    col_map = {}
+    for col in columns:
+        if col in pt_temp:
+            col_map[col] = friendly_names[col]
+            pt_temp[col] = pt_temp[col].astype(int)
+            pt = pd.concat([pt, pt_temp[col]], axis=1)
 
+    #rename the columns
+    pt.rename(columns=col_map, inplace=True)
+
+    return pt
 #
 #
 # Main
@@ -880,6 +899,9 @@ site_list = get_target_sites()
 df = clean_data(df_original, site_list[site_str])
 
 # Nuke the original data, hopefully this frees up memory
+#TODO If Wendy wants to see all errors in the data, then leave it this way because we need the entire 
+#file to do that. However, if she only wants errors for the current site, then we can put the next
+#two lines back.
 #del df_original
 #gc.collect()
 
@@ -912,7 +934,8 @@ for site in target_sites:
     #
     # Data Analysis
     # -------------
-    # We want a series of charts. The first chart is:
+    # 
+    # MANUAL ANALYSIS
     #   1. Select all rows where one of the following tags
     #       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
     #   2. Make a pivot table with the following columns:
@@ -924,16 +947,17 @@ for site in target_sites:
     
     #TODO If there is no data (this is only used for old sites), then don't output the graph
     df_manual = filter_df_by_tags(site_df, manual_cols)
-    manual_pt = make_pivot_table(df_manual, song_columns, date_range_dict)
+    manual_pt = make_pivot_table(df_manual, song_cols, date_range_dict)
 
-    # 
+    # MINI-MANUAL ANALYSIS
     # 1. Select all rows with one of the following tags:
     #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
     # 2. Make a pivot table as above
     #   
     df_mini_manual = filter_df_by_tags(site_df, mini_manual_cols)
-    mini_manual_pt = make_pivot_table(df_mini_manual, song_columns, date_range_dict)
+    mini_manual_pt = make_pivot_table(df_mini_manual, song_cols, date_range_dict)
 
+    # EDGE ANALYSIS
     #   1. Select all rows where one of the following tags
     #       P1C, P1N, P2C, P2N
     
@@ -962,18 +986,18 @@ for site in target_sites:
         #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
 
         # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        # for future graphing needs
+        # this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        # had tags but no songs
         pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
         pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
         edge_pt = pd.concat([edge_pt, pt_for_tag])
 
-    #
-    # Pattern Matching analysis
+    # PATTERN MATCHING ANALYSIS
     #
     df_pattern_match = load_pm_data(site, date_range_dict)
     pm_pt = pd.DataFrame()
 
-    for t in PM_file_types:
+    for t in pm_file_types:
         #For each file type, get the filtered range of just that type
         df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
         #Build the pivot table for it
@@ -997,14 +1021,14 @@ for site in target_sites:
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = manual_pt, 
-                        row_names = song_columns, 
+                        row_names = song_cols, 
                         cmap = cmap, 
                         title = (site + ' ' if save_files else '') + 'Manual Analysis')
     output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
 
     # Computer Assisted Analysis
     graph = create_graph(df = mini_manual_pt, 
-                        row_names = song_columns, 
+                        row_names = song_cols, 
                         cmap = cmap, 
                         raw_data = site_df,
                         draw_vert_rects = True,
@@ -1024,7 +1048,7 @@ for site in target_sites:
     # Pattern Matching Analysis
     cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
     graph = create_graph(df = pm_pt, 
-                        row_names = PM_file_types, 
+                        row_names = pm_file_types, 
                         cmap = cmap_pm, 
                         title = (site + ' ' if save_files else '') + 'Pattern Matching Analysis')
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
@@ -1037,15 +1061,56 @@ for site in target_sites:
         #st.write()
 
 
-if len(site_list[bad_files]) > 0:
-    with st.expander("See possibly bad filenames"):  
-        st.write(site_list[bad_files])
+if not make_all_graphs:
+    if len(site_list[bad_files]) > 0:
+        with st.expander("See possibly bad filenames"):  
+            st.write(site_list[bad_files])
 
+    # Show the table with all the raw data
+    with st.expander("See raw data"):
+        #Used for making the summary pivot table
+        friendly_names = {data_columns[malesong] : 'M-Male', 
+                          data_columns[courtsong]: 'M-Chorus',
+                          data_columns[altsong2] : 'M-Female', 
+                          data_columns[altsong1] : 'M-Nestling'
+        }
+        summary = []
+        summary.append(make_friendly_pt(manual_pt, song_cols, friendly_names))
+        
+        friendly_names = {data_columns[malesong] : 'MM-Male', 
+                          data_columns[courtsong]: 'MM-Chorus',
+                          data_columns[altsong2] : 'MM-Female', 
+                          data_columns[altsong1] : 'MM-Nestling'
+        }
+        summary.append(make_friendly_pt(mini_manual_pt, song_cols, friendly_names))
 
-#Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
-#in the sidebar, and B) the expander for the errors is at the bottom of the body of the page.
-check_tags(df_original)
+        friendly_names =   {data_columns[tag_p1c]: 'E-P1C',
+                            data_columns[tag_p1n]: 'E-P1N',
+                            data_columns[tag_p2c]: 'E-P2C',
+                            data_columns[tag_p2n]: 'E-P2N'
+        }
+        summary.append(make_friendly_pt(edge_pt, edge_cols, friendly_names))
 
-if st.button('Clear cache'):
-     st.experimental_singleton.clear()
+        friendly_names =   {pm_file_types[0]: 'PM-M',
+                            pm_file_types[1]: 'PM-F',
+                            pm_file_types[2]: 'PM-YN',
+                            pm_file_types[3]: 'PM-MN',
+                            pm_file_types[4]: 'PM-ON'
+        }
+        summary.append(make_friendly_pt(pm_pt, pm_file_types, friendly_names))
 
+        #how to handle weather?
+
+        union_pt = pd.concat(summary, axis=1)
+
+        union_pt.sort_index(ascending=True, inplace=True)
+        union_pt.reset_index(inplace=True)
+        union_pt['index'] = union_pt['index'].dt.strftime('%m-%d-%y')
+        st.dataframe(union_pt)
+
+    #Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
+    #in the sidebar, and B) the expander for the errors is at the bottom of the body of the page.
+    check_tags(df_original)
+
+    if st.button('Clear cache'):
+        st.experimental_singleton.clear()
