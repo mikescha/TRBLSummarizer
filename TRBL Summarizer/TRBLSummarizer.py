@@ -443,7 +443,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2022 Colusa NWR 27.1')
+    #return('2019 Hay Landfill')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -623,7 +623,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
         # and not that it's just hard to read!
         if df_clean.loc[row].sum() == 0:
-            axs[i].text(0.5,0.8,'No data for ' + row, fontsize='small', fontstyle='italic', color='gray')
+            axs[i].text(0.5,0.8,'No data for ' + row, fontsize='x-small', fontstyle='italic', color='gray')
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
@@ -735,8 +735,7 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             save_figure(site, graph_type)
     else:
         #No data, so show a message instead. 
-        #WENDY: If "save_files" is true, then we just delete the file if it happened to exist. 
-        #Is this what you want? or empty file?
+        #TODO write an empty file in this case
         save_figure(site, graph_type, delete_only=True)
         site_name_text = '<p style="font-family:sans-serif; color:Black; font-size: 16px;"><b>{}</b></p>'.format(graph_type)
         st.write(site_name_text, unsafe_allow_html=True)
@@ -912,14 +911,17 @@ def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) ->
 # way, the cell in question gets formatted using props if the value is zero. 
 # It would be called like this:
 #        #union_pt = union_pt.style.applymap(style_zero, props='color:gray;')
+#
+#https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html
 def style_zero(v, props=''):
     return props if v == 0 else None
 
-#In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
+# In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
 # a date, or a date. This is to make non-zero values that aren't dates easier to see.
+# Color options: https://www.w3schools.com/colors/colors_names.asp
 def style_cells(v):
     zeroprops = 'color:gray'
-    nonzeroprops = 'color:black;background-color:YellowGreen;'
+    nonzeroprops = 'color:black;background-color:YellowGreen;text-align:center'
     result = ''
     if v == 0:
         result = zeroprops
@@ -928,6 +930,34 @@ def style_cells(v):
     else: #it must be a non-date, non-zero value so format it to call it out
         result = nonzeroprops
     return result
+
+
+# Retrieve the start and end dates for the analysis from the sidebar and format them appropriately
+def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
+    #TODO Need to ensure the rows aren't missing
+    pt_site = pt_site.transpose()
+    output = {}
+    for song in song_cols:
+        output[song] = {}
+        d = pt_site[pt_site[song]>0]
+        if d.empty:
+            output[song]['First'] = 'n/a'
+            output[song]['First count'] = '0'
+        else:
+            output[song]['First'] = d.index[0].strftime('%x')
+            output[song]['First count'] = str(d.iloc[0][song])
+    
+    pt_site.sort_index(ascending=False, inplace=True)
+    for song in song_cols:
+        d = pt_site[pt_site[song]>0]
+        if d.empty:
+            output[song]['Last'] = 'n/a'
+            output[song]['Last count'] = '0'
+        else:
+            output[song]['Last'] = d.index[0].strftime('%x')
+            output[song]['Last count'] = str(d.iloc[0][song])
+    return output
+
 
 #
 #
@@ -967,14 +997,14 @@ site_counter = 0
 for site in target_sites:
     site_counter += 1
     # Select the site matching the one of interest
-    site_df = df[df[data_columns[site_str]] == site]
+    df_site = df[df[data_columns[site_str]] == site]
 
-    if site_df.empty:
+    if df_site.empty:
         st.write('Site {} has no recordings'.format(site))
         break
 
     #Using the site of interest, get the first & last dates and give the user the option to customize the range
-    date_range_dict = get_date_range(site_df, make_all_graphs)
+    date_range_dict = get_date_range(df_site, make_all_graphs)
 
     #
     # Data Analysis
@@ -989,7 +1019,7 @@ for site in target_sites:
     #       The number of recordings from that set that have AltSong2 >= 1
     #       The number of recordings from that set that have AltSong >= 1 
     #     
-    df_manual = filter_df_by_tags(site_df, manual_cols)
+    df_manual = filter_df_by_tags(df_site, manual_cols)
     pt_manual = make_pivot_table(df_manual, song_cols, date_range_dict)
 
     # MINI-MANUAL ANALYSIS
@@ -997,7 +1027,7 @@ for site in target_sites:
     #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
     # 2. Make a pivot table as above
     #   
-    df_mini_manual = filter_df_by_tags(site_df, mini_manual_cols)
+    df_mini_manual = filter_df_by_tags(df_site, mini_manual_cols)
     pt_mini_manual = make_pivot_table(df_mini_manual, song_cols, date_range_dict)
 
     # EDGE ANALYSIS
@@ -1018,7 +1048,7 @@ for site in target_sites:
     pt_edge = pd.DataFrame()
     edge_data_empty = False
     for tag in edge_cols:
-        df_for_tag = filter_df_by_tags(site_df, [tag])
+        df_for_tag = filter_df_by_tags(df_site, [tag])
         edge_data_empty = edge_data_empty or len(df_for_tag)
         if tag in edge_c_cols:
             target_col = data_columns[courtsong]
@@ -1074,7 +1104,7 @@ for site in target_sites:
     graph = create_graph(df = pt_mini_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
-                        raw_data = site_df,
+                        raw_data = df_site,
                         draw_vert_rects = True,
                         title = (site + ' ' if save_files else '') + 'Mini Manual Analysis')
     output_graph(site, 'Mini Manual', save_files, make_all_graphs, len(df_mini_manual))
@@ -1084,7 +1114,7 @@ for site in target_sites:
     graph = create_graph(df = pt_edge, 
                         row_names = edge_cols,
                         cmap = cmap_edge, 
-                        raw_data = site_df,
+                        raw_data = df_site,
                         draw_horiz_rects = True,
                         title = (site + ' ' if save_files else '') + 'Edge Analysis')
     output_graph(site, 'Edge Analysis', save_files, make_all_graphs, edge_data_empty)
@@ -1105,11 +1135,7 @@ for site in target_sites:
         output_graph(site, "Weather Data", save_files, make_all_graphs)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
-if not make_all_graphs and len(site_df):
-    if len(site_list[bad_files]) > 0:
-        with st.expander("See possibly bad filenames"):  
-            st.write(site_list[bad_files])
-
+if not make_all_graphs and len(df_site):
     # Show the table with all the raw data
     with st.expander("See raw data"):
         #Used for making the summary pivot table
@@ -1153,23 +1179,74 @@ if not make_all_graphs and len(site_df):
                 weather_data[t] = weather_data[t].astype(int)
         summary.append(weather_data)
 
-        #The variable Summary is a list of each dataframe. Now, take all the data and concat it into 
+        # The variable Summary is a list of each dataframe. Now, take all the data and concat it into 
         #a single table
         union_pt = pd.concat(summary, axis=1)
 
-        #TODO Are the next two lines needed?
-        union_pt.sort_index(ascending=True, inplace=True)
+        # Pop the index out so that we can format it, do this by resetting the index so each 
+        # row just gets a number index
         union_pt.reset_index(inplace=True)
-        
-        #Format the summary table so it's easy to read and output it 
         union_pt.rename(columns={'index':'Date'}, inplace=True)
+
+        # Format the summary table so it's easy to read and output it 
+        # Learn about formatting
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#
         union_pt = union_pt.style.applymap(style_cells)
-        union_pt = union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m/%d/%y')})
+        union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m-%d-%y')})
         st.dataframe(union_pt)
+
+    # Put a box with first and last dates for the Song columns, with counts on that date
+    with st.expander("See summary of first and last dates"):  
+        output = get_first_and_last_dates(make_pivot_table(df_site, song_cols, date_range_dict))
+        output_df = pd.DataFrame.from_dict(output)
+
+        # Formatting note
+        # Note that the line that should work to set alignment doesn't if we are outputting
+        # the table using st.dataframe or st.table. I can set color this way, but alignment
+        # appears to be ignored.
+        #  
+        # The only way to get it to work is to write the table out using st.write, which is
+        # OK for a little table like this but bad for the data table because st.write doesn't
+        # give the interactive table where you scroll to see rows and columns, it puts all 
+        # the data on the page at once!  
+        #
+        # So, eventually all this formatting junk should be moved to a functiona and cleaned up.
+        # style
+
+        # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
+        for col in output_df.columns:
+            new_name = col.replace('<',' ')
+            new_name = new_name.replace('>', ' ')
+            output_df.rename(columns={col:new_name},inplace=True)
+
+        th_props = [
+        ('font-size', '14px'),
+        ('text-align', 'center'),
+        ('font-weight', 'bold'),
+        ('color', '#6d6d6d'),
+        ('background-color', '#f7ffff')
+        ]
+                                    
+        td_props = [
+        ('font-size', '12px')
+        ]
+                                        
+        styles = [
+        dict(selector="th", props=th_props),
+        dict(selector="td", props=td_props)
+        ]
+
+        # table
+        df2=output_df.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
+        st.write(df2.to_html(), unsafe_allow_html=True)
 
     #Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
     #in the sidebar, and B) the expander for the errors is at the bottom of the body of the page.
     check_tags(df_original)
+
+    if len(site_list[bad_files]) > 0:
+        with st.expander("See possibly bad filenames"):  
+            st.write(site_list[bad_files])
 
     if st.button('Clear cache'):
         st.experimental_singleton.clear()
