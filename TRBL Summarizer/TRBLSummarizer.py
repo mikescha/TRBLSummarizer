@@ -11,6 +11,8 @@ import os
 import calendar
 from collections import Counter
 from itertools import tee
+import random
+
 #to force garbage collection and reduce memory use
 import gc
 
@@ -310,37 +312,39 @@ def load_data() -> pd.DataFrame:
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 # These are the files from all the folders named by site. 
 # Note that if there is no data, then there will be an empty file
+# However, if there any missing files then we should return an empty DF
 def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 
-    # For each type of file for this site (which has already been validated that they exist), load the file. 
+    # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building.
     df = pd.DataFrame()
 
     # Add the site name so we look into the appropriate folder
     site_dir = data_dir / site
-    for t in pm_file_types:
-        fname = site + ' ' + t + '.csv'
-        full_file_name = site_dir / fname
-        usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
-                site_columns['day'], site_columns[validated]]
+    if os.path.isdir(site_dir):
+        for t in pm_file_types:
+            fname = site + ' ' + t + '.csv'
+            full_file_name = site_dir / fname
+            usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
+                    site_columns['day'], site_columns[validated]]
 
-        df_temp = pd.DataFrame()
-        if is_non_zero_file(full_file_name):
-            #Validate that all columns exist
-            headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
-            #TODO: what if the number of columns is wrong, just continue and get an exception or somehow fail?
-            confirm_columns(site_columns, headers, fname)
+            df_temp = pd.DataFrame()
+            if is_non_zero_file(full_file_name):
+                #Validate that all columns exist
+                headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
+                #TODO: what if the number of columns is wrong, just continue and get an exception or somehow fail?
+                confirm_columns(site_columns, headers, fname)
 
-            df_temp = pd.read_csv(full_file_name, usecols=usecols)
-            df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                df_temp = pd.read_csv(full_file_name, usecols=usecols)
+                df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
 
-        else: # if the file is empty, make an empty table so the graphing code has something to work with
-            df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
-            df_temp[validated] = 0
-            #pt = pt.reindex(date_range).fillna(0)
+            else: # if the file is empty, make an empty table so the graphing code has something to work with
+                df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
+                df_temp[validated] = 0
+                #pt = pt.reindex(date_range).fillna(0)
 
-        df_temp['type'] = t
-        df = pd.concat([df, df_temp])
+            df_temp['type'] = t
+            df = pd.concat([df, df_temp])
 
     return df
 
@@ -439,7 +443,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2021 Markham Ravine')
+    #return('2022 Colusa NWR 27.1')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -565,6 +569,9 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
                  draw_vert_rects=False, draw_horiz_rects=False,title='') -> plt.figure:
+    if len(df) == 0:
+        return
+
     row_count = len(row_names)
     graph_drawn = []
     
@@ -612,10 +619,17 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                         cbar = False,
                         xticklabels = tick_spacing,
                         yticklabels = False)
-        #track which graphs we drew, so we can put the proper ticks on later
+        
+        # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
+        # and not that it's just hard to read!
+        if df_clean.loc[row].sum() == 0:
+            axs[i].text(0.5,0.8,'No data for ' + row, fontsize='small', fontstyle='italic', color='gray')
+
+        # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
             
-        #Add a rectangle around the regions of consective tags, and a line between non-consectutive if it's a N tag
+        # Add a rectangle around the regions of consective tags, and a line between 
+        # non-consectutive if it's a N tag.
         if draw_horiz_rects and row in df_clean.index:
             df_col_nonzero = df.loc[row].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
@@ -656,7 +670,6 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                         # The +1/-1 are because we don't want to draw on top of the days, just between the days
                         axs[i].add_patch(patches.Rectangle((borders[x]+1,0.48), borders[x+1]-borders[x]-1, 0.04, ec=c, fc=c, fill=True)) 
         i += 1
-    
         
     # add a rect around each day that has some data
     if draw_vert_rects and len(raw_data)>0:
@@ -699,27 +712,40 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     return fig
 
 # Save the graphic to a different folder. All file-related options are managed from here.
-def save_figure(site:str, graph_type:str):
+def save_figure(site:str, graph_type:str, delete_only=False):
     filename = site + ' - ' + graph_type + '.png'
     figure_path = Path(__file__).parents[0] / 'Figures/' / filename
     #If the file exists then delete it, so that we make sure a new one is written
     if os.path.isfile(figure_path):
         os.remove(figure_path)
-    plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+    
+    if not delete_only:
+        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
     plt.close()
 
-def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool):
-    
-    if make_all_graphs:
-        #st.write(graph_type)
-        pass
-    else:
-        #st.subheader(graph_type)
-        st.write(graph)
+def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
+    if data_to_graph:
+        if make_all_graphs:
+            pass
+        else:
+            st.write(graph)
 
-    if make_all_graphs or save_files:
-        graph_type = graph_type.replace(' ', '_')
-        save_figure(site, graph_type)
+        if make_all_graphs or save_files:
+            graph_type = graph_type.replace(' ', '_')
+            save_figure(site, graph_type)
+    else:
+        #No data, so show a message instead. 
+        #WENDY: If "save_files" is true, then we just delete the file if it happened to exist. 
+        #Is this what you want? or empty file?
+        save_figure(site, graph_type, delete_only=True)
+        site_name_text = '<p style="font-family:sans-serif; color:Black; font-size: 16px;"><b>{}</b></p>'.format(graph_type)
+        st.write(site_name_text, unsafe_allow_html=True)
+
+        # https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
+        emoji = [':woman-shrugging:', ':crying_cat_face:', ':slightly_frowning_face:', 
+                 ':see_no_evil:', ':no_entry_sign:', ':cry:', ':thumbsdown:']
+        st.write('No data available ' + random.choice(emoji))
+
 
 def output_text(text:str, make_all_graphs:bool):
     if make_all_graphs:
@@ -963,10 +989,8 @@ for site in target_sites:
     #       The number of recordings from that set that have AltSong2 >= 1
     #       The number of recordings from that set that have AltSong >= 1 
     #     
-    
-    #TODO If there is no data (this is only used for old sites), then don't output the graph
     df_manual = filter_df_by_tags(site_df, manual_cols)
-    manual_pt = make_pivot_table(df_manual, song_cols, date_range_dict)
+    pt_manual = make_pivot_table(df_manual, song_cols, date_range_dict)
 
     # MINI-MANUAL ANALYSIS
     # 1. Select all rows with one of the following tags:
@@ -974,7 +998,7 @@ for site in target_sites:
     # 2. Make a pivot table as above
     #   
     df_mini_manual = filter_df_by_tags(site_df, mini_manual_cols)
-    mini_manual_pt = make_pivot_table(df_mini_manual, song_cols, date_range_dict)
+    pt_mini_manual = make_pivot_table(df_mini_manual, song_cols, date_range_dict)
 
     # EDGE ANALYSIS
     #   1. Select all rows where one of the following tags
@@ -991,9 +1015,11 @@ for site in target_sites:
     #   
     #TODO add the new things having to do with ONC and YNC tags
 
-    edge_pt = pd.DataFrame()
+    pt_edge = pd.DataFrame()
+    edge_data_empty = False
     for tag in edge_cols:
         df_for_tag = filter_df_by_tags(site_df, [tag])
+        edge_data_empty = edge_data_empty or len(df_for_tag)
         if tag in edge_c_cols:
             target_col = data_columns[courtsong]
         else:
@@ -1009,20 +1035,22 @@ for site in target_sites:
         # had tags but no songs
         pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
         pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
-        edge_pt = pd.concat([edge_pt, pt_for_tag])
+        pt_edge = pd.concat([pt_edge, pt_for_tag])
 
     # PATTERN MATCHING ANALYSIS
     #
     df_pattern_match = load_pm_data(site, date_range_dict)
-    pm_pt = pd.DataFrame()
-
-    for t in pm_file_types:
-        #For each file type, get the filtered range of just that type
-        df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
-        #Build the pivot table for it
-        pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
-        #Concat as above
-        pm_pt = pd.concat([pm_pt, pt_for_file_type])
+    pt_pm = pd.DataFrame()
+    pm_data_empty = False
+    if len(df_pattern_match):
+        for t in pm_file_types:
+            #For each file type, get the filtered range of just that type
+            df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
+            pm_data_empty = pm_data_empty or len(df_for_file_type)
+            #Build the pivot table for it
+            pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
+            #Concat as above
+            pt_pm = pd.concat([pt_pm, pt_for_file_type])
 
     # ------------------------------------------------------------------------------------------------
     # DISPLAY
@@ -1034,43 +1062,40 @@ for site in target_sites:
     if st.sidebar.checkbox('Show station info', value=True):
         show_station_info(site)
 
-    #TODO If there is data but the value is all zeroes, then show something nice instead of the empty
-    #graph, since the empty graph looks like a bug
-
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
-    graph = create_graph(df = manual_pt, 
+    graph = create_graph(df = pt_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
                         title = (site + ' ' if save_files else '') + 'Manual Analysis')
-    output_graph(site, 'Manual Analysis', save_files, make_all_graphs)
+    output_graph(site, 'Manual Analysis', save_files, make_all_graphs, len(df_manual))
 
     # Computer Assisted Analysis
-    graph = create_graph(df = mini_manual_pt, 
+    graph = create_graph(df = pt_mini_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
                         raw_data = site_df,
                         draw_vert_rects = True,
                         title = (site + ' ' if save_files else '') + 'Mini Manual Analysis')
-    output_graph(site, 'Mini Manual', save_files, make_all_graphs)
+    output_graph(site, 'Mini Manual', save_files, make_all_graphs, len(df_mini_manual))
 
     # Edge Analysis
     cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
-    graph = create_graph(df = edge_pt, 
+    graph = create_graph(df = pt_edge, 
                         row_names = edge_cols,
                         cmap = cmap_edge, 
                         raw_data = site_df,
                         draw_horiz_rects = True,
                         title = (site + ' ' if save_files else '') + 'Edge Analysis')
-    output_graph(site, 'Edge Analysis', save_files, make_all_graphs)
+    output_graph(site, 'Edge Analysis', save_files, make_all_graphs, edge_data_empty)
 
     # Pattern Matching Analysis
     cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
-    graph = create_graph(df = pm_pt, 
+    graph = create_graph(df = pt_pm, 
                         row_names = pm_file_types, 
                         cmap = cmap_pm, 
                         title = (site + ' ' if save_files else '') + 'Pattern Matching Analysis')
-    output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs)
+    output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs, pm_data_empty)
 
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather', True):
@@ -1079,7 +1104,8 @@ for site in target_sites:
         graph = create_weather_graph(weather_df, site, date_range_dict)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
 
-if not make_all_graphs:
+#If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
+if not make_all_graphs and len(site_df):
     if len(site_list[bad_files]) > 0:
         with st.expander("See possibly bad filenames"):  
             st.write(site_list[bad_files])
@@ -1093,21 +1119,21 @@ if not make_all_graphs:
                           data_columns[altsong1] : 'M-Nestling'
         }
         summary = []
-        summary.append(make_summary_pt(manual_pt, song_cols, friendly_names))
+        summary.append(make_summary_pt(pt_manual, song_cols, friendly_names))
         
         friendly_names = {data_columns[malesong] : 'MM-Male', 
                           data_columns[courtsong]: 'MM-Chorus',
                           data_columns[altsong2] : 'MM-Female', 
                           data_columns[altsong1] : 'MM-Nestling'
         }
-        summary.append(make_summary_pt(mini_manual_pt, song_cols, friendly_names))
+        summary.append(make_summary_pt(pt_mini_manual, song_cols, friendly_names))
 
         friendly_names =   {data_columns[tag_p1c]: 'E-P1C',
                             data_columns[tag_p1n]: 'E-P1N',
                             data_columns[tag_p2c]: 'E-P2C',
                             data_columns[tag_p2n]: 'E-P2N'
         }
-        summary.append(make_summary_pt(edge_pt, edge_cols, friendly_names))
+        summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
 
         friendly_names =   {pm_file_types[0]: 'PM-M',
                             pm_file_types[1]: 'PM-F',
@@ -1115,7 +1141,7 @@ if not make_all_graphs:
                             pm_file_types[3]: 'PM-MN',
                             pm_file_types[4]: 'PM-ON'
         }
-        summary.append(make_summary_pt(pm_pt, pm_file_types, friendly_names))
+        summary.append(make_summary_pt(pt_pm, pm_file_types, friendly_names))
 
         #Add weather at the end
         weather_data = pd.DataFrame()
