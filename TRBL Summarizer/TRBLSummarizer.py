@@ -765,15 +765,15 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> pd.DataFrame:
     if site_name in df.index:
         site_weather = df.loc[[site_name]]
         site_weather = site_weather.set_index('date')
+        #TODO Clean the data. For 2020 Hay Landfill, some of the precipitation data
+        #points are missing. So, need to add missing dates and set any values we added to 0
+            
     else:
         show_error('No weather available for ' + site_name)
-        
+
     return site_weather
 
-def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
-    # Load and parse weather data
-    df = get_weather_data(site_name, date_range_dict)
-
+def create_weather_graph(df: pd.DataFrame, site_name:str, date_range_dict:dict) -> plt.figure:
     #Defaults for the Y Axis labels
     font_size = 14
     label_pad = 20
@@ -783,10 +783,6 @@ def create_weather_graph(site_name:str, date_range_dict:dict) -> plt.figure:
         prcp = df.loc[df['datatype']=='PRCP']
         tmax = df.loc[df['datatype']=='TMAX']
         tmin = df.loc[df['datatype']=='TMIN']
-
-        #TODO Clean the data. For 2020 Hay Landfill, some of the precipitation data
-        #points are missing. So, need to add missing dates and set any values we added to 0
-
 
         # Build graph for data
         # Need to make it wider than the rest to accomodate the text on the vertical axes. 
@@ -867,7 +863,7 @@ def check_tags(df: pd.DataFrame):
                 st.write('No errors found')
 
 # Clean up a pivottable so we can display it as a table
-def make_friendly_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
+def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
     pt = pd.DataFrame()
     pt_temp = site_pt.transpose()
     #Build the column name mapping (<ugly-tag-name> to 'My tag')
@@ -882,8 +878,31 @@ def make_friendly_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -
 
     #rename the columns
     pt.rename(columns=col_map, inplace=True)
-
     return pt
+
+#Used for formatting output table
+#The function can take at most one paramenter. In this case, if there is a param and the 
+# value passed in is zero, then we use the props that are passed in, otherwise none. In this
+# way, the cell in question gets formatted using props if the value is zero. 
+# It would be called like this:
+#        #union_pt = union_pt.style.applymap(style_zero, props='color:gray;')
+def style_zero(v, props=''):
+    return props if v == 0 else None
+
+#In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
+# a date, or a date. This is to make non-zero values that aren't dates easier to see.
+def style_cells(v):
+    zeroprops = 'color:gray'
+    nonzeroprops = 'color:black;background-color:YellowGreen;'
+    result = ''
+    if v == 0:
+        result = zeroprops
+    elif type(v) == type(pd.Timestamp.now()): #if it's a date, do nothing
+        result = ''
+    else: #it must be a non-date, non-zero value so format it to call it out
+        result = nonzeroprops
+    return result
+
 #
 #
 # Main
@@ -1055,11 +1074,10 @@ for site in target_sites:
 
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather', True):
-        graph = create_weather_graph(site, date_range_dict)
+        # Load and parse weather data
+        weather_df = get_weather_data(site, date_range_dict)
+        graph = create_weather_graph(weather_df, site, date_range_dict)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
-        #st.subheader('Weather Data')
-        #st.write()
-
 
 if not make_all_graphs:
     if len(site_list[bad_files]) > 0:
@@ -1075,21 +1093,21 @@ if not make_all_graphs:
                           data_columns[altsong1] : 'M-Nestling'
         }
         summary = []
-        summary.append(make_friendly_pt(manual_pt, song_cols, friendly_names))
+        summary.append(make_summary_pt(manual_pt, song_cols, friendly_names))
         
         friendly_names = {data_columns[malesong] : 'MM-Male', 
                           data_columns[courtsong]: 'MM-Chorus',
                           data_columns[altsong2] : 'MM-Female', 
                           data_columns[altsong1] : 'MM-Nestling'
         }
-        summary.append(make_friendly_pt(mini_manual_pt, song_cols, friendly_names))
+        summary.append(make_summary_pt(mini_manual_pt, song_cols, friendly_names))
 
         friendly_names =   {data_columns[tag_p1c]: 'E-P1C',
                             data_columns[tag_p1n]: 'E-P1N',
                             data_columns[tag_p2c]: 'E-P2C',
                             data_columns[tag_p2n]: 'E-P2N'
         }
-        summary.append(make_friendly_pt(edge_pt, edge_cols, friendly_names))
+        summary.append(make_summary_pt(edge_pt, edge_cols, friendly_names))
 
         friendly_names =   {pm_file_types[0]: 'PM-M',
                             pm_file_types[1]: 'PM-F',
@@ -1097,15 +1115,30 @@ if not make_all_graphs:
                             pm_file_types[3]: 'PM-MN',
                             pm_file_types[4]: 'PM-ON'
         }
-        summary.append(make_friendly_pt(pm_pt, pm_file_types, friendly_names))
+        summary.append(make_summary_pt(pm_pt, pm_file_types, friendly_names))
 
-        #how to handle weather?
+        #Add weather at the end
+        weather_data = pd.DataFrame()
+        weather_data_types = ['TMAX', 'TMIN', 'PRCP']
+        for t in weather_data_types:
+            weather_data = pd.concat([weather_data, weather_df[weather_df['datatype']==t]['value']], axis=1)
+            weather_data.rename(columns={'value':t}, inplace=True)
+            if t != 'PRCP':
+                weather_data[t] = weather_data[t].astype(int)
+        summary.append(weather_data)
 
+        #The variable Summary is a list of each dataframe. Now, take all the data and concat it into 
+        #a single table
         union_pt = pd.concat(summary, axis=1)
 
+        #TODO Are the next two lines needed?
         union_pt.sort_index(ascending=True, inplace=True)
         union_pt.reset_index(inplace=True)
-        union_pt['index'] = union_pt['index'].dt.strftime('%m-%d-%y')
+        
+        #Format the summary table so it's easy to read and output it 
+        union_pt.rename(columns={'index':'Date'}, inplace=True)
+        union_pt = union_pt.style.applymap(style_cells)
+        union_pt = union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m/%d/%y')})
         st.dataframe(union_pt)
 
     #Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
@@ -1114,3 +1147,5 @@ if not make_all_graphs:
 
     if st.button('Clear cache'):
         st.experimental_singleton.clear()
+
+    
