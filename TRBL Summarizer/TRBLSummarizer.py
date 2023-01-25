@@ -113,9 +113,10 @@ site_columns = {
 songs = [malesong, courtsong, altsong2, altsong1]
 song_cols = [data_columns[s] for s in songs]
 
+#TODO When we get a new data file, update all these lists
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-edge_c_tags = [tag_p1c, tag_p2c]  #male chorus
+edge_c_tags = [tag_p1c, tag_p2c] #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
 edge_tags = edge_c_tags + edge_n_tags
 all_tags = manual_tags + mini_manual_tags + edge_tags
@@ -124,7 +125,6 @@ manual_cols = [data_columns[t] for t in manual_tags]
 mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
 edge_c_cols = [data_columns[t] for t in edge_c_tags]
 edge_n_cols = [data_columns[t] for t in edge_n_tags]
-
 all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
@@ -153,6 +153,8 @@ files = {
 
 pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
+missing_data_flag = -100
+preserve_edges_flag = -99
 #
 #
 # Helper functions
@@ -380,10 +382,11 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 
         df_clean = pd.concat([df_clean, df_site])
     
-    # We need to preserve the diff between no data and 0 tags. But, we have to also make everything integers for
-    # later processing. So, we'll replace the hyphens with -100 and then just realize that we can't do math on this
-    # column any more without excluding the -100s. Picked -100 because if we do do math then the answer will be obviously wrong!
-    df_clean = df_clean.replace('---', -100)
+    # We need to preserve the diff between no data and 0 tags. But, we have to also make everything 
+    # integers for later processing. So, we'll replace the hyphens with a special value and then just 
+    # realize that we can't do math on this column any more without excluding it. Picked -100 because 
+    # if we do do math then the answer will be obviously wrong!
+    df_clean = df_clean.replace('---', missing_data_flag)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in songs:
@@ -398,7 +401,10 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 #  
 
 # Get the subset of rows where there's at least one tag, i.e. the count of any tag is greater than zero
-# See here for an explanation of the next couple lines: https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
+# See here for an explanation of the next couple lines: 
+# https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
+# filter_str is '>0' by default because that's what most queries involve, but if a 
+# different string is passed in then we use that instead. 
 def filter_df_by_tags(site_df:pd.DataFrame, target_tags:list, filter_str='>0') -> pd.DataFrame:
     # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
     query = ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags])
@@ -423,7 +429,7 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
     if preserve_edges:
         # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
         # graph later, we'll use this to show where the edges of the analysis were
-        summary = summary.replace(to_replace=0, value=-99)
+        summary = summary.replace(to_replace=0, value=preserve_edges_flag)
 
     return normalize_pt(summary, date_range_dict)
 
@@ -443,7 +449,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2019 Hay Landfill')
+    return('2019 Rush Ranch')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -600,9 +606,9 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         if row not in df.index:
             df.loc[row]=pd.Series(0,index=df.columns)
 
-    # Set a mask ("NaN" since the value isn't specified) on the zero values so that we can force them to display as white. 
-    # Keep the original data as we need it for drawing later. Use '<=0' because -100 is used to differentiate no data 
-    # from data with zero value
+    # Set a mask ("NaN" since the value isn't specified) on the zero values so that we can force them 
+    # to display as white. Keep the original data as we need it for drawing later. Use '<=0' because negative
+    # numbers are used to differentiate no data from data with zero value
     df_clean = df.mask(df <= 0)
 
     i=0
@@ -851,6 +857,89 @@ def create_weather_graph(df: pd.DataFrame, site_name:str, date_range_dict:dict) 
 #
 # Bonus functions
 #
+
+
+#Used for formatting output table
+#The function can take at most one paramenter. In this case, if there is a param and the 
+# value passed in is zero, then we use the props that are passed in, otherwise none. In this
+# way, the cell in question gets formatted using props if the value is zero. 
+# It would be called like this:
+#        #union_pt = union_pt.style.applymap(style_zero, props='color:gray;')
+#
+#https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html
+def style_zero(v, props=''):
+    return props if v == 0 else None
+
+# In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
+# a date, or a date. This is to make non-zero values that aren't dates easier to see.
+# Color options: https://www.w3schools.com/colors/colors_names.asp
+def style_cells(v):
+    zeroprops = 'color:gray;'
+    nonzeroprops = 'color:black;background-color:YellowGreen;text-align:center;'
+    result = ''
+    if v == 0:
+        result = zeroprops
+    elif type(v) == type(pd.Timestamp.now()): #if it's a date, do nothing
+        result = ''
+    else: #it must be a non-date, non-zero value so format it to call it out
+        result = nonzeroprops
+    return result
+
+def style_center_align(s, props='text-align: center;'):
+    return props
+
+# For pretty printing a table
+def pretty_print_table(df:pd.DataFrame):
+    # Do this so that the original DF doesn't get edited, because of how Python handles parameters 
+    output_df = df
+    # Formatting note
+    # Note that the line that should work to set alignment doesn't if we are outputting
+    # the table using st.dataframe or st.table. I can set color this way, but alignment
+    # appears to be ignored.
+    #  
+    # The only way to get it to work is to write the table out using st.write, which is
+    # OK for a little table like this but bad for the data table because st.write doesn't
+    # give the interactive table where you scroll to see rows and columns, it puts all 
+    # the data on the page at once!  
+    #
+    # So, eventually all this formatting junk should be moved to a functiona and cleaned up.
+    # style
+
+    # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
+    for col in output_df.columns:
+        new_name = col.replace('<',' ')
+        new_name = new_name.replace('>', ' ')
+        output_df.rename(columns={col:new_name},inplace=True)
+
+    th_props = [
+    ('font-size', '14px'),
+    ('text-align', 'center'),
+    ('font-weight', 'bold'),
+    ('color', '#6d6d6d'),
+    ('background-color', '#f7ffff')
+    ]
+                                
+    td_props = [
+    ('font-size', '12px')
+    ]
+                                    
+    styles = [
+    dict(selector="th", props=th_props),
+    dict(selector="td", props=td_props)
+    ]
+
+    # apply table formatting from above
+    output_df=output_df.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
+    #If there is a Date column then format it correctly
+    if 'Date' in output_df.columns:
+        output_df.format(formatter={'Date':lambda x:x.strftime('%m-%d-%y')})
+
+    #Currently the centering isn't working. The following does center the text but then we lose
+    #the scrolling feature
+    #st.write(output_df.to_html(), unsafe_allow_html=True)
+    st.table(output_df)
+
+
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
     df = pd.read_csv(files[site_info_file])
@@ -873,19 +962,37 @@ def show_station_info(site_name:str):
 #    check that all "val" columns have a number. 
 #    If any of them have a "---" or not a number then print out the filename of that row.
 def check_tags(df: pd.DataFrame):
-#    if st.sidebar.checkbox('Show errors'):
-    if True:
-        #This selects all rows where the tag cols are > 0 and the song columns have '---' in them
-        non_zero_rows = filter_df_by_tags(df, all_tag_cols)
-        bad_rows = filter_df_by_tags(non_zero_rows, song_cols, '==\'---\'')
 
-        with st.expander('See errors'):
-            if not(bad_rows.empty):
-                bad = bad_rows.sort_values(by='filename')
-                st.write('Total errors: {}'.format(len(bad)))
-                st.write(bad_rows)
-            else:
-                st.write('No errors found')
+    if True or st.sidebar.checkbox('Show errors'):
+        bad_rows = pd.DataFrame()                                               
+        #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
+        non_zero_rows = filter_df_by_tags(df, [data_columns[tag_mhm], 
+                                               data_columns[tag_wsm]])
+        bad_rows = pd.concat([bad_rows, 
+                              filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
+
+        #P1C, P2C throws an error if it's missing courtsong song
+        non_zero_rows = filter_df_by_tags(df, edge_c_cols)
+        bad_rows = pd.concat([bad_rows,
+                              filter_df_by_tags(non_zero_rows, [data_columns[courtsong]], '=={}'.format(missing_data_flag))])
+
+        #P1N, P2N throws an error if it's missing alternative song
+        non_zero_rows = filter_df_by_tags(df, edge_n_cols)
+        bad_rows = pd.concat([bad_rows, 
+                              filter_df_by_tags(non_zero_rows, [data_columns[altsong1]], '=={}'.format(missing_data_flag))])       
+
+        if not(bad_rows.empty):
+            with st.expander('See errors'):
+                bad_rows.sort_values(by='filename', inplace=True)
+                st.write('Total errors: {}'.format(len(bad_rows)))
+                
+                #Pull out date so we can format it
+                bad_rows.reset_index(inplace=True)
+                bad_rows.rename(columns={'index':'Date'}, inplace=True)
+
+                pretty_print_table(bad_rows)
+        else:
+            st.write('No tag errors found')
 
 # Clean up a pivottable so we can display it as a table
 def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
@@ -904,32 +1011,6 @@ def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) ->
     #rename the columns
     pt.rename(columns=col_map, inplace=True)
     return pt
-
-#Used for formatting output table
-#The function can take at most one paramenter. In this case, if there is a param and the 
-# value passed in is zero, then we use the props that are passed in, otherwise none. In this
-# way, the cell in question gets formatted using props if the value is zero. 
-# It would be called like this:
-#        #union_pt = union_pt.style.applymap(style_zero, props='color:gray;')
-#
-#https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html
-def style_zero(v, props=''):
-    return props if v == 0 else None
-
-# In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
-# a date, or a date. This is to make non-zero values that aren't dates easier to see.
-# Color options: https://www.w3schools.com/colors/colors_names.asp
-def style_cells(v):
-    zeroprops = 'color:gray'
-    nonzeroprops = 'color:black;background-color:YellowGreen;text-align:center'
-    result = ''
-    if v == 0:
-        result = zeroprops
-    elif type(v) == type(pd.Timestamp.now()): #if it's a date, do nothing
-        result = ''
-    else: #it must be a non-date, non-zero value so format it to call it out
-        result = nonzeroprops
-    return result
 
 
 # Retrieve the start and end dates for the analysis from the sidebar and format them appropriately
@@ -1198,51 +1279,10 @@ if not make_all_graphs and len(df_site):
     # Put a box with first and last dates for the Song columns, with counts on that date
     with st.expander("See summary of first and last dates"):  
         output = get_first_and_last_dates(make_pivot_table(df_site, song_cols, date_range_dict))
-        output_df = pd.DataFrame.from_dict(output)
+        pretty_print_table(pd.DataFrame.from_dict(output))
 
-        # Formatting note
-        # Note that the line that should work to set alignment doesn't if we are outputting
-        # the table using st.dataframe or st.table. I can set color this way, but alignment
-        # appears to be ignored.
-        #  
-        # The only way to get it to work is to write the table out using st.write, which is
-        # OK for a little table like this but bad for the data table because st.write doesn't
-        # give the interactive table where you scroll to see rows and columns, it puts all 
-        # the data on the page at once!  
-        #
-        # So, eventually all this formatting junk should be moved to a functiona and cleaned up.
-        # style
-
-        # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
-        for col in output_df.columns:
-            new_name = col.replace('<',' ')
-            new_name = new_name.replace('>', ' ')
-            output_df.rename(columns={col:new_name},inplace=True)
-
-        th_props = [
-        ('font-size', '14px'),
-        ('text-align', 'center'),
-        ('font-weight', 'bold'),
-        ('color', '#6d6d6d'),
-        ('background-color', '#f7ffff')
-        ]
-                                    
-        td_props = [
-        ('font-size', '12px')
-        ]
-                                        
-        styles = [
-        dict(selector="th", props=th_props),
-        dict(selector="td", props=td_props)
-        ]
-
-        # table
-        df2=output_df.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
-        st.write(df2.to_html(), unsafe_allow_html=True)
-
-    #Scan the list of tags and flag any where there is "---" for the value. This code is put here so that A) the checkbox is lowest 
-    #in the sidebar, and B) the expander for the errors is at the bottom of the body of the page.
-    check_tags(df_original)
+    # Scan the list of tags and flag any where there is "---" for the value. 
+    check_tags(df_site)
 
     if len(site_list[bad_files]) > 0:
         with st.expander("See possibly bad filenames"):  
