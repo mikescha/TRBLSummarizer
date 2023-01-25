@@ -4,6 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.lines import Line2D
 import matplotlib.transforms as transforms
 from matplotlib import cm
 from pathlib import Path
@@ -136,6 +137,12 @@ edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 #For setting figure width and height, values in inches
 fig_w = 6.5
 fig_h = 1
+
+#constants for the weather data files
+weather_prcp = 'PRCP'
+weather_tmax = 'TMAX'
+weather_tmin = 'TMIN'
+weather_cols = [weather_prcp, weather_tmax, weather_tmin]
 
 #Files, paths, etc.
 data_foldername = 'Data/'
@@ -449,7 +456,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    return('2019 Rush Ranch')
+    #return('2019 Rush Ranch')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -535,7 +542,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
         fmt = '%d-%b'
         rot = 30
         weight = 'light'
-        fontsize = 10
+        fontsize = 9
     else:
         fmt = '%d'
         rot = 0
@@ -550,7 +557,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 
     #Actually set the ticks and then apply font format as needed
     date_axis.xaxis.set_ticklabels(ticks, fontweight=weight, fontsize=fontsize)
-    date_axis.tick_params(axis = 'x',labelrotation = rot)
+    date_axis.tick_params(axis = 'x',labelrotation = rot, length=6, width=0.5) 
     return
 
 
@@ -570,7 +577,12 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
         if n<max:
             for ax in axs:
                 ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
-    
+
+# For ensuring the title in the graph looks the same between weather and data graphs.
+# note that if the fontsize is too big, then the title will become the largest thing 
+# in the figure which causes the graph to shrink!
+def plot_title(title:str):
+    plt.suptitle(title, fontsize=14, x=0, horizontalalignment='left')
             
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
@@ -597,9 +609,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
     # If we have one, add the title for the graph and set appropriate formatting
     if len(title)>0:
-        #note that if the fontsize is too big, then the title will become the largest thing in the figure
-        #which causes the graph to shrink!
-        plt.suptitle(title, fontsize=14, x=0, horizontalalignment='left')
+        plot_title(title)
     
     # Ensure that we have a row for each index. If a row is missing, add it with zero values
     for row in row_names:
@@ -649,8 +659,6 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
-                    #st.error("MC First: " + str(df_col_nonzero.loc[first].values[0].date()) + 
-                    #         ", MC Last: " + str(df_col_nonzero.loc[last-1].values[0].date()))
                     
                 else: #n tags get boxes around each consecutive block
                     borders = []
@@ -784,63 +792,84 @@ def load_weather_data_from_file() -> pd.DataFrame:
     return df
 
 #Filter weather data down to just what we need for a site
-def get_weather_data(site_name:str, date_range_dict:dict) -> pd.DataFrame:
+def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     df = load_weather_data_from_file()    
-
-    #select only rows that are in our date range
-    mask = (df['date'] >= date_range_dict[start_str]) & (df['date'] <= date_range_dict[end_str])
-    df = df.loc[mask]
     
     #select only rows that match our site
-    site_weather = pd.DataFrame
     if site_name in df.index:
         site_weather = df.loc[[site_name]]
-        site_weather = site_weather.set_index('date')
-        #TODO Clean the data. For 2020 Hay Landfill, some of the precipitation data
-        #points are missing. So, need to add missing dates and set any values we added to 0
-            
+        #select only rows that are in our date range
+        mask = (site_weather['date'] >= date_range_dict[start_str]) & (site_weather['date'] <= date_range_dict[end_str])
+        site_weather = site_weather.loc[mask]
+
+        # For each type of weather, break out that type into a separate table and 
+        # drop it into a dict. Then, reindex the table to match our date range and 
+        # fill in empty values
+        site_weather_by_type = {}
+        date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+        for w in weather_cols:
+            site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
+            #reindex the table to match our date range and fill in empty values
+            site_weather_by_type[w]  = site_weather_by_type[w].set_index('date')
+            site_weather_by_type[w]  = site_weather_by_type[w].reindex(date_range, fill_value=0)         
     else:
         show_error('No weather available for ' + site_name)
 
-    return site_weather
+    return site_weather_by_type
 
-def create_weather_graph(df: pd.DataFrame, site_name:str, date_range_dict:dict) -> plt.figure:
+#Used below to get min temp that isn't zero
+def min_above_zero(s:pd.Series):
+    return min(i for i in s if i > 0)
+
+def create_weather_graph(weather_by_type: dict, site_name:str) -> plt.figure:
     #Defaults for the Y Axis labels
     font_size = 14
     label_pad = 20
-    
-    if not df.empty:
-        # Break into three groups for cleaner code
-        prcp = df.loc[df['datatype']=='PRCP']
-        tmax = df.loc[df['datatype']=='TMAX']
-        tmin = df.loc[df['datatype']=='TMIN']
 
-        # Build graph for data
-        # Need to make it wider than the rest to accomodate the text on the vertical axes. 
-        weather_fig_w = fig_w #+ (label_pad)/300
-        
-        # The use of rows, cols, and gridspec is to force the graph to be drawn in the same proportions and size
-        # as the heatmaps
+    if not df.empty:
+        # The use of rows, cols, and gridspec is to force the graph to be drawn in the same 
+        # proportions and size as the heatmaps
         fig, ax1 = plt.subplots(nrows = 1, ncols = 1, 
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
-            figsize=(weather_fig_w,fig_h)) # initializes figure and plots
+            figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
 
-        plt.suptitle(site_name + ' Weather', fontsize=20, fontweight='bold')
+        plot_title(site_name + ' Weather')
 
         # plot the data in the proper format on the correct axis.
-        ax1.bar(prcp.index.values.astype(str), prcp['value'], color = 'blue')
-        ax2.plot(tmax.index.values.astype(str), tmax['value'], color = 'red')
-        ax2.plot(tmin.index.values.astype(str), tmin['value'], color = 'pink')
+        for wt in weather_cols:
+            w = weather_by_type[wt]
+            if wt == weather_prcp:
+                ax1.bar(w.index.values.astype(str), w['value'], color = 'blue')
+            elif wt == weather_tmax:
+                ax2.plot(w.index.values.astype(str), w['value'], color = 'red')
+            else: #TMIN
+                ax2.plot(w.index.values.astype(str), w['value'], color = 'pink')
 
-        #Add the annotations for the plot 
-        ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=font_size)
-        ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=font_size,
-                        rotation=270, labelpad=label_pad)
+        # Adjust the axis limits
+        ax1.set_ylim(ymax=1.5) #Sets the max amount of precip to 1.5
+        ax2.set_ylim(ymin=32,ymax=115) #Set temp range
+        ax2.axline((0,100),slope=0, color='red', lw=0.5, ls='dotted')        
+        #Add the labels for the plot 
+        #ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=font_size)
+        #ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=font_size,
+        #                rotation=270, labelpad=label_pad)
+        #No longer doing labels, now we hide the ticks
+        ax1.tick_params(
+            axis='y',
+            which='both',      # both major and minor ticks are affected
+            left=False, right=False,  # ticks along the sides are off
+            labelleft=False, labelright=False) # labels on the Y are off 
+
+        ax2.tick_params(
+            axis='y',
+            which='both',      # both major and minor ticks are affected
+            left=False, right=False,  # ticks along the sides are off
+            labelleft=False, labelright=False) # labels on the Y are off 
 
         #Get the list of ticks and set them 
-        axis_dates = list(tmax.index.values.astype(str))
-        tick_pos = list(range(len(tmax)))
+        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
+        tick_pos = list(range(len(weather_by_type[weather_tmax])))
         weather_tick_spacing = 14
         ax1.axes.set_xticks(tick_pos[::weather_tick_spacing], axis_dates[::weather_tick_spacing])
         format_xdateticks(ax1, mmdd=True)
@@ -848,11 +877,33 @@ def create_weather_graph(df: pd.DataFrame, site_name:str, date_range_dict:dict) 
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_linewidth(0.5)
         ax1.spines[:].set_visible(True)
+
+
+#        high_temp = plt.Rectangle(
+#            # (lower-left corner), width, height
+#            (0.0, y_100f), 1.0, y_100f, fill=True, color='red', lw=0.1, 
+#            zorder=1000, transform=fig.transFigure, figure=fig)
+#        fig.patches.extend([high_temp])
+
+
+        # Add a legend for the figure
+        # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
+        tmax_label = 'High temp ({}-{}F)'.format(min_above_zero(weather_by_type[weather_tmax]['value']),
+                                                 weather_by_type[weather_tmax]['value'].max())
+        tmin_label = 'Low temp ({}-{}F)'.format(min_above_zero(weather_by_type[weather_tmin]['value']),
+                                                weather_by_type[weather_tmin]['value'].max())
+        prcp_label = 'Precipitation ({}-{}\")'.format(min_above_zero(weather_by_type[weather_prcp]['value']),
+                                                      weather_by_type[weather_prcp]['value'].max())
+        legend_elements = [Line2D([0], [0], color='red', lw=4, label=tmax_label),
+                           Line2D([0], [0], color='pink', lw=4, label=tmin_label),
+                           Line2D([0], [0], color='blue', lw=4, label=prcp_label)]
+        
+        #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
+        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=3)
     else:
         fig = plt.figure()
 
     return fig
-
 
 #
 # Bonus functions
@@ -1211,8 +1262,8 @@ for site in target_sites:
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather', True):
         # Load and parse weather data
-        weather_df = get_weather_data(site, date_range_dict)
-        graph = create_weather_graph(weather_df, site, date_range_dict)
+        weather_by_type = get_weather_data(site, date_range_dict)
+        graph = create_weather_graph(weather_by_type, site)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
@@ -1252,11 +1303,10 @@ if not make_all_graphs and len(df_site):
 
         #Add weather at the end
         weather_data = pd.DataFrame()
-        weather_data_types = ['TMAX', 'TMIN', 'PRCP']
-        for t in weather_data_types:
-            weather_data = pd.concat([weather_data, weather_df[weather_df['datatype']==t]['value']], axis=1)
+        for t in weather_cols:
+            weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
             weather_data.rename(columns={'value':t}, inplace=True)
-            if t != 'PRCP':
+            if t != weather_prcp:
                 weather_data[t] = weather_data[t].astype(int)
         summary.append(weather_data)
 
