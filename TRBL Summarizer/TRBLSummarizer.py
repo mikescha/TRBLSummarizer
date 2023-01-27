@@ -13,6 +13,7 @@ import calendar
 from collections import Counter
 from itertools import tee
 import random
+from PIL import Image
 
 #to force garbage collection and reduce memory use
 import gc
@@ -144,9 +145,18 @@ weather_tmax = 'TMAX'
 weather_tmin = 'TMIN'
 weather_cols = [weather_prcp, weather_tmax, weather_tmin]
 
+graph_man = 'Manual Analysis'
+graph_miniman = 'Mini Manual Analysis'
+graph_edge = 'Edge Analysis'
+graph_pm = 'Pattern Matching Analysis'
+graph_weather = 'Weather'
+graph_names = [graph_man, graph_miniman, graph_edge, graph_pm, graph_weather]
+
 #Files, paths, etc.
 data_foldername = 'Data/'
+figure_foldername = 'Figures/'
 data_dir = Path(__file__).parents[0] / data_foldername
+figure_dir = Path(__file__).parents[0] / figure_foldername
 data_file = 'data.csv'
 site_info_file = 'sites.csv'
 weather_file = 'weather_history.csv'
@@ -523,6 +533,7 @@ def set_global_theme():
                      'axes.spines.right':'False',
                      'axes.spines.top':'False',
                      'axes.spines.bottom':'False',
+                     'savefig.facecolor':'white'
                      }
     #The base context is "notebook", and the other contexts are "paper", "talk", and "poster".
     sns.set_theme(context = 'paper', 
@@ -563,7 +574,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
+def draw_axis_labels(month_lengths:dict, axs:np.ndarray):
     max = len(month_lengths)
     n = 0
     x = 0
@@ -572,7 +583,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, gap:float):
         #The line below shifts the label to the left a little bit to better center it on the month space. 
         center_pt -= len(month)/4
         mid = x + center_pt
-        axs[len(axs)-1].text(x=mid, y=gap, s=month)
+        axs[len(axs)-1].text(x=mid, y=2+(0.25 if len(axs)>4 else 0), s=month)
         x += month_lengths[month]
         if n<max:
             for ax in axs:
@@ -644,7 +655,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
             
-        # Add a rectangle around the regions of consective tags, and a line between 
+        # For edge: Add a rectangle around the regions of consective tags, and a line between 
         # non-consectutive if it's a N tag.
         if draw_horiz_rects and row in df_clean.index:
             df_col_nonzero = df.loc[row].to_frame()  #pull out the row we want, it turns into a column as above
@@ -685,7 +696,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                         axs[i].add_patch(patches.Rectangle((borders[x]+1,0.48), borders[x+1]-borders[x]-1, 0.04, ec=c, fc=c, fill=True)) 
         i += 1
         
-    # add a rect around each day that has some data
+    # For mini-manual: Add a rect around each day that has some data
     if draw_vert_rects and len(raw_data)>0:
         tagged_rows = filter_df_by_tags(raw_data, mini_manual_cols)
         if len(tagged_rows):
@@ -705,7 +716,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         # Clean up the ticks on the axis we're going to use
         format_xdateticks(axs[len(row_names)-1])
         month_counts = get_days_per_month(df)
-        draw_axis_labels(month_counts, axs, 2 if row_count==4 else 3)
+        draw_axis_labels(month_counts, axs)
 
         #Hide the ticks on the top graphs
         for i in range(0,len(row_names)-1):
@@ -715,7 +726,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         #an empty row for each index, so we always have something to graph
         axs[len(row_names)-1].tick_params(bottom = False, labelbottom = False)
 
-    # draw a bounding rectangle around everything except the caption
+    # Draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
         # (lower-left corner), width, height
         (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
@@ -728,14 +739,55 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
     filename = site + ' - ' + graph_type + '.png'
-    figure_path = Path(__file__).parents[0] / 'Figures/' / filename
+    figure_path = figure_dir / filename
+
     #If the file exists then delete it, so that we make sure a new one is written
     if os.path.isfile(figure_path):
         os.remove(figure_path)
     
     if not delete_only:
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+
     plt.close()
+
+
+def concat_images(*images):
+    """Generate composite of all supplied images."""
+    # Get the widest width.
+    width = max(image.width for image in images)
+    # Add up all the heights.
+    height = sum(image.height for image in images)
+    composite = Image.new('RGB', (width, height))
+    # Paste each image below the one before it.
+    y = 0
+    for image in images:
+        composite.paste(image, (0, y))
+        y += image.height
+    return composite
+
+
+# Load all the images that match the site name, combine them into a single composite,
+# and then save that out
+def combine_images(site):
+
+    composite = site + ' - composite.png'
+    composite_path = figure_dir / composite
+
+    # Get the list of all files that match this site
+    site_figures = []
+    figures = os.scandir(figure_dir)
+    if any(figures):
+        # Get all the figures for this site
+        for fig in figures:
+            if site in fig.name and composite not in fig.name:
+                site_figures.append(fig)
+
+        # Now have the list of figures.  
+        if len(site_figures) > 0:
+            images = [Image.open(f.path) for f in site_figures]
+            composite = concat_images(*images)
+            composite.save(composite_path)
+
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
     if data_to_graph:
@@ -834,7 +886,7 @@ def create_weather_graph(weather_by_type: dict, site_name:str) -> plt.figure:
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
 
-        plot_title(site_name + ' Weather')
+        plot_title(site_name + ' ' + graph_weather)
 
         # plot the data in the proper format on the correct axis.
         for wt in weather_cols:
@@ -1229,7 +1281,7 @@ for site in target_sites:
     graph = create_graph(df = pt_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
-                        title = (site + ' ' if save_files else '') + 'Manual Analysis')
+                        title = (site + ' ' if save_files else '') + graph_man)
     output_graph(site, 'Manual Analysis', save_files, make_all_graphs, len(df_manual))
 
     # Computer Assisted Analysis
@@ -1238,7 +1290,7 @@ for site in target_sites:
                         cmap = cmap, 
                         raw_data = df_site,
                         draw_vert_rects = True,
-                        title = (site + ' ' if save_files else '') + 'Mini Manual Analysis')
+                        title = (site + ' ' if save_files else '') + graph_miniman)
     output_graph(site, 'Mini Manual', save_files, make_all_graphs, len(df_mini_manual))
 
     # Edge Analysis
@@ -1248,7 +1300,7 @@ for site in target_sites:
                         cmap = cmap_edge, 
                         raw_data = df_site,
                         draw_horiz_rects = True,
-                        title = (site + ' ' if save_files else '') + 'Edge Analysis')
+                        title = (site + ' ' if save_files else '') + graph_edge)
     output_graph(site, 'Edge Analysis', save_files, make_all_graphs, edge_data_empty)
 
     # Pattern Matching Analysis
@@ -1256,7 +1308,7 @@ for site in target_sites:
     graph = create_graph(df = pt_pm, 
                         row_names = pm_file_types, 
                         cmap = cmap_pm, 
-                        title = (site + ' ' if save_files else '') + 'Pattern Matching Analysis')
+                        title = (site + ' ' if save_files else '') + graph_pm)
     output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs, pm_data_empty)
 
     #Show weather, as needed            
@@ -1265,6 +1317,9 @@ for site in target_sites:
         weather_by_type = get_weather_data(site, date_range_dict)
         graph = create_weather_graph(weather_by_type, site)
         output_graph(site, "Weather Data", save_files, make_all_graphs)
+    
+    if True or make_all_graphs or save_files:
+        combine_images(site)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
@@ -1340,5 +1395,3 @@ if not make_all_graphs and len(df_site):
 
     if st.button('Clear cache'):
         st.experimental_singleton.clear()
-
-    
