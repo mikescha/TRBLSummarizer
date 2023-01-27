@@ -466,7 +466,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2019 Rush Ranch')
+    #return('2021 Colusa NWR 27-1')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -540,14 +540,15 @@ def set_global_theme():
                   style = 'white',
                   rc = custom_params)
 
-def get_days_per_month(df:pd.DataFrame) -> dict:
-    date_list = df.columns.tolist()
-    #Make a list of all the values, but only use the month name. Then, count how many of each month names there are, 
-    #to get the number of days/month
+def get_days_per_month(date_list:list) -> dict:
+    # Make a list of all the values, but only use the month name. Then, count how many of each 
+    # month names there are to get the number of days/month
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
 
-#The axis already has all the dates in it, but they need to be formatted. 
+# The axis already has all the dates in it, but they need to be formatted. 
+# 27 Jan 2023: This isn't really doing anything, because we're currently hiding all the 
+# x-ticks, but I'm leaving this code because it doesn't hurt and we might want it later.
 def format_xdateticks(date_axis:plt.Axes, mmdd = False):
     if mmdd:
         fmt = '%d-%b'
@@ -574,7 +575,12 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_axis_labels(month_lengths:dict, axs:np.ndarray):
+def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
+    if weather_graph:
+        y = -0.33
+    else:
+        y = 1.9+(0.25 if len(axs)>4 else 0)
+
     max = len(month_lengths)
     n = 0
     x = 0
@@ -583,7 +589,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray):
         #The line below shifts the label to the left a little bit to better center it on the month space. 
         center_pt -= len(month)/4
         mid = x + center_pt
-        axs[len(axs)-1].text(x=mid, y=2+(0.25 if len(axs)>4 else 0), s=month)
+        axs[len(axs)-1].text(x=mid, y=y, s=month)
         x += month_lengths[month]
         if n<max:
             for ax in axs:
@@ -715,8 +721,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     if len(graph_drawn):
         # Clean up the ticks on the axis we're going to use
         format_xdateticks(axs[len(row_names)-1])
-        month_counts = get_days_per_month(df)
-        draw_axis_labels(month_counts, axs)
+        draw_axis_labels(get_days_per_month(df.columns.tolist()), axs)
 
         #Hide the ticks on the top graphs
         for i in range(0,len(row_names)-1):
@@ -873,70 +878,76 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
 def min_above_zero(s:pd.Series):
     return min(i for i in s if i > 0)
 
-def create_weather_graph(weather_by_type: dict, site_name:str) -> plt.figure:
-    #Defaults for the Y Axis labels
-    font_size = 14
-    label_pad = 20
-
-    if not df.empty:
+def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
+    if len(weather_by_type)>0:
         # The use of rows, cols, and gridspec is to force the graph to be drawn in the same 
         # proportions and size as the heatmaps
         fig, ax1 = plt.subplots(nrows = 1, ncols = 1, 
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
+        ax1.margins(0,tight=True)
+        ax2.margins(0,tight=True)
 
         plot_title(site_name + ' ' + graph_weather)
 
-        # plot the data in the proper format on the correct axis.
+        # Plot the data in the proper format on the correct axis.
+        temp_color = 'red'
+        prcp_color = 'blue'
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == weather_prcp:
-                ax1.bar(w.index.values.astype(str), w['value'], color = 'blue')
+                ax1.bar(w.index.values.astype(str), w['value'], color = prcp_color)
             elif wt == weather_tmax:
-                ax2.plot(w.index.values.astype(str), w['value'], color = 'red')
+                ax2.plot(w.index.values.astype(str), w['value'], color = temp_color)
             else: #TMIN
                 ax2.plot(w.index.values.astype(str), w['value'], color = 'pink')
 
+        # VERTICAL TICK FORMATTING AND CONTENT
         # Adjust the axis limits
         ax1.set_ylim(ymax=1.5) #Sets the max amount of precip to 1.5
         ax2.set_ylim(ymin=32,ymax=115) #Set temp range
         ax2.axline((0,100),slope=0, color='red', lw=0.5, ls='dotted')        
-        #Add the labels for the plot 
-        #ax1.set_ylabel('Precipitation', color='blue', fontweight='light', fontsize=font_size)
-        #ax2.set_ylabel('High & Low Temperature', color='red', fontweight='light', fontsize=font_size,
-        #                rotation=270, labelpad=label_pad)
-        #No longer doing labels, now we hide the ticks
+
+        ax1.tick_params(axis='y', direction='in', color=prcp_color, labelsize=6, length=3, width=0.5, 
+                        labelcolor=prcp_color, labelleft=True, pad=-14)
+        prcp_ticks = [0.2,0.5,1.0]
+        prcp_tlabel = ['{}\"'.format(t) for t in prcp_ticks]
+        ax1.set_yticks(prcp_ticks)
+        ax1.set_yticklabels(prcp_tlabel, fontdict={'horizontalalignment':'right'})
+
+        temp_ticks = [50,75,100]
+        temp_tlabel = ['{}°F'.format(t) for t in temp_ticks]
+        ax2.tick_params(axis='y', direction='in', color=temp_color, labelsize=6, length=3, width=0.5,
+                        labelcolor=temp_color, labelright=True, pad=-4)
+        ax2.set_yticks(temp_ticks)
+        ax2.set_yticklabels(temp_tlabel, fontdict={'horizontalalignment':'right'})
+
+        # To turn off all y ticks
         ax1.tick_params(
             axis='y',
             which='both',      # both major and minor ticks are affected
             left=False, right=False,  # ticks along the sides are off
             labelleft=False, labelright=False) # labels on the Y are off 
-
         ax2.tick_params(
             axis='y',
             which='both',      # both major and minor ticks are affected
             left=False, right=False,  # ticks along the sides are off
             labelleft=False, labelright=False) # labels on the Y are off 
 
-        #Get the list of ticks and set them 
+        # HORIZONTAL TICKS AND LABLING 
+        # Get the list of ticks and set them 
         axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
-        tick_pos = list(range(len(weather_by_type[weather_tmax])))
-        weather_tick_spacing = 14
-        ax1.axes.set_xticks(tick_pos[::weather_tick_spacing], axis_dates[::weather_tick_spacing])
-        format_xdateticks(ax1, mmdd=True)
+#        tick_pos = list(range(len(weather_by_type[weather_tmax])))
+#        weather_tick_spacing = 14
+#        ax1.axes.set_xticks(tick_pos[::weather_tick_spacing], axis_dates[::weather_tick_spacing])
+        ax1.axes.set_xticks([])
+#        format_xdateticks(ax1) #, mmdd=True)
+        draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
 
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_linewidth(0.5)
         ax1.spines[:].set_visible(True)
-
-
-#        high_temp = plt.Rectangle(
-#            # (lower-left corner), width, height
-#            (0.0, y_100f), 1.0, y_100f, fill=True, color='red', lw=0.1, 
-#            zorder=1000, transform=fig.transFigure, figure=fig)
-#        fig.patches.extend([high_temp])
-
 
         # Add a legend for the figure
         # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
@@ -951,7 +962,7 @@ def create_weather_graph(weather_by_type: dict, site_name:str) -> plt.figure:
                            Line2D([0], [0], color='blue', lw=4, label=prcp_label)]
         
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
-        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.5), ncol=3)
+        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3)
     else:
         fig = plt.figure()
 
