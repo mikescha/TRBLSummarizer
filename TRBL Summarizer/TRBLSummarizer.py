@@ -13,7 +13,7 @@ import calendar
 from collections import Counter
 from itertools import tee
 import random
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 #to force garbage collection and reduce memory use
 import gc
@@ -146,11 +146,11 @@ weather_tmin = 'TMIN'
 weather_cols = [weather_prcp, weather_tmax, weather_tmin]
 
 graph_man = 'Manual Analysis'
-graph_miniman = 'Mini Manual Analysis'
+graph_miniman = 'Mini Man Analysis'
 graph_edge = 'Edge Analysis'
 graph_pm = 'Pattern Matching Analysis'
 graph_weather = 'Weather'
-graph_names = [graph_man, graph_miniman, graph_edge, graph_pm, graph_weather]
+graph_names = [graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
 
 #Files, paths, etc.
 data_foldername = 'Data/'
@@ -466,7 +466,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2021 Colusa NWR 27-1')
+    return('2019 Rush Ranch')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -586,10 +586,13 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     x = 0
     for month in month_lengths:
         center_pt = int(month_lengths[month]/2)
+
+        #TODO If the month_length is too short to fit the text, then don't draw the text or maybe center it differently
         #The line below shifts the label to the left a little bit to better center it on the month space. 
         center_pt -= len(month)/4
         mid = x + center_pt
-        axs[len(axs)-1].text(x=mid, y=y, s=month)
+
+        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small'})
         x += month_lengths[month]
         if n<max:
             for ax in axs:
@@ -741,9 +744,13 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     # return the final plotted heatmap
     return fig
 
+#Helper to ensure we make the filename consistently because this is done from multiple places
+def make_img_filename(site:str, graph_type:str) ->str:
+    return site + ' - ' + graph_type + '.png'
+
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
-    filename = site + ' - ' + graph_type + '.png'
+    filename = make_img_filename(site, graph_type)
     figure_path = figure_dir / filename
 
     #If the file exists then delete it, so that we make sure a new one is written
@@ -752,6 +759,17 @@ def save_figure(site:str, graph_type:str, delete_only=False):
     
     if not delete_only:
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+        
+        #Create a different version of the image that we'll use for the compilation
+        plt.suptitle('')
+        x=plt.gca()
+        for s in x.texts:
+            if not('data' in s.get_text()):
+                s.remove()
+        filename = site + ' - ' + graph_type + '_clean.png'
+        figure_path = figure_dir / filename
+        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+        
 
     plt.close()
 
@@ -759,10 +777,11 @@ def save_figure(site:str, graph_type:str, delete_only=False):
 def concat_images(*images):
     """Generate composite of all supplied images."""
     # Get the widest width.
+    #TODO Why aren't the images all the same width?
     width = max(image.width for image in images)
     # Add up all the heights.
     height = sum(image.height for image in images)
-    composite = Image.new('RGB', (width, height))
+    composite = Image.new('RGB', (width, height), color='white')
     # Paste each image below the one before it.
     y = 0
     for image in images:
@@ -774,24 +793,45 @@ def concat_images(*images):
 # Load all the images that match the site name, combine them into a single composite,
 # and then save that out
 def combine_images(site):
-
     composite = site + ' - composite.png'
     composite_path = figure_dir / composite
 
     # Get the list of all files that match this site
-    site_figures = []
+    site_fig_dict = {}
     figures = os.scandir(figure_dir)
     if any(figures):
         # Get all the figures for this site
         for fig in figures:
-            if site in fig.name and composite not in fig.name:
-                site_figures.append(fig)
+            if site in fig.name and 'clean' in fig.name and composite not in fig.name:
+                for graph_type in graph_names:
+                    #TODO Need to add some error checking to not crash if somehow none of the graph names are present 
+                    print("figure:       " + fig.name)
+                    print("current type: " + graph_type)
+                    if graph_type in fig.name:
+                        print('Found')
+                        print(fig.path)
+                        site_fig_dict[graph_type] = fig.path
 
         # Now have the list of figures.  
-        if len(site_figures) > 0:
-            images = [Image.open(f.path) for f in site_figures]
+        if len(site_fig_dict) > 0:
+            #Building the list of the figures but it needs to be in a specific order so that the composite looks right
+            site_fig_list = []
+            for g in graph_names:
+                if g in site_fig_dict:
+                    site_fig_list.append(site_fig_dict[g])
+            images = [Image.open(f) for f in site_fig_list]
             composite = concat_images(*images)
-            composite.save(composite_path)
+
+            #Make a new image that's a little bigger so we can add the site name at the top
+            width, height = composite.size
+            caption_height = 125      
+            new_height = height + caption_height #for the string
+            final = Image.new(composite.mode, (width, new_height), color='white')
+            draw = ImageDraw.Draw(final)
+            font = ImageFont.truetype("arialbd.ttf", size=72)
+            draw.text((25,25), site, fill='black', font=font)
+            final.paste(composite, box=(0,caption_height)) 
+            final.save(composite_path)
 
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
@@ -800,9 +840,13 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             pass
         else:
             st.write(graph)
-
+            
         if make_all_graphs or save_files:
-            graph_type = graph_type.replace(' ', '_')
+            #TODO if we want to put _ in the names then a) it neds to happen elsewhere, as this is 
+            #just putting them into the graph type and not the site name, and b) this breaks the
+            #code in the image compilation section because the filename it has (without underscore)
+            #doesn't match ones with the underscore
+            #graph_type = graph_type.replace(' ', '_')
             save_figure(site, graph_type)
     else:
         #No data, so show a message instead. 
@@ -1169,11 +1213,8 @@ site_list = get_target_sites()
 df = clean_data(df_original, site_list[site_str])
 
 # Nuke the original data, hopefully this frees up memory
-#TODO If Wendy wants to see all errors in the data, then leave it this way because we need the entire 
-#file to do that. However, if she only wants errors for the current site, then we can put the next
-#two lines back.
-#del df_original
-#gc.collect()
+del df_original
+gc.collect()
 
 #TODO Make this a UI option
 make_all_graphs = False
@@ -1293,16 +1334,24 @@ for site in target_sites:
                         row_names = song_cols, 
                         cmap = cmap, 
                         title = (site + ' ' if save_files else '') + graph_man)
-    output_graph(site, 'Manual Analysis', save_files, make_all_graphs, len(df_manual))
+    output_graph(site, graph_man, save_files, make_all_graphs, len(df_manual))
 
-    # Computer Assisted Analysis
+    # MiniManual Assisted Analysis
     graph = create_graph(df = pt_mini_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
                         raw_data = df_site,
                         draw_vert_rects = True,
                         title = (site + ' ' if save_files else '') + graph_miniman)
-    output_graph(site, 'Mini Manual', save_files, make_all_graphs, len(df_mini_manual))
+    output_graph(site, graph_miniman, save_files, make_all_graphs, len(df_mini_manual))
+
+    # Pattern Matching Analysis
+    cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
+    graph = create_graph(df = pt_pm, 
+                        row_names = pm_file_types, 
+                        cmap = cmap_pm, 
+                        title = (site + ' ' if save_files else '') + graph_pm)
+    output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
     # Edge Analysis
     cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
@@ -1312,23 +1361,16 @@ for site in target_sites:
                         raw_data = df_site,
                         draw_horiz_rects = True,
                         title = (site + ' ' if save_files else '') + graph_edge)
-    output_graph(site, 'Edge Analysis', save_files, make_all_graphs, edge_data_empty)
-
-    # Pattern Matching Analysis
-    cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
-    graph = create_graph(df = pt_pm, 
-                        row_names = pm_file_types, 
-                        cmap = cmap_pm, 
-                        title = (site + ' ' if save_files else '') + graph_pm)
-    output_graph(site, 'Pattern Matching Analysis', save_files, make_all_graphs, pm_data_empty)
+    output_graph(site, graph_edge, save_files, make_all_graphs, edge_data_empty)
 
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather', True):
         # Load and parse weather data
         weather_by_type = get_weather_data(site, date_range_dict)
         graph = create_weather_graph(weather_by_type, site)
-        output_graph(site, "Weather Data", save_files, make_all_graphs)
+        output_graph(site, graph_weather, save_files, make_all_graphs)
     
+    #TODO remove the "True" below when we're done debugging
     if True or make_all_graphs or save_files:
         combine_images(site)
 
