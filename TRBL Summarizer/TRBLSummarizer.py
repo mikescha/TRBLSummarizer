@@ -466,7 +466,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    return('2019 Rush Ranch')
+    #return('2022 Baja 1')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -517,6 +517,8 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
 # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
+    line_color = 'gray'
+    line_width = '0.5'
     custom_params = {'figure.dpi':'300', 
                      'font.family':'Arial', #'sans-serif'
                      'font.size':'12',
@@ -524,7 +526,7 @@ def set_global_theme():
                      'font.weight':'light',
                      'xtick.labelsize':'medium',
                      'xtick.major.size':'12',
-                     'xtick.color':'black',
+                     'xtick.color':line_color,
                      'xtick.bottom':'True',
                      'ytick.left':'False',
                      'ytick.labelleft':'False',
@@ -533,6 +535,11 @@ def set_global_theme():
                      'axes.spines.right':'False',
                      'axes.spines.top':'False',
                      'axes.spines.bottom':'False',
+                     'axes.edgecolor':line_color,
+                     'lines.color':line_color,
+                     'lines.linewidth':line_width,
+                     'patch.edgecolor':line_color,
+                     'patch.linewidth':line_width,
                      'savefig.facecolor':'white'
                      }
     #The base context is "notebook", and the other contexts are "paper", "talk", and "poster".
@@ -596,13 +603,13 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
         x += month_lengths[month]
         if n<max:
             for ax in axs:
-                ax.axvline(x=x+0.5, color='black', lw=0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
+                ax.axvline(x=x+0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
 # note that if the fontsize is too big, then the title will become the largest thing 
 # in the figure which causes the graph to shrink!
 def plot_title(title:str):
-    plt.suptitle(title, fontsize=14, x=0, horizontalalignment='left')
+    plt.suptitle(' '+title, fontsize=10, x=0, horizontalalignment='left')
             
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
@@ -659,7 +666,8 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
         # and not that it's just hard to read!
         if df_clean.loc[row].sum() == 0:
-            axs[i].text(0.5,0.8,'No data for ' + row, fontsize='x-small', fontstyle='italic', color='gray')
+            axs[i].text(0.5,0.5,'No data for ' + row, 
+                        fontsize='xx-small', fontstyle='italic', color='gray', verticalalignment='center')
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
@@ -737,8 +745,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     # Draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
         # (lower-left corner), width, height
-        (0.0, 0.0), 1.0, top_gap, fill=False, color='black', lw=0.5, 
-        zorder=1000, transform=fig.transFigure, figure=fig)
+        (0.0, 0.0), 1.0, top_gap, fill=False, zorder=1000, transform=fig.transFigure, figure=fig)
     fig.patches.extend([rect])
 
     # return the final plotted heatmap
@@ -761,18 +768,44 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
         
         #Create a different version of the image that we'll use for the compilation
-        plt.suptitle('')
-        x=plt.gca()
-        for s in x.texts:
-            if not('data' in s.get_text()):
-                s.remove()
-        filename = site + ' - ' + graph_type + '_clean.png'
+        #plt.suptitle('')  #if we want to remove the titles but I don't think we do
+
+        #Figure out where the labels are. There's probably a way to do this in one call ...
+        #maybe check the last axis?
+        if graph_type == graph_weather:
+            ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
+        else:
+            ax = plt.gca() #in the other graphs, it's in the last axis
+        #Go find the month labels and remove them
+        for ge in ax.texts:
+            #if the word 'data' is there then it's one of the error messages, otherwise it's a month
+            if not('data' in ge.get_text()):
+                ge.remove()
+        filename = site + ' - ' + graph_type + ' clean.png'
         figure_path = figure_dir / filename
-        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
-        
+        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
     plt.close()
 
+def get_month_locs_from_graph() -> dict:
+    locs = {}
+    months = []
+    #This only works for the data graphs, not the weather graph. But if all we have is a weather 
+    #graph then we don't care what the composite looks like.
+    ax = plt.gca() 
+    for t in ax.texts:
+        if not('data' in t.get_text()):
+            # This pulls out the month string for the key of the dict
+            months.append(t.get_text())
+    x = 0
+    m = 0 
+    for l in ax.get_lines():
+        locs[months[m]] = (x, l.get_xdata()[0])
+        x = l.get_xdata()[0]
+        m+=1
+    if x>0:
+        locs['max']=x    
+    return locs
 
 def concat_images(*images):
     """Generate composite of all supplied images."""
@@ -789,10 +822,59 @@ def concat_images(*images):
         y += image.height
     return composite
 
+def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
+    #Make a new image that's a little bigger so we can add the site name at the top
+    width, height = composite.size
+    title_height = 125
+    month_row_height = 80
+    border_width = 4
+    border_height = border_width * 2 
+    margin_bottom = 20
+    new_height = height + title_height + month_row_height + border_height + margin_bottom
+    final = Image.new(composite.mode, (width, new_height), color='white')
+
+    #Add the title
+    draw = ImageDraw.Draw(final)
+    font = ImageFont.truetype("arialbd.ttf", size=72)
+    draw.text((width/2,title_height-10), site, fill='black', anchor='ms', font=font)
+
+    #Add the months
+    margin_left = 27
+    margin_right = 1982
+    font = ImageFont.truetype("arial.ttf", size=36)
+    v_pos = title_height + month_row_height - 10 #for descenders
+    month_row_width = margin_right - margin_left
+    
+    max_width = month_locs['max']
+    del month_locs['max'] #This entry has a dif't data type than the rest, so nuke it so we don't crash
+
+    for month in month_locs:
+        m_left = month_locs[month][0]
+        m_right = month_locs[month][1]
+        m_center = (month_locs[month][1] - month_locs[month][0]) * 0.5
+        row_center = (m_left + m_center)/max_width 
+        h_pos =  (row_center * month_row_width) + margin_left
+        draw.text((h_pos, v_pos), month, fill='black', font=font, anchor='ms')
+
+    #Paste in the composite
+    final.paste(composite, box=(0,title_height + month_row_height + border_width)) 
+
+    #Add the border
+    border_top = title_height + month_row_height
+    border_left = margin_left
+    border_right = margin_right
+    draw.rectangle([(border_left,border_top),(border_right,new_height-margin_bottom)], 
+                    outline='black', width=border_width)
+
+    return final
 
 # Load all the images that match the site name, combine them into a single composite,
 # and then save that out
-def combine_images(site):
+def combine_images(site:str, month_locs:dict):
+    #if there are no months, then we didn't have any data to graph so don't make a composite
+    if len(month_locs) == 0:
+        return
+    
     composite = site + ' - composite.png'
     composite_path = figure_dir / composite
 
@@ -814,7 +896,8 @@ def combine_images(site):
 
         # Now have the list of figures.  
         if len(site_fig_dict) > 0:
-            #Building the list of the figures but it needs to be in a specific order so that the composite looks right
+            # Building the list of the figures but it needs to be in a specific order so that 
+            # the composite looks right
             site_fig_list = []
             for g in graph_names:
                 if g in site_fig_dict:
@@ -822,17 +905,9 @@ def combine_images(site):
             images = [Image.open(f) for f in site_fig_list]
             composite = concat_images(*images)
 
-            #Make a new image that's a little bigger so we can add the site name at the top
-            width, height = composite.size
-            caption_height = 125      
-            new_height = height + caption_height #for the string
-            final = Image.new(composite.mode, (width, new_height), color='white')
-            draw = ImageDraw.Draw(final)
-            font = ImageFont.truetype("arialbd.ttf", size=72)
-            draw.text((25,25), site, fill='black', font=font)
-            final.paste(composite, box=(0,caption_height)) 
+            final = apply_decorations_to_composite(composite, month_locs)
             final.save(composite_path)
-
+    return
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
     if data_to_graph:
@@ -933,7 +1008,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         ax1.margins(0,tight=True)
         ax2.margins(0,tight=True)
 
-        plot_title(site_name + ' ' + graph_weather)
+        plot_title(graph_weather) #site_name + ' ' +  to include site
 
         # Plot the data in the proper format on the correct axis.
         temp_color = 'red'
@@ -1224,7 +1299,7 @@ if make_all_graphs:
     save_files = False #True if we want to save all the image files
 else:
     target_sites = [get_site_to_analyze(site_list[site_str])]
-    save_files = st.sidebar.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
+    save_files = st.sidebar.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
 
 # Set format shared by all graphs
 set_global_theme()
@@ -1328,21 +1403,32 @@ for site in target_sites:
     if st.sidebar.checkbox('Show station info', value=True):
         show_station_info(site)
 
+    #list of month positions in the graphs
+    month_locs = {}  
+
     # Manual analyisis graph
     cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = pt_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
-                        title = (site + ' ' if save_files else '') + graph_man)
+                        title = graph_man) # add this if we want to include the site name (site + ' ' if save_files else '')
+    # Need to be able to build an image that looks like the graph labels so that it can be drawn
+    # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
+    # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
+    # to accidentally delete our list
+    if len(month_locs)==0:
+        month_locs = get_month_locs_from_graph() 
     output_graph(site, graph_man, save_files, make_all_graphs, len(df_manual))
 
-    # MiniManual Assisted Analysis
+    # MiniManual Analysis
     graph = create_graph(df = pt_mini_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
                         raw_data = df_site,
                         draw_vert_rects = True,
-                        title = (site + ' ' if save_files else '') + graph_miniman)
+                        title = 'Mini Manual Analysis')
+    if len(month_locs)==0:
+        month_locs = get_month_locs_from_graph() 
     output_graph(site, graph_miniman, save_files, make_all_graphs, len(df_mini_manual))
 
     # Pattern Matching Analysis
@@ -1350,7 +1436,9 @@ for site in target_sites:
     graph = create_graph(df = pt_pm, 
                         row_names = pm_file_types, 
                         cmap = cmap_pm, 
-                        title = (site + ' ' if save_files else '') + graph_pm)
+                        title = graph_pm) 
+    if len(month_locs)==0:
+        month_locs = get_month_locs_from_graph() 
     output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
     # Edge Analysis
@@ -1360,7 +1448,9 @@ for site in target_sites:
                         cmap = cmap_edge, 
                         raw_data = df_site,
                         draw_horiz_rects = True,
-                        title = (site + ' ' if save_files else '') + graph_edge)
+                        title = graph_edge)
+    if len(month_locs)==0:
+        month_locs = get_month_locs_from_graph() 
     output_graph(site, graph_edge, save_files, make_all_graphs, edge_data_empty)
 
     #Show weather, as needed            
@@ -1372,7 +1462,7 @@ for site in target_sites:
     
     #TODO remove the "True" below when we're done debugging
     if True or make_all_graphs or save_files:
-        combine_images(site)
+        combine_images(site, month_locs)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
