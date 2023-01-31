@@ -19,6 +19,9 @@ from datetime import datetime as dt
 #to force garbage collection and reduce memory use
 import gc
 
+#Set to true before we deploy
+being_deployed_to_streamlit = True
+
 #
 #
 # Constants and Globals
@@ -184,14 +187,16 @@ def my_time():
     return dt.now().strftime('%d-%b-%y %H:%M:%S')
 
 def init_logging():
-    if os.path.isfile(error_file):
-        os.remove(error_file)
-    with error_file.open("a") as f:
-        f.write(f"Logging started {my_time()}")    
+    if not being_deployed_to_streamlit:
+        if os.path.isfile(error_file):
+            os.remove(error_file)
+        with error_file.open("a") as f:
+            f.write(f"Logging started {my_time()}")    
 
 def log_error(msg: str):
-    with error_file.open("a") as f:
-        f.write("{my_time()}: " + msg + '\n')
+    if not being_deployed_to_streamlit:
+        with error_file.open("a") as f:
+            f.write("{my_time()}: " + msg + '\n')
 
 def show_error(msg: str):
     st.error("Whoops! " + msg + "! This may not work correctly.")
@@ -498,7 +503,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    return('2018 Markham Ravine')
+    #return('2018 Markham Ravine')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1031,10 +1036,14 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
 
 #Used below to get min temp that isn't zero
 def min_above_zero(s:pd.Series):
-    #TODO: If the PRCP for every month is 0 then this crashes because the generator is empty
-    # how to fix?
-    #  
-    return min(i for i in s if i > 0)
+    temps = (temp for temp in s if temp>0)
+    
+    try:
+         min_temp = min(temps)
+    except:
+        min_temp = 0
+
+    return min_temp
 
 def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
     if len(weather_by_type)>0:
@@ -1337,13 +1346,15 @@ gc.collect()
 
 #TODO Make this a UI option
 make_all_graphs = False
+save_files = False
+
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
     target_sites = site_list[site_str]
-    save_files = False #True if we want to save all the image files
 else:
     target_sites = [get_site_to_analyze(site_list[site_str])]
-    save_files = st.sidebar.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+    if not being_deployed_to_streamlit:
+        save_files = st.sidebar.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
 
 # Set format shared by all graphs
 set_global_theme()
@@ -1505,7 +1516,7 @@ for site in target_sites:
         output_graph(site, graph_weather, save_files, make_all_graphs)
     
     #TODO remove the "True" below when we're done debugging
-    if True or make_all_graphs or save_files:
+    if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs)
         #TODO clean up by deleting all the files with "clean" in their name
 
