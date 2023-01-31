@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import matplotlib.transforms as transforms
 from matplotlib import cm
@@ -727,7 +727,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                 if row in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
-                    axs[i].add_patch(patches.Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
+                    axs[i].add_patch(Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
                     
                 else: #n tags get boxes around each consecutive block
                     borders = []
@@ -747,11 +747,11 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                     # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
                     for x in range(0,len(borders),2):
                         extra = 1 if x != ((len(borders)/2)-1)*2 else 0
-                        axs[i].add_patch(patches.Rectangle((borders[x],0), borders[x+1]-borders[x] + extra, 0.99, ec=c, fc=c, fill=False))
+                        axs[i].add_patch(Rectangle((borders[x],0), borders[x+1]-borders[x] + extra, 0.99, ec=c, fc=c, fill=False))
                     # For each pair of rects, draw a line between them.
                     for x in range(1,len(borders)-1,2):
                         # The +1/-1 are because we don't want to draw on top of the days, just between the days
-                        axs[i].add_patch(patches.Rectangle((borders[x]+1,0.48), borders[x+1]-borders[x]-1, 0.04, ec=c, fc=c, fill=True)) 
+                        axs[i].add_patch(Rectangle((borders[x]+1,0.48), borders[x+1]-borders[x]-1, 0.04, ec=c, fc=c, fill=True)) 
         i += 1
         
     # For mini-manual: Add a rect around each day that has some data
@@ -766,7 +766,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
             _,bottom = fig.transFigure.inverted().transform(axs[row_count-1].transAxes.transform([0,0]))
             trans = transforms.blended_transform_factory(axs[0].transData, fig.transFigure)
             for px in box_pos:
-                rect = patches.Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
+                rect = Rectangle(xy=(px,bottom), width=1, height=top-bottom, transform=trans,
                                          fc='none', ec='C0', lw=0.5)
                 fig.add_artist(rect)
     
@@ -1034,6 +1034,59 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
 
     return site_weather_by_type
 
+# add the ticks and associated content for the weather graph
+def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:dict):
+    # VERTICAL TICK FORMATTING AND CONTENT
+    temp_min = 32
+    temp_max = 115
+    prcp_min = 0
+    prcp_max = 2
+    label_xoffset = 0.5
+    label_yoffset = -1
+    tick_width = 0.5
+
+    # Adjust the axis limits so all graphs are consistent
+    ax1.set_ylim(ymin=prcp_min, ymax=prcp_max) #Sets the max amount of precip to 1.5
+    ax2.set_ylim(ymin=temp_min, ymax=temp_max) #Set temp range
+
+    # line marking 100F
+    ax2.axline((0,100),slope=0, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
+    
+    # doing our own labels so we can customize positions
+    tick1y = 100
+    tick2y = temp_min+8
+
+    #blank out part of the 100F line so the label is readable
+    rect = Rectangle((max_x-label_xoffset,tick1y-5),-3.25,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
+    ax2.add_patch(rect)
+    
+    #add tick label and ticks
+    ax2.text(max_x-label_xoffset, tick1y+label_yoffset, "100F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3)
+    ax2.text(max_x-label_xoffset, tick2y+label_yoffset, f"{temp_min+8}F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center')
+    ax2.hlines([tick1y, tick2y], max_x-tick_width, max_x, colors=wg_colors['high'], linewidth=0.5)
+    
+    #drawing this on the temp axis because drawing on the prcp axis blew up, so have to convert to that scale
+    prcp_label_pos1 = (temp_max - temp_min)*(0.5/prcp_max) + temp_min
+    ax2.text(label_xoffset, prcp_label_pos1, f'0.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
+    prcp_label_pos2 = (temp_max - temp_min)*(1.5/prcp_max) + temp_min
+    ax2.text(label_xoffset, prcp_label_pos2, f'1.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
+    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5)
+    # To turn off all default y ticks
+    ax1.tick_params(
+        axis='y',
+        which='both',      # both major and minor ticks are affected
+        left=False, right=False,  # ticks along the sides are off
+        labelleft=False, labelright=False) # labels on the Y are off 
+    ax2.tick_params(
+        axis='y',
+        which='both',      # both major and minor ticks are affected
+        left=False, right=False,  # ticks along the sides are off
+        labelleft=False, labelright=False) # labels on the Y are off 
+
 #Used below to get min temp that isn't zero
 def min_above_zero(s:pd.Series):
     temps = (temp for temp in s if temp>0)
@@ -1059,61 +1112,25 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         plot_title(graph_weather) #site_name + ' ' +  to include site
 
         # Plot the data in the proper format on the correct axis.
-        temp_color = 'red'
-        prcp_color = 'blue'
+        wg_colors = {'high':'red', 'low':'pink', 'prcp':'blue'}
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == weather_prcp:
-                ax1.bar(w.index.values.astype(str), w['value'], color = prcp_color)
+                ax1.bar(w.index.values.astype(str), w['value'], color = wg_colors['prcp'])
             elif wt == weather_tmax:
-                ax2.plot(w.index.values.astype(str), w['value'], color = temp_color)
+                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['high'])
             else: #TMIN
-                ax2.plot(w.index.values.astype(str), w['value'], color = 'pink')
-
-        # TODO: annotate weather graph
-        #   - Note the 100F line
-        #   - Add something about what the scale is
-
-        # VERTICAL TICK FORMATTING AND CONTENT
-        # Adjust the axis limits
-        ax1.set_ylim(ymax=1.5) #Sets the max amount of precip to 1.5
-        ax2.set_ylim(ymin=32,ymax=115) #Set temp range
-        ax2.axline((0,100),slope=0, color='red', lw=0.5, ls='dotted')        
-
-        ax1.tick_params(axis='y', direction='in', color=prcp_color, labelsize=6, length=3, width=0.5, 
-                        labelcolor=prcp_color, labelleft=True, pad=-14)
-        prcp_ticks = [0.2,0.5,1.0]
-        prcp_tlabel = ['{}\"'.format(t) for t in prcp_ticks]
-        ax1.set_yticks(prcp_ticks)
-        ax1.set_yticklabels(prcp_tlabel, fontdict={'horizontalalignment':'right'})
-
-        temp_ticks = [50,75,100]
-        temp_tlabel = ['{}°F'.format(t) for t in temp_ticks]
-        ax2.tick_params(axis='y', direction='in', color=temp_color, labelsize=6, length=3, width=0.5,
-                        labelcolor=temp_color, labelright=True, pad=-4)
-        ax2.set_yticks(temp_ticks)
-        ax2.set_yticklabels(temp_tlabel, fontdict={'horizontalalignment':'right'})
-
-        # To turn off all y ticks
-        ax1.tick_params(
-            axis='y',
-            which='both',      # both major and minor ticks are affected
-            left=False, right=False,  # ticks along the sides are off
-            labelleft=False, labelright=False) # labels on the Y are off 
-        ax2.tick_params(
-            axis='y',
-            which='both',      # both major and minor ticks are affected
-            left=False, right=False,  # ticks along the sides are off
-            labelleft=False, labelright=False) # labels on the Y are off 
+                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['low'])
+        
+        max_x = len(w['value']) - 1
+        add_weather_graph_yticks(ax1, ax2, max_x,wg_colors)
 
         # HORIZONTAL TICKS AND LABLING 
+        # Need to set xlim so that we don't get an extra gap on either side
+        ax1.set_xlim(0, len(w['value'])-1)
         # Get the list of ticks and set them 
         axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
-#        tick_pos = list(range(len(weather_by_type[weather_tmax])))
-#        weather_tick_spacing = 14
-#        ax1.axes.set_xticks(tick_pos[::weather_tick_spacing], axis_dates[::weather_tick_spacing])
         ax1.axes.set_xticks([])
-#        format_xdateticks(ax1) #, mmdd=True)
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
 
         #Turn on the graph borders, these are off by default for other charts
@@ -1128,9 +1145,9 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                      f"{weather_by_type[weather_tmin]['value'].max():.0f}F)"
         prcp_label = f"Precipitation ({min_above_zero(weather_by_type[weather_prcp]['value']):.2f}-"\
                      f"{weather_by_type[weather_prcp]['value'].max():.2f})"
-        legend_elements = [Line2D([0], [0], color='red', lw=4, label=tmax_label),
-                           Line2D([0], [0], color='pink', lw=4, label=tmin_label),
-                           Line2D([0], [0], color='blue', lw=4, label=prcp_label)]
+        legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=4, label=tmax_label),
+                           Line2D([0], [0], color=wg_colors['low'], lw=4, label=tmin_label),
+                           Line2D([0], [0], color=wg_colors['prcp'], lw=4, label=prcp_label)]
         
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
