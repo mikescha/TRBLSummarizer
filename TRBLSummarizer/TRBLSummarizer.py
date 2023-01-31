@@ -937,11 +937,7 @@ def combine_images(site:str, month_locs:dict):
             if site in fig.name and 'clean' in fig.name and composite not in fig.name:
                 for graph_type in graph_names:
                     #TODO Need to add some error checking to not crash if somehow none of the graph names are present 
-                    print("figure:       " + fig.name)
-                    print("current type: " + graph_type)
-                    if graph_type in fig.name:
-                        print('Found')
-                        print(fig.path)
+                    if graph_type in fig.name and os.path.getsize(fig)>1000:
                         site_fig_dict[graph_type] = fig.path
 
         # Now have the list of figures.  
