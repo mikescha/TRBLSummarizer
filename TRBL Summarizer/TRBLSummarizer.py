@@ -14,6 +14,7 @@ from collections import Counter
 from itertools import tee
 import random
 from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime as dt
 
 #to force garbage collection and reduce memory use
 import gc
@@ -161,12 +162,14 @@ data_file = 'data.csv'
 site_info_file = 'sites.csv'
 weather_file = 'weather_history.csv'
 data_old_file = 'data_old.csv'
+error_file = figure_dir / 'error.txt'
 files = {
     data_file : data_dir / data_file,
     site_info_file : data_dir / site_info_file,
     weather_file : data_dir / weather_file,
     data_old_file : data_dir / data_old_file
 }
+
 
 pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
@@ -177,8 +180,19 @@ preserve_edges_flag = -99
 # Helper functions
 #
 #
+def init_logging():
+    if os.path.isfile(error_file):
+        os.remove(error_file)
+    with error_file.open("a") as f:
+        f.write(f"Logging started {dt.now().strftime('%d-%b-%y %H:%M:%S')}")    
+
+def log_error(msg: str):
+    with error_file.open("a") as f:
+        f.write(msg + '\n')
+
 def show_error(msg: str):
     st.error("Whoops! " + msg + "! This may not work correctly.")
+    log_error(msg)
 
 def pairwise(iterable):
     a, b = tee(iterable) # Note that tee is from itertools
@@ -379,22 +393,37 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     for site in site_list:
         df_site = df[df[site_str] == site]
 
-        #Sort descending, find first two consecutive items and drop everything after.
+        #used to ensure anything outside this year gets dropped
+        target_year = site[0:4]
+
+        # Sort newest to oldest (backwards) and filter to this year
         df_site = df_site.sort_index(ascending=False)
+        original_size = df_site.shape[0]
+        df_site = df_site.query(f"date <= '{target_year}-12-31'")
+        if df_site.shape[0] != original_size:
+            log_error(f"Data for site {site} has the wrong year in it, newer than its year")
+
+        # Now, find first two consecutive items and drop everything after.
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
                 #found a match, need to keep only what's after this
-                df_site = df_site.query("date <= '{}'".format(x.strftime('%Y-%m-%d')))
+                df_site = df_site.query(f"date <= '{x.strftime('%Y-%m-%d')}'")
                 break
 
-        #Sort ascending, find first two consecutive items and drop everything before
+        #Sort oldest to newest, and filter to this year
         df_site = df_site.sort_index(ascending=True)
+        original_size = df_site.shape[0]
+        df_site = df_site.query(f"date >= '{target_year}-01-01'")
+        if df_site.shape[0] != original_size:
+            log_error(f"Data for site {site} has the wrong year in it, older than its year")
+
+        # Find first two consecutive items and drop everything before
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
             if abs((x-y).days) == 1:
                 #found a match, need to keep only what's after this
-                df_site = df_site.query("date >= '{}'".format(x.strftime('%Y-%m-%d')))
+                df_site = df_site.query(f"date >= '{x.strftime('%Y-%m-%d')}'")
                 break
 
         df_clean = pd.concat([df_clean, df_site])
@@ -466,7 +495,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2022 Baja 1')
+    #return('2020 Ohlone - Santa Lucia Preserve')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -484,8 +513,12 @@ def get_site_to_analyze(site_list:list) -> str:
 # and if the user wants a specific range then update our range to reflect that.
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
     df.sort_index(inplace=True)
-    #Set the default date range to the first and last dates that we have data
-    date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+
+    # Set the default date range to the first and last dates that we have data
+    # Assume that the data cleaning code has removed any extraneous dates, such as if data 
+    # is mistagged (i.e. data from 2019 shows up in the 2020 site)
+    date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
+                       end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
     
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
@@ -1070,18 +1103,19 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
 
         # Add a legend for the figure
         # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
-        tmax_label = 'High temp ({}-{}F)'.format(min_above_zero(weather_by_type[weather_tmax]['value']),
-                                                 weather_by_type[weather_tmax]['value'].max())
-        tmin_label = 'Low temp ({}-{}F)'.format(min_above_zero(weather_by_type[weather_tmin]['value']),
-                                                weather_by_type[weather_tmin]['value'].max())
-        prcp_label = 'Precipitation ({}-{}\")'.format(min_above_zero(weather_by_type[weather_prcp]['value']),
-                                                      weather_by_type[weather_prcp]['value'].max())
+        tmax_label = f"High temp ({min_above_zero(weather_by_type[weather_tmax]['value']):.0f}-"\
+                     f"{weather_by_type[weather_tmax]['value'].max():.0f}F)"
+        tmin_label = f"Low temp ({min_above_zero(weather_by_type[weather_tmin]['value']):.0f}-"\
+                     f"{weather_by_type[weather_tmin]['value'].max():.0f}F)"
+        prcp_label = f"Precipitation ({min_above_zero(weather_by_type[weather_prcp]['value']):.2f}-"\
+                     f"{weather_by_type[weather_prcp]['value'].max():.2f})"
         legend_elements = [Line2D([0], [0], color='red', lw=4, label=tmax_label),
                            Line2D([0], [0], color='pink', lw=4, label=tmin_label),
                            Line2D([0], [0], color='blue', lw=4, label=prcp_label)]
         
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
-        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3)
+        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
+                   fontsize='x-small')
     else:
         fig = plt.figure()
 
@@ -1463,6 +1497,7 @@ for site in target_sites:
     #TODO remove the "True" below when we're done debugging
     if True or make_all_graphs or save_files:
         combine_images(site, month_locs)
+        #TODO clean up by deleting all the files with "clean" in their name
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
