@@ -196,7 +196,7 @@ def init_logging():
 def log_error(msg: str):
     if not being_deployed_to_streamlit:
         with error_file.open("a") as f:
-            f.write("{my_time()}: " + msg + '\n')
+            f.write(f"{my_time()}: " + msg + "\n")
 
 def show_error(msg: str):
     st.error("Whoops! " + msg + "! This may not work correctly.")
@@ -559,7 +559,7 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
     line_color = 'gray'
-    line_width = '0.5'
+    line_width = '0.75'
     custom_params = {'figure.dpi':'300', 
                      'font.family':'Arial', #'sans-serif'
                      'font.size':'12',
@@ -815,6 +815,12 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         #maybe check the last axis?
         if graph_type == graph_weather:
             ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
+            legend = ax.get_legend()
+            bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+            yOffset = 0.25
+            bb.y0 += yOffset
+            bb.y1 += yOffset
+            legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
         else:
             ax = plt.gca() #in the other graphs, it's in the last axis
         #Go find the month labels and remove them
@@ -825,6 +831,9 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         filename = site + ' - ' + graph_type + ' clean.png'
         figure_path = figure_dir / filename
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+    else:
+        #Write an empty file if there's no data so that we can tell
+        Image.new(mode="RGB", size=(1, 1)).save(figure_path)
 
     plt.close()
 
@@ -966,7 +975,6 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             save_figure(site, graph_type)
     else:
         #No data, so show a message instead. 
-        #TODO write an empty file in this case
         save_figure(site, graph_type, delete_only=True)
         site_name_text = '<p style="font-family:sans-serif; color:Black; font-size: 16px;"><b>{}</b></p>'.format(graph_type)
         st.write(site_name_text, unsafe_allow_html=True)
@@ -1057,7 +1065,7 @@ def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:di
     tick2y = temp_min+8
 
     #blank out part of the 100F line so the label is readable
-    rect = Rectangle((max_x-label_xoffset,tick1y-5),-3.25,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
+    rect = Rectangle((max_x-label_xoffset,tick1y-5),-2,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
     ax2.add_patch(rect)
     
     #add tick label and ticks
@@ -1116,7 +1124,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == weather_prcp:
-                ax1.bar(w.index.values.astype(str), w['value'], color = wg_colors['prcp'])
+                ax1.bar(w.index.values.astype(str), w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == weather_tmax:
                 ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['high'])
             else: #TMIN

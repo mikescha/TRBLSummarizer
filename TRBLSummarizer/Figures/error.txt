@@ -1,20 +1,40 @@
-Data for site 2018 Iron Point has the wrong year in it, newer than its year
-Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
-Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
-Data for site 2020 Fort Ord has the wrong year in it, older than its year
-Data for site 2020 Iron Point has the wrong year in it, older than its year
-Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
-Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
-Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
-Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
-Data for site 2022 WC-WR1 has the wrong year in it, older than its year
-Data for site 2018 Iron Point has the wrong year in it, newer than its year
-Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
-Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
-Data for site 2020 Fort Ord has the wrong year in it, older than its year
-Data for site 2020 Iron Point has the wrong year in it, older than its year
-Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
-Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
-Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
-Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
-Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+{my_time()}: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+{my_time()}: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+{my_time()}: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+{my_time()}: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+{my_time()}: Data for site 2020 Iron Point has the wrong year in it, older than its year
+{my_time()}: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+{my_time()}: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+{my_time()}: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+{my_time()}: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+{my_time()}: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+31-Jan-23 15:47:32: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+31-Jan-23 15:47:32: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+31-Jan-23 15:47:33: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+31-Jan-23 15:47:34: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+31-Jan-23 15:47:34: Data for site 2020 Iron Point has the wrong year in it, older than its year
+31-Jan-23 15:47:34: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+31-Jan-23 15:47:37: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+31-Jan-23 15:47:37: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+31-Jan-23 15:47:38: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+31-Jan-23 15:47:39: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+31-Jan-23 15:55:09: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+31-Jan-23 15:55:09: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+31-Jan-23 15:55:09: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+31-Jan-23 15:55:10: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+31-Jan-23 15:55:10: Data for site 2020 Iron Point has the wrong year in it, older than its year
+31-Jan-23 15:55:10: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+31-Jan-23 15:55:14: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+31-Jan-23 15:55:14: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+31-Jan-23 15:55:15: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+31-Jan-23 15:55:16: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+31-Jan-23 15:59:17: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+31-Jan-23 15:59:18: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+31-Jan-23 15:59:18: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+31-Jan-23 15:59:19: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+31-Jan-23 15:59:19: Data for site 2020 Iron Point has the wrong year in it, older than its year
+31-Jan-23 15:59:19: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+31-Jan-23 15:59:22: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+31-Jan-23 15:59:23: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+31-Jan-23 15:59:24: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+31-Jan-23 15:59:24: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
