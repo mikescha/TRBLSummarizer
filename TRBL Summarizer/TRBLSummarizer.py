@@ -180,15 +180,18 @@ preserve_edges_flag = -99
 # Helper functions
 #
 #
+def my_time():
+    return dt.now().strftime('%d-%b-%y %H:%M:%S')
+
 def init_logging():
     if os.path.isfile(error_file):
         os.remove(error_file)
     with error_file.open("a") as f:
-        f.write(f"Logging started {dt.now().strftime('%d-%b-%y %H:%M:%S')}")    
+        f.write(f"Logging started {my_time()}")    
 
 def log_error(msg: str):
     with error_file.open("a") as f:
-        f.write(msg + '\n')
+        f.write("{my_time()}: " + msg + '\n')
 
 def show_error(msg: str):
     st.error("Whoops! " + msg + "! This may not work correctly.")
@@ -495,7 +498,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2020 Ohlone - Santa Lucia Preserve')
+    return('2018 Markham Ravine')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1028,6 +1031,9 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
 
 #Used below to get min temp that isn't zero
 def min_above_zero(s:pd.Series):
+    #TODO: If the PRCP for every month is 0 then this crashes because the generator is empty
+    # how to fix?
+    #  
     return min(i for i in s if i > 0)
 
 def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
@@ -1054,6 +1060,10 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                 ax2.plot(w.index.values.astype(str), w['value'], color = temp_color)
             else: #TMIN
                 ax2.plot(w.index.values.astype(str), w['value'], color = 'pink')
+
+        # TODO: annotate weather graph
+        #   - Note the 100F line
+        #   - Add something about what the scale is
 
         # VERTICAL TICK FORMATTING AND CONTENT
         # Adjust the axis limits
