@@ -72,14 +72,12 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 24790,2021 Wind Wolves Preserve,34.9574,-119.132,100,America/Los_Angeles,6481
 34485,2022 Baja 1,32.53798,-116.31848,100,America/Tijuana,7507
 34486,2022 Baja 2,32.53799,-116.31814,100,America/Tijuana,0
-34044,2022 Colusa NWR 27.1,39.137332,-122.025965,100,America/Los_Angeles,7178
+34044,2022 Colusa NWR T27.1,39.137332,-122.025965,100,America/Los_Angeles,7178
 34079,2022 Colusa NWR T27.2,39.137406,-122.025967,100,America/Los_Angeles,7736
 34115,2022 Conaway East,38.646,-121.694,100,America/Los_Angeles,7183
 34111,2022 Conaway New Easement Pond West,38.63886,-121.70872,100,America/Los_Angeles,4743
 34112,2022 Conaway North,38.6547,-121.686,100,America/Los_Angeles,7898
 34113,2022 Conaway North A,38.6547,-121.686,100,America/Los_Angeles,7900
-34078,2022 Creed Road,38.241,-121.888,100,America/Los_Angeles,13273
-34040,2022 Foley Ranch,39.077,-121.494,100,America/Los_Angeles,0
 34118,2022 Foley Ranch A,39.07692,-121.49425,100,America/Los_Angeles,3105
 34119,2022 Foley Ranch B,39.07692,-121.49425,100,America/Los_Angeles,3109
 33966,2022 Hay Landfill,38.306,-121.825,100,America/Los_Angeles,14543
@@ -93,9 +91,8 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 33851,2022 OR1,44.772737,-121.237908,100,America/Los_Angeles,7373
 34073,2022 OR2,44.374056,-121.930472,100,America/Los_Angeles,5785
 34071,2022 Paicines Ranch - Teal Pond,36.713547,-121.295711,100,America/Los_Angeles,8369
-34072,2022 Paicines Ranch Teal Pond b,36.713547,-121.295711,100,America/Los_Angeles,7665
-34129,2022 Panoche Creek Loc 3,36.591,-120.591,100,America/Los_Angeles,6992
-34130,2022 Panoche Creek Loc 4,36.591,-120.769,100,America/Los_Angeles,6685
+34072,2022 Paicines Ranch - Teal Pond B,36.713547,-121.295711,100,America/Los_Angeles,7665
+34130,2022 Panoche Creek Loc 5,36.591,-120.769,100,America/Los_Angeles,5046
 33981,2022 Plumas Arboga 6,39.0375,-121.5352,57,America/Los_Angeles,0
 34012,2022 Plumas Arboga East,39.037433,-121.534099,100,America/Los_Angeles,7896
 34013,2022 Plumas Arboga West,39.037372,-121.536708,100,America/Los_Angeles,6897
@@ -112,3 +109,5 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 32016,Testing Data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
 32010,Training Data 2021 PA,39.03,-121.537,100,America/Los_Angeles,21
 32015,Training data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227
+34129,WRONG TIME FIX 2022 Panoche Creek Loc 3,36.591,-120.591,100,America/Los_Angeles,6992
+34078,WRONG TIME OFF BY 1HR 2022 Creed Road,38.241,-121.888,100,America/Los_Angeles,13273
