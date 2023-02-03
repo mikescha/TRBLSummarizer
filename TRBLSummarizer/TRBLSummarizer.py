@@ -180,7 +180,7 @@ missing_data_flag = -100
 preserve_edges_flag = -99
 
 dpi = 300
-scale = int(dpi/100)
+scale = int(dpi/300)
 
 
 #
