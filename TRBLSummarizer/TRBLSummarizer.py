@@ -124,8 +124,8 @@ song_cols = [data_columns[s] for s in songs]
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
 edge_c_tags = [tag_p1c, tag_p2c] #male chorus
-edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-edge_tags = edge_c_tags + edge_n_tags
+edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2, YNC=young nestling call
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2]
 all_tags = manual_tags + mini_manual_tags + edge_tags
 
 manual_cols = [data_columns[t] for t in manual_tags]
@@ -508,7 +508,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2018 Markham Ravine')
+    return('2022 WA Harder Spring')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -573,7 +573,8 @@ def set_global_theme():
                      'xtick.labelsize':'medium',
                      'xtick.major.size':'12',
                      'xtick.color':line_color,
-                     'xtick.bottom':'True',
+                     'xtick.bottom':'False',
+                     'xtick.labelbottom':'False',
                      'ytick.left':'False',
                      'ytick.labelleft':'False',
                      'figure.frameon':'False',
@@ -680,14 +681,11 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     n = 0
     x = 0
     for month in month_lengths:
+        #Center the label on the middle of the month, which is the #-days-in-the-month/2
         center_pt = int(month_lengths[month]/2)
-
-        #TODO If the month_length is too short to fit the text, then don't draw the text or maybe center it differently
-        #The line below shifts the label to the left a little bit to better center it on the month space. 
-        center_pt -= len(month)/4
         mid = x + center_pt
 
-        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small'})
+        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small', 'horizontalalignment':'center'})
         x += month_lengths[month]
         if n<max:
             for ax in axs:
@@ -1034,11 +1032,6 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             st.write(graph)
             
         if make_all_graphs or save_files:
-            #TODO if we want to put _ in the names then a) it neds to happen elsewhere, as this is 
-            #just putting them into the graph type and not the site name, and b) this breaks the
-            #code in the image compilation section because the filename it has (without underscore)
-            #doesn't match ones with the underscore
-            #graph_type = graph_type.replace(' ', '_')
             save_figure(site, graph_type)
     else:
         #No data, so show a message instead. 
@@ -1132,7 +1125,7 @@ def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:di
     tick2y = temp_min+8
 
     #blank out part of the 100F line so the label is readable
-    rect = Rectangle((max_x-label_xoffset,tick1y-5),-2,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
+    rect = Rectangle((max_x-label_xoffset,tick1y-5),-2.5,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
     ax2.add_patch(rect)
     
     #add tick label and ticks
@@ -1195,8 +1188,6 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
-        ax1.margins(0,tight=True)
-        ax2.margins(0,tight=True)
 
         plot_title(graph_weather) #site_name + ' ' +  to include site
 
@@ -1221,7 +1212,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         #axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
-
+        
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_linewidth(0.5)
         ax1.spines[:].set_visible(True)
@@ -1241,6 +1232,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
                    fontsize='x-small')
+
     else:
         fig = plt.figure()
 
@@ -1514,27 +1506,35 @@ for site in target_sites:
     #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
     #   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
     #   5. Merge the tables together so we get one block of heatmaps
-    #   
-    #TODO add the new things having to do with ONC and YNC tags
 
     pt_edge = pd.DataFrame()
     edge_data_empty = False
-    for tag in edge_cols:
+    site_has_YNC_tag = not filter_df_by_tags(df_site, [tag_YNC_p2]).empty
+    for tag in edge_cols: # tag_p1c, tag_p2c, tag_p1n, tag_p2n
+        # Get all the rows where this tag has a value > 0
         df_for_tag = filter_df_by_tags(df_site, [tag])
         edge_data_empty = edge_data_empty or len(df_for_tag)
+
+        # Get the column we want to filter based on this tag
         if tag in edge_c_cols:
             target_col = data_columns[courtsong]
         else:
-            target_col = data_columns[altsong1]
+            #WENDY
+            # We are doing an N tag. 
+            # If it is P2N and there is at least one tag_YNC_p2 with a non-zero value then
+            # count tag_YNC_p2 else count altsong1
 
-        #TODO
-        # Validate that all values in target_col are values and not --- or NaN
-        #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
-        #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
+            if tag == data_columns[tag_p2n] and site_has_YNC_tag:
+                target_col = data_columns[tag_YNC_p2]
+            else:
+                target_col = data_columns[altsong1]
 
         # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
         # this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
         # had tags but no songs
+
+        # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
+        # and it further filters it to the columns that have a non-zero value in the target_col
         pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
         pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
         pt_edge = pd.concat([pt_edge, pt_for_tag])
