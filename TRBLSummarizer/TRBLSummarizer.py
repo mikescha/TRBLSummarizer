@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as transforms
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
-import matplotlib.transforms as transforms
 from matplotlib import cm
 from pathlib import Path
 import os
@@ -173,11 +174,15 @@ files = {
     data_old_file : data_dir / data_old_file
 }
 
-
 pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
 
 missing_data_flag = -100
 preserve_edges_flag = -99
+
+dpi = 300
+scale = int(dpi/300)
+
+
 #
 #
 # Helper functions
@@ -487,7 +492,7 @@ def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, p
 
     return normalize_pt(summary, date_range_dict)
 
-
+# Pivot table for pattern matching is a little different
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
     summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_columns[date_str]], 
@@ -560,7 +565,7 @@ def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
     line_color = 'gray'
     line_width = '0.75'
-    custom_params = {'figure.dpi':'300', 
+    custom_params = {'figure.dpi':dpi, 
                      'font.family':'Arial', #'sans-serif'
                      'font.size':'12',
                      'font.stretch':'normal',
@@ -577,16 +582,58 @@ def set_global_theme():
                      'axes.spines.top':'False',
                      'axes.spines.bottom':'False',
                      'axes.edgecolor':line_color,
+                     'axes.xmargin':0,
+                     'axes.ymargin':0,
                      'lines.color':line_color,
                      'lines.linewidth':line_width,
                      'patch.edgecolor':line_color,
                      'patch.linewidth':line_width,
                      'savefig.facecolor':'white'
                      }
-    #The base context is "notebook", and the other contexts are "paper", "talk", and "poster".
-    sns.set_theme(context = 'paper', 
-                  style = 'white',
-                  rc = custom_params)
+    mpl.rcParams.update(custom_params)
+
+
+def output_cmap(save_files):
+    if save_files:
+        filename = 'legend.png'
+        figure_path = figure_dir / filename
+        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+
+
+def draw_cmap(cmap:dict):
+    good_cmap = cmap.copy()
+    del good_cmap["bad"]
+
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+
+    fig = plt.figure(figsize=(fig_w*0.75, fig_h*0.28), layout='constrained')
+    gs = fig.add_gridspec(nrows=1, ncols=len(good_cmap), wspace=0)
+    axs = gs.subplots()
+
+    friendly_names={data_columns[malesong]:'Male\nSong', 
+                    data_columns[courtsong]:'Male\nChorus', 
+                    data_columns[altsong2]:'Female\nSong', 
+                    data_columns[altsong1]:'Nestling and\nFledgling Call'}
+
+    for ax, call_type in zip(axs, good_cmap):
+        ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[good_cmap[call_type]])
+
+        ax.text(1.02, 0.5, friendly_names[call_type], verticalalignment='center', horizontalalignment='left',
+                fontsize=8, transform=ax.transAxes)
+        ax.add_patch(Rectangle((0,0), 1, 1, ec='black', fill=False, transform=ax.transAxes))
+        
+    # Turn off *all* ticks & spines, not just the ones with colormaps.
+    for ax in axs:
+        ax.set_axis_off()
+    
+#    st.pyplot(fig)
+    col1, col3, col5= st.columns([1,4, 1])
+    with col3:
+        st.pyplot(fig)
+    return
+
+
 
 def get_days_per_month(date_list:list) -> dict:
     # Make a list of all the values, but only use the month name. Then, count how many of each 
@@ -625,7 +672,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     if weather_graph:
-        y = -0.33
+        y = -0.3
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
@@ -667,8 +714,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     tick_spacing = 0
 
     # Create the base figure for the graphs
-    fig, axs = plt.subplots(nrows = row_count, 
-                            ncols = 1,
+    fig, axs = plt.subplots(nrows = row_count, ncols = 1,
                             sharex = 'col', 
                             gridspec_kw={'height_ratios': np.repeat(1,row_count), 
                                          'left':0, 'right':1, 'bottom':0, 'top':top_gap,
@@ -692,14 +738,20 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     i=0
     for row in row_names:
         # plotting the heatmap
-        data_points = df_clean.loc[row].max()
+        heatmap_max = df_clean.loc[row].max()
 
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[row].to_frame().transpose()
+        #x_max = len(df_to_graph.columns)*scale
+        #axs[i].imshow(df_to_graph, 
+        #                    cmap = cmap[row] if len(cmap) > 1 else cmap[0],
+        #                    vmin = 0, vmax = heatmap_max if heatmap_max > 0 else 1,
+        #                    interpolation='nearest',
+        #                    origin='upper', extent=(0,x_max,0,x_max/fig_w))
         axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
                         cmap = cmap[row] if len(cmap) > 1 else cmap[0],
-                        vmin = 0, vmax = data_points if data_points > 0 else 1,
+                        vmin = 0, vmax = heatmap_max if heatmap_max > 0 else 1,
                         cbar = False,
                         xticklabels = tick_spacing,
                         yticklabels = False)
@@ -727,7 +779,8 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                 if row in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
-                    axs[i].add_patch(Rectangle((first,0), last-first, 0.99, ec=c, fc=c, fill=False))
+                    axs[i].add_patch(Rectangle((first,0), last-first, 0.99, 
+                                     ec=c, fc=c, fill=False))
                     
                 else: #n tags get boxes around each consecutive block
                     borders = []
@@ -770,23 +823,23 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                                          fc='none', ec='C0', lw=0.5)
                 fig.add_artist(rect)
     
-    if len(graph_drawn):
-        # Clean up the ticks on the axis we're going to use
-        format_xdateticks(axs[len(row_names)-1])
-        draw_axis_labels(get_days_per_month(df.columns.tolist()), axs)
+    # Clean up the ticks on the axis we're going to use
+    # Set x-ticks
+    #axs[len(row_names)-1].set_xticks(np.arange(0,len(df_to_graph.columns)), labels=df_to_graph.columns)
+    #format_xdateticks(axs[len(row_names)-1])
+    
+    # Add the vertical lines and month names
+    draw_axis_labels(get_days_per_month(df.columns.tolist()), axs)
 
-        #Hide the ticks on the top graphs
-        for i in range(0,len(row_names)-1):
-            axs[i].tick_params(bottom = False)
-    else: 
-        #Need to hide the ticks, although I don't think this will get called anymore since I now create
-        #an empty row for each index, so we always have something to graph
-        axs[len(row_names)-1].tick_params(bottom = False, labelbottom = False)
+    #Hide the ticks as we don't want them, we're just using them
+    for i in graph_drawn:
+        axs[i].tick_params(labelbottom=False, bottom=False)
 
     # Draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
         # (lower-left corner), width, height
-        (0.0, 0.0), 1.0, top_gap, fill=False, zorder=1000, transform=fig.transFigure, figure=fig)
+        (0.0, 0.0), 1.0, top_gap, 
+        linewidth = 0.5, fill=False, zorder=1000, transform=fig.transFigure, figure=fig)
     fig.patches.extend([rect])
 
     # return the final plotted heatmap
@@ -857,7 +910,7 @@ def get_month_locs_from_graph() -> dict:
         locs['max']=x    
     return locs
 
-def concat_images(*images):
+def concat_images(*images, is_legend=False):
     """Generate composite of all supplied images."""
     # Get the widest width.
     #TODO Why aren't the images all the same width?
@@ -865,34 +918,48 @@ def concat_images(*images):
     # Add up all the heights.
     height = sum(image.height for image in images)
     composite = Image.new('RGB', (width, height), color='white')
+
     # Paste each image below the one before it.
     y = 0
-    for image in images:
-        composite.paste(image, (0, y))
-        y += image.height
+    if is_legend:
+        # In this case,  there will be exactly two images. The first one is the main image 
+        # and the second is the legend, which should be centered.
+        composite.paste(images[0], (0,0))
+        y += images[0].height
+        x = int((width-images[1].width)/2)
+        composite.paste(images[1], (x,y))
+    else:
+        for image in images:
+            composite.paste(image, (0, y))
+            y += image.height
     return composite
 
 def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
     #Make a new image that's a little bigger so we can add the site name at the top
     width, height = composite.size
-    title_height = 125
-    month_row_height = 80
-    border_width = 4
-    border_height = border_width * 2 
-    margin_bottom = 20
+    title_height = 125 * scale
+    month_row_height = 80 * scale
+    border_width = 4 * scale
+    border_height = border_width * 2  * scale
+    margin_bottom = 20 * scale
     new_height = height + title_height + month_row_height + border_height + margin_bottom
+
+    title_font_size = 72 * scale
+    month_font_size = 36 * scale
+    fudge = 10 * scale #for descenders
+    
     final = Image.new(composite.mode, (width, new_height), color='white')
 
     #Add the title
     draw = ImageDraw.Draw(final)
-    font = ImageFont.truetype("arialbd.ttf", size=72)
-    draw.text((width/2,title_height-10), site, fill='black', anchor='ms', font=font)
+    font = ImageFont.truetype("arialbd.ttf", size=title_font_size)
+    draw.text((width/2,title_height-fudge), site, fill='black', anchor='ms', font=font)
 
     #Add the months
-    margin_left = 27
-    margin_right = 1982
-    font = ImageFont.truetype("arial.ttf", size=36)
-    v_pos = title_height + month_row_height - 10 #for descenders
+    margin_left = 27 * scale
+    margin_right = 1982 * scale
+    font = ImageFont.truetype("arial.ttf", size=month_font_size)
+    v_pos = title_height + month_row_height - fudge
     month_row_width = margin_right - margin_left
     
     max_width = month_locs['max']
@@ -901,7 +968,7 @@ def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
     for month in month_locs:
         m_left = month_locs[month][0]
         m_right = month_locs[month][1]
-        m_center = (month_locs[month][1] - month_locs[month][0]) * 0.5
+        m_center = (m_right - m_left) * 0.5
         row_center = (m_left + m_center)/max_width 
         h_pos =  (row_center * month_row_width) + margin_left
         draw.text((h_pos, v_pos), month, fill='black', font=font, anchor='ms')
@@ -939,18 +1006,22 @@ def combine_images(site:str, month_locs:dict):
                     #TODO Need to add some error checking to not crash if somehow none of the graph names are present 
                     if graph_type in fig.name and os.path.getsize(fig)>1000:
                         site_fig_dict[graph_type] = fig.path
+            elif 'legend' in fig.name:
+                legend = fig.path
 
         # Now have the list of figures.  
         if len(site_fig_dict) > 0:
             # Building the list of the figures but it needs to be in a specific order so that 
             # the composite looks right
             site_fig_list = []
+            graph_names.append('legend')
             for g in graph_names:
-                if g in site_fig_dict:
+                if g in site_fig_dict and g != graph_weather:
                     site_fig_list.append(site_fig_dict[g])
             images = [Image.open(f) for f in site_fig_list]
             composite = concat_images(*images)
-
+            composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
+            composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
             final = apply_decorations_to_composite(composite, month_locs)
             final.save(composite_path)
     return
@@ -1102,6 +1173,20 @@ def min_above_zero(s:pd.Series):
 
     return min_temp
 
+#
+# Something funky here...the weather graph is slightly offset from the others even though when viewed in the
+# Paint they look the same. However, when I show the composite from the debugger after adding the weather
+# graph, you can see that the border on the outside of the weather graph is slightly different. So, there 
+# is some scaling that needs to be done that i'm missing... 
+#
+# Know:
+# - number of data points is the same across all graphs
+# - the error gets greater further we go across the graph
+# - the error doesn't seem to be bigger as DPI increases
+# - Line Width of the external frame is smaller on the weather graph (like 0.5pt instead of 0.75pt)
+# -  
+
+
 def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
     if len(weather_by_type)>0:
         # The use of rows, cols, and gridspec is to force the graph to be drawn in the same 
@@ -1127,13 +1212,13 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                 ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['low'])
         
         max_x = len(w['value']) - 1
-        add_weather_graph_yticks(ax1, ax2, max_x,wg_colors)
+        add_weather_graph_yticks(ax1, ax2, max_x, wg_colors)
 
         # HORIZONTAL TICKS AND LABLING 
         # Need to set xlim so that we don't get an extra gap on either side
         ax1.set_xlim(0, len(w['value'])-1)
         # Get the list of ticks and set them 
-        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
+        #axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
 
@@ -1144,11 +1229,11 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         # Add a legend for the figure
         # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
         tmax_label = f"High temp ({min_above_zero(weather_by_type[weather_tmax]['value']):.0f}-"\
-                     f"{weather_by_type[weather_tmax]['value'].max():.0f}F)"
+                     f"{weather_by_type[weather_tmax]['value'].max():.0f}\u00B0F)"
         tmin_label = f"Low temp ({min_above_zero(weather_by_type[weather_tmin]['value']):.0f}-"\
-                     f"{weather_by_type[weather_tmin]['value'].max():.0f}F)"
-        prcp_label = f"Precipitation ({min_above_zero(weather_by_type[weather_prcp]['value']):.2f}-"\
-                     f"{weather_by_type[weather_prcp]['value'].max():.2f})"
+                     f"{weather_by_type[weather_tmin]['value'].max():.0f}\u00B0F)"
+        prcp_label = f"Precipitation (0-"\
+                     f"{weather_by_type[weather_prcp]['value'].max():.2f}\042)"
         legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=4, label=tmax_label),
                            Line2D([0], [0], color=wg_colors['low'], lw=4, label=tmin_label),
                            Line2D([0], [0], color=wg_colors['prcp'], lw=4, label=prcp_label)]
@@ -1528,6 +1613,10 @@ for site in target_sites:
     if len(month_locs)==0:
         month_locs = get_month_locs_from_graph() 
     output_graph(site, graph_edge, save_files, make_all_graphs, edge_data_empty)
+
+    #Create a graphic for our legend
+    draw_cmap(cmap)
+    output_cmap(save_files)
 
     #Show weather, as needed            
     if st.sidebar.checkbox('Show station weather', True):
