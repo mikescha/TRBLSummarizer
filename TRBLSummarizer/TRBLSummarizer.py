@@ -568,7 +568,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    return('2022 WA Harder Spring')
+    #return('2022 WA Harder Spring')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1699,10 +1699,9 @@ for site in target_sites:
         graph = create_weather_graph(weather_by_type, site)
         output_graph(site, graph_weather, save_files, make_all_graphs)
     
-    #TODO remove the "True" below when we're done debugging
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs)
-        #TODO clean up by deleting all the files with "clean" in their name
+        #TODO clean up by deleting all the files with "clean" in their name?
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
