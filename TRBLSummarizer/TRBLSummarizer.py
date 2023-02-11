@@ -31,10 +31,6 @@ being_deployed_to_streamlit = True
 bad_files = 'bad'
 filename_str = 'filename'
 site_str = 'site'
-malesong = 'malesong'
-altsong2 = 'altsong2'
-altsong1 = 'altsong1'
-courtsong = 'courtsong'
 date_str = 'date'
 hour_str = 'hour'
 tag_wse = 'tag_edge'
@@ -51,11 +47,17 @@ tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
+tag_p1f = 'tag_p1f'
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_ONC_p1 = 'tag<ONC-p1>'
 tag_YNC_p1 = 'tag<YNC-p1>'
 tag_YNC_p2 = 'tag<YNC-p2>'
+malesong = 'malesong'
+altsong2 = 'altsong2'
+altsong1 = 'altsong1'
+courtsong = 'courtsong'
+simplecall2 = 'simplecall2'
 
 present = 'present'
 
@@ -78,6 +80,7 @@ data_columns = {
     tag_p1n      : 'tag<p1n>',
     tag_p2c      : 'tag<p2c>',
     tag_p2n      : 'tag<p2n>',
+    tag_p1f      : 'tag<p1f>',
     tag_mhe      : 'tag<reviewed-MH-e>', #WENDY this is still in the data file, should it be?
     tag_mhe2     : 'tag<reviewed-MH-e2>', #WENDY this is still in the data file, should it be?
     tag_mhh      : 'tag<reviewed-MH-h>',
@@ -93,6 +96,7 @@ data_columns = {
     altsong1     : 'val<Agelaius tricolor/Alternative Song>',
     altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
     courtsong    : 'val<Agelaius tricolor/Courtship Song>',
+    simplecall2  : 'val<Agelaius tricolor/Simple Call 2>',
 }
 
 site_columns = {
@@ -117,15 +121,15 @@ site_columns = {
     'site_id'   : 'site_id'
 }
 
-songs = [malesong, courtsong, altsong2, altsong1]
+songs = [malesong, courtsong, altsong2, altsong1, simplecall2]
 song_cols = [data_columns[s] for s in songs]
 
 #TODO When we get a new data file, update all these lists
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
 edge_c_tags = [tag_p1c, tag_p2c] #male chorus
-edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2, YNC=young nestling call
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2]
+edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f] #YNC=young nestling call
 all_tags = manual_tags + mini_manual_tags + edge_tags
 
 manual_cols = [data_columns[t] for t in manual_tags]
@@ -333,6 +337,23 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     
     return error_found
 
+# Confirm that a date has either a p1f tag or a p1n tag, but not both
+def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
+    error_found = False
+
+    p1f = filter_df_by_tags(df, [data_columns[tag_p1f]])
+    p1n = filter_df_by_tags(df, [data_columns[tag_p1n]])
+
+    #TODO The logic below is fine to keep but not sufficient. What we also need is, group by date. For each day, there should ONLY be either P1F or P1N, never both.
+    for f in p1f[filename_str]:
+        if f in p1n[filename_str]:
+            if not error_found:
+                show_error("Found recordings that have both P1F and P1N tags, see log")
+                error_found = True
+            log_error(f"Recording has both P1F and P1N tags: {f}")
+
+    return error_found 
+
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.experimental_singleton(suppress_st_warning=True)
 def load_data() -> pd.DataFrame:
@@ -464,26 +485,39 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
 # filter_str is '>0' by default because that's what most queries involve, but if a 
 # different string is passed in then we use that instead. 
-def filter_df_by_tags(site_df:pd.DataFrame, target_tags:list, filter_str='>0') -> pd.DataFrame:
+def filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclude_tags=[]) -> pd.DataFrame:
     # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-    query = ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags])
-    filtered_df = site_df.query(query)
+    query  =  '(' + ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags]) + ')' 
+    query += ' & ~'.join([f'`{tag}`{filter_str}' for tag in exclude_tags])
+    filtered_df = df.query(query)
     return filtered_df
 
 # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
 # Also, transpose to get the right shape for the graph
 def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
-    pt = pt.reindex(date_range).fillna(0)
-    pt = pt.transpose()
-    return pt
+    temp = pt.reindex(date_range).fillna(0)
+    temp = temp.transpose()
+    return temp
 
 # Generate the pivot table for the site
-def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False) -> pd.DataFrame:
-    #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
-    #that the test 'x>=1' is true.
-    summary = pd.pivot_table(site_df, values = labels, index = [data_columns[date_str]], 
-                              aggfunc = lambda x: (x>=1).sum()) 
+def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False, label_dict={}) -> pd.DataFrame:
+    if len(label_dict):
+        #Assumes dict is: {column to filter on: column to count}
+        #In this case, we filter to only columns that match the key, and then count the columns that are non-zero
+        summary = pd.DataFrame()
+        for tag in label_dict:
+            temp = filter_df_by_tags(site_df, [tag])
+            temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_columns[date_str]], 
+                                aggfunc = lambda x: (x>=1).sum())
+            temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
+            summary = pd.concat([summary, temp_pt]).groupby('date').sum()            
+        summary.rename(columns={'temp':tag}, inplace=True) #rename the index so that it's the tag, not the song name
+    else:
+        #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
+        #that the test 'x>=1' is true.
+        summary = pd.pivot_table(site_df, values = labels, index = [data_columns[date_str]], 
+                                aggfunc = lambda x: (x>=1).sum()) 
 
     if preserve_edges:
         # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
@@ -1508,35 +1542,44 @@ for site in target_sites:
     #   5. Merge the tables together so we get one block of heatmaps
 
     pt_edge = pd.DataFrame()
-    edge_data_empty = False
+    have_edge_data = False
     site_has_YNC_tag = not filter_df_by_tags(df_site, [tag_YNC_p2]).empty
+    #TODO Fix this, see comments in function
+    check_edge_cols_for_errors(df_site)
+
     for tag in edge_cols: # tag_p1c, tag_p2c, tag_p1n, tag_p2n
-        # Get all the rows where this tag has a value > 0
-        df_for_tag = filter_df_by_tags(df_site, [tag])
-        edge_data_empty = edge_data_empty or len(df_for_tag)
-
         # Get the column we want to filter based on this tag
+        target_tags = [tag]
         if tag in edge_c_cols:
-            target_col = data_columns[courtsong]
-        else:
-            #WENDY
-            # We are doing an N tag. 
-            # If it is P2N and there is at least one tag_YNC_p2 with a non-zero value then
-            # count tag_YNC_p2 else count altsong1
-
-            if tag == data_columns[tag_p2n] and site_has_YNC_tag:
-                target_col = data_columns[tag_YNC_p2]
+            target_cols = [data_columns[courtsong]]
+        elif tag == data_columns[tag_p1n]:
+            # In this case, a day can only have P1N tag or P1F. It can never have both. We checked this above.
+            # So, if a row has P1F then count SC2, and if a row has P1N then count AltSong1
+            target_tags.append(data_columns[tag_p1f])
+            target_cols = [data_columns[altsong1], data_columns[simplecall2]]
+        else: #tag == p2n
+            if site_has_YNC_tag:
+                target_cols = [data_columns[tag_YNC_p2]]
             else:
-                target_col = data_columns[altsong1]
+                target_cols = [data_columns[altsong1]]
+
 
         # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        # this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-        # had tags but no songs
-
+        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        #    had tags but no songs
         # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
-        # and it further filters it to the columns that have a non-zero value in the target_col
-        pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
-        pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
+        #    and it further filters it to the columns that have a non-zero value in the target_col
+        df_for_tag = filter_df_by_tags(df_site, target_tags)
+        have_edge_data = have_edge_data or len(df_for_tag)
+        if tag == data_columns[tag_p1n]:
+            pt_cols = {data_columns[tag_p1f]:data_columns[simplecall2], data_columns[tag_p1n]:data_columns[altsong1]}
+            pt_for_tag = make_pivot_table(df_for_tag, [], date_range_dict, preserve_edges=True, label_dict=pt_cols)
+
+        else:
+            # Get all the rows where this tag has a value > 0
+            pt_for_tag = make_pivot_table(df_for_tag, target_cols, date_range_dict, preserve_edges=True)
+
+        pt_for_tag = pt_for_tag.rename({target_cols[0]:tag}) #rename the index so that it's the tag, not the song name
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
     # PATTERN MATCHING ANALYSIS
@@ -1612,7 +1655,7 @@ for site in target_sites:
                         title = graph_edge)
     if len(month_locs)==0:
         month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_edge, save_files, make_all_graphs, edge_data_empty)
+    output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
 
     #Create a graphic for our legend
     draw_cmap(cmap)
