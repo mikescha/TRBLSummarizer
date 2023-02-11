@@ -65,7 +65,7 @@ start_str = 'start'
 end_str = 'end'
 
 #Master list of all the columns I need. If columns get added/removed then this needs to update
-data_columns = {
+data_col = {
     filename_str : 'filename', 
     site_str     : 'site', 
     'day'        : 'day',
@@ -121,8 +121,10 @@ site_columns = {
     'site_id'   : 'site_id'
 }
 
-songs = [malesong, courtsong, altsong2, altsong1, simplecall2]
-song_cols = [data_columns[s] for s in songs]
+songs = [malesong, courtsong, altsong2, altsong1]
+song_cols = [data_col[s] for s in songs]
+all_songs = [malesong, courtsong, altsong2, altsong1, simplecall2] 
+all_song_cols = [data_col[s] for s in all_songs]
 
 #TODO When we get a new data file, update all these lists
 manual_tags = [tag_mh, tag_ws, tag_]
@@ -132,10 +134,10 @@ edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
 edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f] #YNC=young nestling call
 all_tags = manual_tags + mini_manual_tags + edge_tags
 
-manual_cols = [data_columns[t] for t in manual_tags]
-mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
-edge_c_cols = [data_columns[t] for t in edge_c_tags]
-edge_n_cols = [data_columns[t] for t in edge_n_tags]
+manual_cols = [data_col[t] for t in manual_tags]
+mini_manual_cols = [data_col[t] for t in mini_manual_tags]
+edge_c_cols = [data_col[t] for t in edge_c_tags]
+edge_n_cols = [data_col[t] for t in edge_n_tags]
 all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
@@ -186,6 +188,7 @@ preserve_edges_flag = -99
 dpi = 300
 scale = int(dpi/300)
 
+error_list = ''
 
 #
 #
@@ -203,12 +206,14 @@ def init_logging():
             f.write(f"Logging started {my_time()}")    
 
 def log_error(msg: str):
+    global error_list
+    error_list += f"{msg}\n\n"
     if not being_deployed_to_streamlit:
         with error_file.open("a") as f:
-            f.write(f"{my_time()}: " + msg + "\n")
+            f.write(f"{my_time()}: {msg}\n")
 
 def show_error(msg: str):
-    st.error("Whoops! " + msg + "! This may not work correctly.")
+    st.error(msg)
     log_error(msg)
 
 def pairwise(iterable):
@@ -341,16 +346,32 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
 def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     error_found = False
 
-    p1f = filter_df_by_tags(df, [data_columns[tag_p1f]])
-    p1n = filter_df_by_tags(df, [data_columns[tag_p1n]])
+    # For each day, there should be only either P1F or P1N, never both
+    tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
 
-    #TODO The logic below is fine to keep but not sufficient. What we also need is, group by date. For each day, there should ONLY be either P1F or P1N, never both.
-    for f in p1f[filename_str]:
-        if f in p1n[filename_str]:
-            if not error_found:
-                show_error("Found recordings that have both P1F and P1N tags, see log")
-                error_found = True
-            log_error(f"Recording has both P1F and P1N tags: {f}")
+    if len(tag_errors):
+        error_found = True
+        show_error("Found recordings that have both P1F and P1N tags, see log")
+        for f in tag_errors[filename_str]: 
+            log_error(f"{f}\tRecording has both P1F and P1N tags")
+    
+    # If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
+    # If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
+    error_case = {data_col[tag_p1c] : data_col[courtsong],
+                  data_col[tag_p2c] : data_col[courtsong],
+                  data_col[tag_p1n] : data_col[altsong1],
+                  data_col[tag_p2n] : data_col[altsong1],
+    }
+    tag_errors = pd.DataFrame()
+    for e in error_case:
+        tag_errors = pd.concat([tag_errors, df.loc[(df[e] >= 1) & (df[error_case[e]] > 1)]])
+
+    if len(tag_errors):
+        error_found = True
+        show_error("Found recordings that have song count > 1 for edge analysis, see log")
+        for f in tag_errors[filename_str]:
+            log_error(f"{f}\tRecording has soung count > 1")
+
 
     return error_found 
 
@@ -361,19 +382,19 @@ def load_data() -> pd.DataFrame:
 
     #Validate the data file format
     headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
-    confirm_columns(data_columns, headers, data_file)
+    confirm_columns(data_col, headers, data_file)
     
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-    usecols = [data_columns[filename_str], data_columns[site_str], data_columns[date_str]]
-    for song in songs:
-        usecols.append(data_columns[song])
+    usecols = [data_col[filename_str], data_col[site_str], data_col[date_str]]
+    for song in all_songs:
+        usecols.append(data_col[song])
     for tag in all_tags:
-        usecols.append(data_columns[tag])
+        usecols.append(data_col[tag])
 
     df = pd.read_csv(data_csv, 
                      usecols = usecols,
-                     parse_dates = [data_columns[date_str]],
-                     index_col = [data_columns[date_str]])
+                     parse_dates = [data_col[date_str]],
+                     index_col = [data_col[date_str]])
     return df
 
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
@@ -469,8 +490,8 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     df_clean = df_clean.replace('---', missing_data_flag)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
-    for s in songs:
-        df_clean[data_columns[s]] = pd.to_numeric(df_clean[data_columns[s]])
+    for s in all_songs:
+        df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
 
 
@@ -501,35 +522,40 @@ def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     return temp
 
 # Generate the pivot table for the site
-def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False, label_dict={}) -> pd.DataFrame:
-    if len(label_dict):
-        #Assumes dict is: {column to filter on: column to count}
-        #In this case, we filter to only columns that match the key, and then count the columns that are non-zero
-        summary = pd.DataFrame()
-        for tag in label_dict:
-            temp = filter_df_by_tags(site_df, [tag])
-            temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_columns[date_str]], 
-                                aggfunc = lambda x: (x>=1).sum())
-            temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
-            summary = pd.concat([summary, temp_pt]).groupby('date').sum()            
-        summary.rename(columns={'temp':tag}, inplace=True) #rename the index so that it's the tag, not the song name
+def make_pivot_table(df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False, label_dict={}) -> pd.DataFrame:
+    if len(df):
+        if len(label_dict):
+            #Assumes dict is: {column to filter on: column to count}
+            #In this case, we filter to only columns that match the key, and then count the columns that are non-zero
+            summary = pd.DataFrame()
+            for tag in label_dict:
+                temp = filter_df_by_tags(df, [tag])
+                temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[date_str]], 
+                                    aggfunc = lambda x: (x>=1).sum())
+                temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
+                if len(temp_pt):
+                    summary = pd.concat([summary, temp_pt]).groupby('date').sum()            
+            summary.rename(columns={'temp':tag}, inplace=True) #rename the index so that it's the tag, not the song name
+        else:
+            #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
+            #that the test 'x>=1' is true.
+            summary = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
+                                    aggfunc = lambda x: (x>=1).sum()) 
+
+        if preserve_edges:
+            # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
+            # graph later, we'll use this to show where the edges of the analysis were
+            summary = summary.replace(to_replace=0, value=preserve_edges_flag)
+
+        return normalize_pt(summary, date_range_dict)
     else:
-        #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
-        #that the test 'x>=1' is true.
-        summary = pd.pivot_table(site_df, values = labels, index = [data_columns[date_str]], 
-                                aggfunc = lambda x: (x>=1).sum()) 
+        return pd.DataFrame()
 
-    if preserve_edges:
-        # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
-        # graph later, we'll use this to show where the edges of the analysis were
-        summary = summary.replace(to_replace=0, value=preserve_edges_flag)
-
-    return normalize_pt(summary, date_range_dict)
 
 # Pivot table for pattern matching is a little different
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
-    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_columns[date_str]], 
+    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
                               aggfunc = lambda x: (x==present).sum())
     summary = summary.rename(columns={validated:type_name})
     return normalize_pt(summary, date_range_dict)
@@ -646,10 +672,10 @@ def draw_cmap(cmap:dict):
     gs = fig.add_gridspec(nrows=1, ncols=len(good_cmap), wspace=0)
     axs = gs.subplots()
 
-    friendly_names={data_columns[malesong]:'Male\nSong', 
-                    data_columns[courtsong]:'Male\nChorus', 
-                    data_columns[altsong2]:'Female\nSong', 
-                    data_columns[altsong1]:'Nestling and\nFledgling Call'}
+    friendly_names={data_col[malesong]:'Male\nSong', 
+                    data_col[courtsong]:'Male\nChorus', 
+                    data_col[altsong2]:'Female\nSong', 
+                    data_col[altsong1]:'Nestling and\nFledgling Call'}
 
     for ax, call_type in zip(axs, good_cmap):
         ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[good_cmap[call_type]])
@@ -1380,37 +1406,47 @@ def show_station_info(site_name:str):
 #    check that all "val" columns have a number. 
 #    If any of them have a "---" or not a number then print out the filename of that row.
 def check_tags(df: pd.DataFrame):
-
-    if True or st.sidebar.checkbox('Show errors'):
+    if st.sidebar.checkbox('Show errors', value=True):
         bad_rows = pd.DataFrame()                                               
         #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
-        non_zero_rows = filter_df_by_tags(df, [data_columns[tag_mhm], 
-                                               data_columns[tag_wsm]])
+        non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
+                                               data_col[tag_wsm]])
         bad_rows = pd.concat([bad_rows, 
                               filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
 
         #P1C, P2C throws an error if it's missing courtsong song
         non_zero_rows = filter_df_by_tags(df, edge_c_cols)
         bad_rows = pd.concat([bad_rows,
-                              filter_df_by_tags(non_zero_rows, [data_columns[courtsong]], '=={}'.format(missing_data_flag))])
+                              filter_df_by_tags(non_zero_rows, [data_col[courtsong]], '=={}'.format(missing_data_flag))])
 
         #P1N, P2N throws an error if it's missing alternative song
         non_zero_rows = filter_df_by_tags(df, edge_n_cols)
         bad_rows = pd.concat([bad_rows, 
-                              filter_df_by_tags(non_zero_rows, [data_columns[altsong1]], '=={}'.format(missing_data_flag))])       
+                              filter_df_by_tags(non_zero_rows, [data_col[altsong1]], '=={}'.format(missing_data_flag))])       
 
-        if not(bad_rows.empty):
+        if len(bad_rows):
+            for r in bad_rows[filename_str]:
+                log_error(f"{r} missing song tag")
+
+        if not(bad_rows.empty) or len(error_list):
             with st.expander('See errors'):
-                bad_rows.sort_values(by='filename', inplace=True)
-                st.write('Total errors: {}'.format(len(bad_rows)))
-                
-                #Pull out date so we can format it
-                bad_rows.reset_index(inplace=True)
-                bad_rows.rename(columns={'index':'Date'}, inplace=True)
+                #This code prints a formatted table of just the missing song tag rows, not currently
+                #necessary but here just in case I want to bring this back.
+#                if not(bad_rows.empty):
+#                    bad_rows.sort_values(by='filename', inplace=True)
+#                    #Pull out date so we can format it
+#                    bad_rows.reset_index(inplace=True)
+#                    bad_rows.rename(columns={'index':'Date'}, inplace=True)
+#
+#                    pretty_print_table(bad_rows)
+                    
+                st.write(error_list)
 
-                pretty_print_table(bad_rows)
         else:
             st.write('No tag errors found')
+        
+
+
 
 # Clean up a pivottable so we can display it as a table
 def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
@@ -1495,7 +1531,7 @@ site_counter = 0
 for site in target_sites:
     site_counter += 1
     # Select the site matching the one of interest
-    df_site = df[df[data_columns[site_str]] == site]
+    df_site = df[df[data_col[site_str]] == site]
 
     if df_site.empty:
         st.write('Site {} has no recordings'.format(site))
@@ -1531,10 +1567,6 @@ for site in target_sites:
     # EDGE ANALYSIS
     #   1. Select all rows where one of the following tags
     #       P1C, P1N, P2C, P2N
-    
-    #TODO We found at least one row that should have kicked up an error given the description
-    #   below, why didn't it?
-
     #   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
     #      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
     #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
@@ -1544,24 +1576,23 @@ for site in target_sites:
     pt_edge = pd.DataFrame()
     have_edge_data = False
     site_has_YNC_tag = not filter_df_by_tags(df_site, [tag_YNC_p2]).empty
-    #TODO Fix this, see comments in function
     check_edge_cols_for_errors(df_site)
 
     for tag in edge_cols: # tag_p1c, tag_p2c, tag_p1n, tag_p2n
         # Get the column we want to filter based on this tag
         target_tags = [tag]
         if tag in edge_c_cols:
-            target_cols = [data_columns[courtsong]]
-        elif tag == data_columns[tag_p1n]:
+            target_cols = [data_col[courtsong]]
+        elif tag == data_col[tag_p1n]:
             # In this case, a day can only have P1N tag or P1F. It can never have both. We checked this above.
             # So, if a row has P1F then count SC2, and if a row has P1N then count AltSong1
-            target_tags.append(data_columns[tag_p1f])
-            target_cols = [data_columns[altsong1], data_columns[simplecall2]]
+            target_tags.append(data_col[tag_p1f])
+            target_cols = [data_col[altsong1], data_col[simplecall2]]
         else: #tag == p2n
             if site_has_YNC_tag:
-                target_cols = [data_columns[tag_YNC_p2]]
+                target_cols = [data_col[tag_YNC_p2]]
             else:
-                target_cols = [data_columns[altsong1]]
+                target_cols = [data_col[altsong1]]
 
 
         # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
@@ -1571,8 +1602,8 @@ for site in target_sites:
         #    and it further filters it to the columns that have a non-zero value in the target_col
         df_for_tag = filter_df_by_tags(df_site, target_tags)
         have_edge_data = have_edge_data or len(df_for_tag)
-        if tag == data_columns[tag_p1n]:
-            pt_cols = {data_columns[tag_p1f]:data_columns[simplecall2], data_columns[tag_p1n]:data_columns[altsong1]}
+        if tag == data_col[tag_p1n]:
+            pt_cols = {data_col[tag_p1f]:data_col[simplecall2], data_col[tag_p1n]:data_col[altsong1]}
             pt_for_tag = make_pivot_table(df_for_tag, [], date_range_dict, preserve_edges=True, label_dict=pt_cols)
 
         else:
@@ -1611,7 +1642,7 @@ for site in target_sites:
     month_locs = {}  
 
     # Manual analyisis graph
-    cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
+    cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = pt_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
@@ -1678,25 +1709,25 @@ if not make_all_graphs and len(df_site):
     # Show the table with all the raw data
     with st.expander("See raw data"):
         #Used for making the summary pivot table
-        friendly_names = {data_columns[malesong] : 'M-Male', 
-                          data_columns[courtsong]: 'M-Chorus',
-                          data_columns[altsong2] : 'M-Female', 
-                          data_columns[altsong1] : 'M-Nestling'
+        friendly_names = {data_col[malesong] : 'M-Male', 
+                          data_col[courtsong]: 'M-Chorus',
+                          data_col[altsong2] : 'M-Female', 
+                          data_col[altsong1] : 'M-Nestling'
         }
         summary = []
         summary.append(make_summary_pt(pt_manual, song_cols, friendly_names))
         
-        friendly_names = {data_columns[malesong] : 'MM-Male', 
-                          data_columns[courtsong]: 'MM-Chorus',
-                          data_columns[altsong2] : 'MM-Female', 
-                          data_columns[altsong1] : 'MM-Nestling'
+        friendly_names = {data_col[malesong] : 'MM-Male', 
+                          data_col[courtsong]: 'MM-Chorus',
+                          data_col[altsong2] : 'MM-Female', 
+                          data_col[altsong1] : 'MM-Nestling'
         }
         summary.append(make_summary_pt(pt_mini_manual, song_cols, friendly_names))
 
-        friendly_names =   {data_columns[tag_p1c]: 'E-P1C',
-                            data_columns[tag_p1n]: 'E-P1N',
-                            data_columns[tag_p2c]: 'E-P2C',
-                            data_columns[tag_p2n]: 'E-P2N'
+        friendly_names =   {data_col[tag_p1c]: 'E-P1C',
+                            data_col[tag_p1n]: 'E-P1N',
+                            data_col[tag_p2c]: 'E-P2C',
+                            data_col[tag_p2n]: 'E-P2N'
         }
         summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
 
