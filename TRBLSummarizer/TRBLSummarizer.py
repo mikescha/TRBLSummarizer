@@ -733,13 +733,13 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     if weather_graph:
-        y = -0.3
+        y = -0.4
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
     max = len(month_lengths)
     n = 0
-    x = 0
+    x = axs[len(axs)-1].get_xlim()[0]
     for month in month_lengths:
         #Center the label on the middle of the month, which is the #-days-in-the-month/2
         center_pt = int(month_lengths[month]/2)
@@ -909,6 +909,10 @@ def make_img_filename(site:str, graph_type:str) ->str:
 
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
+    #Do nothing if we're on the server for now
+    if being_deployed_to_streamlit:
+        return
+
     filename = make_img_filename(site, graph_type)
     figure_path = figure_dir / filename
 
@@ -917,6 +921,7 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         os.remove(figure_path)
     
     if not delete_only:
+        # save the original image
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
         
         #Create a different version of the image that we'll use for the compilation
@@ -939,6 +944,8 @@ def save_figure(site:str, graph_type:str, delete_only=False):
             #if the word 'data' is there then it's one of the error messages, otherwise it's a month
             if not('data' in ge.get_text()):
                 ge.remove()
+        
+        # Now save the cleaned up version
         filename = site + ' - ' + graph_type + ' clean.png'
         figure_path = figure_dir / filename
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
@@ -1139,6 +1146,7 @@ def load_weather_data_from_file() -> pd.DataFrame:
 #Filter weather data down to just what we need for a site
 def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     df = load_weather_data_from_file()    
+    site_weather_by_type = {}
     
     #select only rows that match our site
     if site_name in df.index:
@@ -1150,7 +1158,6 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
         # For each type of weather, break out that type into a separate table and 
         # drop it into a dict. Then, reindex the table to match our date range and 
         # fill in empty values
-        site_weather_by_type = {}
         date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
         for w in weather_cols:
             site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
@@ -1163,46 +1170,65 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     return site_weather_by_type
 
 # add the ticks and associated content for the weather graph
-def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:dict):
-    # VERTICAL TICK FORMATTING AND CONTENT
+def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict):
+    # TODO:
+    # 1) Clean up where the x-axis formatting code goes, here or in another function
+
+    # TICK FORMATTING AND CONTENT
+    x_min = int(ax1.get_xlim()[0] + 0.5)
+    x_max = int(ax1.get_xlim()[1] + 0.5)
     temp_min = 32
     temp_max = 115
     prcp_min = 0
     prcp_max = 2
-    label_xoffset = 0.5
-    label_yoffset = -1
-    tick_width = 0.5
-
+    
     # Adjust the axis limits so all graphs are consistent
     ax1.set_ylim(ymin=prcp_min, ymax=prcp_max) #Sets the max amount of precip to 1.5
     ax2.set_ylim(ymin=temp_min, ymax=temp_max) #Set temp range
+    ax1.set_xlim(x_min, x_max)
+    ax2.set_xlim(x_min, x_max)
 
     # line marking 100F
-    ax2.axline((0,100),slope=0, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
+    ax2.hlines([100], x_min, x_max, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
     
     # doing our own labels so we can customize positions
     tick1y = 100
     tick2y = temp_min+8
+    tick_width = 0.004
+    label_yoffset = -1
+
+    #Using a transform to get the x-coords in axis units, so they stay the same size regardless
+    #how much temperature data we are graphing
+    #https://matplotlib.org/stable/tutorials/advanced/transforms_tutorial.html
+    trans = transforms.blended_transform_factory(ax2.transAxes, ax2.transData)
 
     #blank out part of the 100F line so the label is readable
-    rect = Rectangle((max_x-label_xoffset,tick1y-5),-2.5,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
+    rect = Rectangle((1,tick1y-6), -0.033, 12, facecolor='white', 
+                    fill=True, edgecolor='none', zorder=2, transform=trans)
     ax2.add_patch(rect)
-    
+
     #add tick label and ticks
-    ax2.text(max_x-label_xoffset, tick1y+label_yoffset, "100F", 
-            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3)
-    ax2.text(max_x-label_xoffset, tick2y+label_yoffset, f"{temp_min+8}F", 
-            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center')
-    ax2.hlines([tick1y, tick2y], max_x-tick_width, max_x, colors=wg_colors['high'], linewidth=0.5)
+    x_pos = 1 - tick_width  #in axis coordinates, where 0 is far left and 1 is far right
+    ax2.text(x_pos, tick1y+label_yoffset, "100F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3,
+            transform=trans)
+    ax2.text(x_pos, tick2y+label_yoffset, f"{temp_min+8}F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center',
+            transform=trans)
+    ax2.hlines([tick1y, tick2y], 1-tick_width, 1, colors=wg_colors['high'], linewidth=0.5,
+            transform=trans)
     
     #drawing this on the temp axis because drawing on the prcp axis blew up, so have to convert to that scale
     prcp_label_pos1 = (temp_max - temp_min)*(0.5/prcp_max) + temp_min
-    ax2.text(label_xoffset, prcp_label_pos1, f'0.5"',
-            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
+    ax2.text(0+tick_width, prcp_label_pos1, f'0.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
+            transform=trans)
     prcp_label_pos2 = (temp_max - temp_min)*(1.5/prcp_max) + temp_min
-    ax2.text(label_xoffset, prcp_label_pos2, f'1.5"',
-            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
-    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5)
+    ax2.text(0+tick_width, prcp_label_pos2, f'1.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
+            transform=trans)
+    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5,
+            transform=trans)
     # To turn off all default y ticks
     ax1.tick_params(
         axis='y',
@@ -1214,6 +1240,7 @@ def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:di
         which='both',      # both major and minor ticks are affected
         left=False, right=False,  # ticks along the sides are off
         labelleft=False, labelright=False) # labels on the Y are off 
+    return
 
 #Used below to get min temp that isn't zero
 def min_above_zero(s:pd.Series):
@@ -1256,20 +1283,21 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == weather_prcp:
-                ax1.bar(w.index.values.astype(str), w['value'], color = wg_colors['prcp'], linewidth=0)
+                ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == weather_tmax:
-                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['high'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['high'])
             else: #TMIN
-                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['low'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['low'])
         
         max_x = len(w['value']) - 1
-        add_weather_graph_yticks(ax1, ax2, max_x, wg_colors)
+        add_weather_graph_ticks(ax1, ax2, wg_colors)
 
         # HORIZONTAL TICKS AND LABLING 
+        x_min = ax1.get_xlim()[0]
+        x_max = ax1.get_xlim()[1]
         # Need to set xlim so that we don't get an extra gap on either side
-        ax1.set_xlim(0, len(w['value'])-1)
         # Get the list of ticks and set them 
-        #axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
+#        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
         
