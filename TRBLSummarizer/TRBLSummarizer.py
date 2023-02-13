@@ -26,8 +26,10 @@ being_deployed_to_streamlit = True
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
 #   also gets the boxes drawn like there is data 
-#
 # 
+# Consider adding the code to write to temp files and then allow the composite image to be
+#   downloaded when the script is deployed to streamlite
+
 # Constants and Globals
 #
 #
@@ -1291,9 +1293,9 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             if wt == weather_prcp:
                 ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == weather_tmax:
-                ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='|')
+                ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='.', markersize=2)
             else: #TMIN
-                ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='|')
+                ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='.', markersize=2)
         
         x_range = (mpl.dates.date2num(w.index.min()), mpl.dates.date2num(w.index.max()))
         add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
@@ -1302,7 +1304,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         x_min = ax1.get_xlim()[0]
         x_max = ax1.get_xlim()[1]
         # Need to set xlim so that we don't get an extra gap on either side
-        # Get the list of ticks and set them 
+        # Get the list of ticks and set them --only needed if we ever want individual dates on the axis
 #        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
