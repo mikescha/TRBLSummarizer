@@ -23,8 +23,11 @@ import gc
 #Set to true before we deploy
 being_deployed_to_streamlit = True
 
+#TODO
+# 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
+#   also gets the boxes drawn like there is data 
 #
-#
+# 
 # Constants and Globals
 #
 #
@@ -568,7 +571,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2022 WA Harder Spring')
+    #return('2022 Hulen Levee - Silveira')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -737,19 +740,21 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
-    max = len(month_lengths)
+    month_count = len(month_lengths)
     n = 0
     x = axs[len(axs)-1].get_xlim()[0]
     for month in month_lengths:
-        #Center the label on the middle of the month, which is the #-days-in-the-month/2
-        center_pt = int(month_lengths[month]/2)
+        # Center the label on the middle of the month, which is the #-days-in-the-month/2
+        #   -1 because the count is 1-based but the axis is 0-based, e.g. if there are 12 days
+        #   in the month
+        center_pt = int((month_lengths[month])/2)
         mid = x + center_pt
 
         axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small', 'horizontalalignment':'center'})
         x += month_lengths[month]
-        if n<max:
+        if n < month_count:
             for ax in axs:
-                ax.axvline(x=x+0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
+                ax.axvline(x=x) 
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
 # note that if the fontsize is too big, then the title will become the largest thing 
@@ -1170,13 +1175,14 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     return site_weather_by_type
 
 # add the ticks and associated content for the weather graph
-def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict):
+def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:pd.Series):
     # TODO:
     # 1) Clean up where the x-axis formatting code goes, here or in another function
 
     # TICK FORMATTING AND CONTENT
-    x_min = int(ax1.get_xlim()[0] + 0.5)
-    x_max = int(ax1.get_xlim()[1] + 0.5)
+    x_min, x_max = x_range
+    x_min -= 0.5
+    x_max += 0.5
     temp_min = 32
     temp_max = 115
     prcp_min = 0
@@ -1203,7 +1209,7 @@ def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict):
     trans = transforms.blended_transform_factory(ax2.transAxes, ax2.transData)
 
     #blank out part of the 100F line so the label is readable
-    rect = Rectangle((1,tick1y-6), -0.033, 12, facecolor='white', 
+    rect = Rectangle((1-0.005,tick1y-6), -0.03, 12, facecolor='white', 
                     fill=True, edgecolor='none', zorder=2, transform=trans)
     ax2.add_patch(rect)
 
@@ -1285,12 +1291,12 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             if wt == weather_prcp:
                 ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == weather_tmax:
-                ax2.plot(w.index.values, w['value'], color = wg_colors['high'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='|')
             else: #TMIN
-                ax2.plot(w.index.values, w['value'], color = wg_colors['low'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='|')
         
-        max_x = len(w['value']) - 1
-        add_weather_graph_ticks(ax1, ax2, wg_colors)
+        x_range = (mpl.dates.date2num(w.index.min()), mpl.dates.date2num(w.index.max()))
+        add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
 
         # HORIZONTAL TICKS AND LABLING 
         x_min = ax1.get_xlim()[0]
@@ -1527,7 +1533,7 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 # Main
 #
 #
-st.sidebar.title('TRBL Summary')
+st.sidebar.title('TRBL Grapher')
 
 #Load all the data for most of the graphs
 df_original = load_data()
