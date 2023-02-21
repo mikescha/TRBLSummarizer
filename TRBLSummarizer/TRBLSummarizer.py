@@ -23,18 +23,19 @@ import gc
 #Set to true before we deploy
 being_deployed_to_streamlit = True
 
-#
-#
+#TODO
+# 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
+#   also gets the boxes drawn like there is data 
+# 
+# Consider adding the code to write to temp files and then allow the composite image to be
+#   downloaded when the script is deployed to streamlite
+
 # Constants and Globals
 #
 #
 bad_files = 'bad'
 filename_str = 'filename'
 site_str = 'site'
-malesong = 'malesong'
-altsong2 = 'altsong2'
-altsong1 = 'altsong1'
-courtsong = 'courtsong'
 date_str = 'date'
 hour_str = 'hour'
 tag_wse = 'tag_edge'
@@ -51,11 +52,17 @@ tag_p1c = 'tag_p1c'
 tag_p1n = 'tag_p1n'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
+tag_p1f = 'tag_p1f'
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_ONC_p1 = 'tag<ONC-p1>'
 tag_YNC_p1 = 'tag<YNC-p1>'
 tag_YNC_p2 = 'tag<YNC-p2>'
+malesong = 'malesong'
+altsong2 = 'altsong2'
+altsong1 = 'altsong1'
+courtsong = 'courtsong'
+simplecall2 = 'simplecall2'
 
 present = 'present'
 
@@ -63,7 +70,7 @@ start_str = 'start'
 end_str = 'end'
 
 #Master list of all the columns I need. If columns get added/removed then this needs to update
-data_columns = {
+data_col = {
     filename_str : 'filename', 
     site_str     : 'site', 
     'day'        : 'day',
@@ -78,6 +85,7 @@ data_columns = {
     tag_p1n      : 'tag<p1n>',
     tag_p2c      : 'tag<p2c>',
     tag_p2n      : 'tag<p2n>',
+    tag_p1f      : 'tag<p1f>',
     tag_mhe      : 'tag<reviewed-MH-e>', #WENDY this is still in the data file, should it be?
     tag_mhe2     : 'tag<reviewed-MH-e2>', #WENDY this is still in the data file, should it be?
     tag_mhh      : 'tag<reviewed-MH-h>',
@@ -93,6 +101,7 @@ data_columns = {
     altsong1     : 'val<Agelaius tricolor/Alternative Song>',
     altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
     courtsong    : 'val<Agelaius tricolor/Courtship Song>',
+    simplecall2  : 'val<Agelaius tricolor/Simple Call 2>',
 }
 
 site_columns = {
@@ -118,20 +127,22 @@ site_columns = {
 }
 
 songs = [malesong, courtsong, altsong2, altsong1]
-song_cols = [data_columns[s] for s in songs]
+song_cols = [data_col[s] for s in songs]
+all_songs = [malesong, courtsong, altsong2, altsong1, simplecall2] 
+all_song_cols = [data_col[s] for s in all_songs]
 
 #TODO When we get a new data file, update all these lists
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
 edge_c_tags = [tag_p1c, tag_p2c] #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-edge_tags = edge_c_tags + edge_n_tags
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f] #YNC=young nestling call
 all_tags = manual_tags + mini_manual_tags + edge_tags
 
-manual_cols = [data_columns[t] for t in manual_tags]
-mini_manual_cols = [data_columns[t] for t in mini_manual_tags]
-edge_c_cols = [data_columns[t] for t in edge_c_tags]
-edge_n_cols = [data_columns[t] for t in edge_n_tags]
+manual_cols = [data_col[t] for t in manual_tags]
+mini_manual_cols = [data_col[t] for t in mini_manual_tags]
+edge_c_cols = [data_col[t] for t in edge_c_tags]
+edge_n_cols = [data_col[t] for t in edge_n_tags]
 all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
@@ -182,6 +193,7 @@ preserve_edges_flag = -99
 dpi = 300
 scale = int(dpi/300)
 
+error_list = ''
 
 #
 #
@@ -199,12 +211,14 @@ def init_logging():
             f.write(f"Logging started {my_time()}")    
 
 def log_error(msg: str):
+    global error_list
+    error_list += f"{msg}\n\n"
     if not being_deployed_to_streamlit:
         with error_file.open("a") as f:
-            f.write(f"{my_time()}: " + msg + "\n")
+            f.write(f"{my_time()}: {msg}\n")
 
 def show_error(msg: str):
-    st.error("Whoops! " + msg + "! This may not work correctly.")
+    st.error(msg)
     log_error(msg)
 
 def pairwise(iterable):
@@ -333,6 +347,39 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     
     return error_found
 
+# Confirm that a date has either a p1f tag or a p1n tag, but not both
+def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
+    error_found = False
+
+    # For each day, there should be only either P1F or P1N, never both
+    tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
+
+    if len(tag_errors):
+        error_found = True
+        show_error("Found recordings that have both P1F and P1N tags, see log")
+        for f in tag_errors[filename_str]: 
+            log_error(f"{f}\tRecording has both P1F and P1N tags")
+    
+    # If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
+    # If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
+    error_case = {data_col[tag_p1c] : data_col[courtsong],
+                  data_col[tag_p2c] : data_col[courtsong],
+                  data_col[tag_p1n] : data_col[altsong1],
+                  data_col[tag_p2n] : data_col[altsong1],
+    }
+    tag_errors = pd.DataFrame()
+    for e in error_case:
+        tag_errors = pd.concat([tag_errors, df.loc[(df[e] >= 1) & (df[error_case[e]] > 1)]])
+
+    if len(tag_errors):
+        error_found = True
+        show_error("Found recordings that have song count > 1 for edge analysis, see log")
+        for f in tag_errors[filename_str]:
+            log_error(f"{f}\tRecording has soung count > 1")
+
+
+    return error_found 
+
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.experimental_singleton(suppress_st_warning=True)
 def load_data() -> pd.DataFrame:
@@ -340,19 +387,19 @@ def load_data() -> pd.DataFrame:
 
     #Validate the data file format
     headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
-    confirm_columns(data_columns, headers, data_file)
+    confirm_columns(data_col, headers, data_file)
     
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-    usecols = [data_columns[filename_str], data_columns[site_str], data_columns[date_str]]
-    for song in songs:
-        usecols.append(data_columns[song])
+    usecols = [data_col[filename_str], data_col[site_str], data_col[date_str]]
+    for song in all_songs:
+        usecols.append(data_col[song])
     for tag in all_tags:
-        usecols.append(data_columns[tag])
+        usecols.append(data_col[tag])
 
     df = pd.read_csv(data_csv, 
                      usecols = usecols,
-                     parse_dates = [data_columns[date_str]],
-                     index_col = [data_columns[date_str]])
+                     parse_dates = [data_col[date_str]],
+                     index_col = [data_col[date_str]])
     return df
 
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
@@ -448,8 +495,8 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     df_clean = df_clean.replace('---', missing_data_flag)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
-    for s in songs:
-        df_clean[data_columns[s]] = pd.to_numeric(df_clean[data_columns[s]])
+    for s in all_songs:
+        df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
 
 
@@ -464,38 +511,56 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
 # filter_str is '>0' by default because that's what most queries involve, but if a 
 # different string is passed in then we use that instead. 
-def filter_df_by_tags(site_df:pd.DataFrame, target_tags:list, filter_str='>0') -> pd.DataFrame:
+def filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclude_tags=[]) -> pd.DataFrame:
     # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-    query = ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags])
-    filtered_df = site_df.query(query)
+    query  =  '(' + ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags]) + ')' 
+    query += ' & ~'.join([f'`{tag}`{filter_str}' for tag in exclude_tags])
+    filtered_df = df.query(query)
     return filtered_df
 
 # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
 # Also, transpose to get the right shape for the graph
 def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
-    pt = pt.reindex(date_range).fillna(0)
-    pt = pt.transpose()
-    return pt
+    temp = pt.reindex(date_range).fillna(0)
+    temp = temp.transpose()
+    return temp
 
 # Generate the pivot table for the site
-def make_pivot_table(site_df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False) -> pd.DataFrame:
-    #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
-    #that the test 'x>=1' is true.
-    summary = pd.pivot_table(site_df, values = labels, index = [data_columns[date_str]], 
-                              aggfunc = lambda x: (x>=1).sum()) 
+def make_pivot_table(df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False, label_dict={}) -> pd.DataFrame:
+    if len(df):
+        if len(label_dict):
+            #Assumes dict is: {column to filter on: column to count}
+            #In this case, we filter to only columns that match the key, and then count the columns that are non-zero
+            summary = pd.DataFrame()
+            for tag in label_dict:
+                temp = filter_df_by_tags(df, [tag])
+                temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[date_str]], 
+                                    aggfunc = lambda x: (x>=1).sum())
+                temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
+                if len(temp_pt):
+                    summary = pd.concat([summary, temp_pt]).groupby('date').sum()            
+            summary.rename(columns={'temp':tag}, inplace=True) #rename the index so that it's the tag, not the song name
+        else:
+            #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
+            #that the test 'x>=1' is true.
+            summary = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
+                                    aggfunc = lambda x: (x>=1).sum()) 
 
-    if preserve_edges:
-        # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
-        # graph later, we'll use this to show where the edges of the analysis were
-        summary = summary.replace(to_replace=0, value=preserve_edges_flag)
+        if preserve_edges:
+            # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
+            # graph later, we'll use this to show where the edges of the analysis were
+            summary = summary.replace(to_replace=0, value=preserve_edges_flag)
 
-    return normalize_pt(summary, date_range_dict)
+        return normalize_pt(summary, date_range_dict)
+    else:
+        return pd.DataFrame()
+
 
 # Pivot table for pattern matching is a little different
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
-    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_columns[date_str]], 
+    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
                               aggfunc = lambda x: (x==present).sum())
     summary = summary.rename(columns={validated:type_name})
     return normalize_pt(summary, date_range_dict)
@@ -508,7 +573,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2018 Markham Ravine')
+    #return('2022 Hulen Levee - Silveira')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -573,7 +638,8 @@ def set_global_theme():
                      'xtick.labelsize':'medium',
                      'xtick.major.size':'12',
                      'xtick.color':line_color,
-                     'xtick.bottom':'True',
+                     'xtick.bottom':'False',
+                     'xtick.labelbottom':'False',
                      'ytick.left':'False',
                      'ytick.labelleft':'False',
                      'figure.frameon':'False',
@@ -611,10 +677,10 @@ def draw_cmap(cmap:dict):
     gs = fig.add_gridspec(nrows=1, ncols=len(good_cmap), wspace=0)
     axs = gs.subplots()
 
-    friendly_names={data_columns[malesong]:'Male\nSong', 
-                    data_columns[courtsong]:'Male\nChorus', 
-                    data_columns[altsong2]:'Female\nSong', 
-                    data_columns[altsong1]:'Nestling and\nFledgling Call'}
+    friendly_names={data_col[malesong]:'Male\nSong', 
+                    data_col[courtsong]:'Male\nChorus', 
+                    data_col[altsong2]:'Female\nSong', 
+                    data_col[altsong1]:'Nestling and\nFledgling Call'}
 
     for ax, call_type in zip(axs, good_cmap):
         ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[good_cmap[call_type]])
@@ -672,26 +738,25 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
     if weather_graph:
-        y = -0.3
+        y = -0.4
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
-    max = len(month_lengths)
+    month_count = len(month_lengths)
     n = 0
-    x = 0
+    x = axs[len(axs)-1].get_xlim()[0]
     for month in month_lengths:
-        center_pt = int(month_lengths[month]/2)
-
-        #TODO If the month_length is too short to fit the text, then don't draw the text or maybe center it differently
-        #The line below shifts the label to the left a little bit to better center it on the month space. 
-        center_pt -= len(month)/4
+        # Center the label on the middle of the month, which is the #-days-in-the-month/2
+        #   -1 because the count is 1-based but the axis is 0-based, e.g. if there are 12 days
+        #   in the month
+        center_pt = int((month_lengths[month])/2)
         mid = x + center_pt
 
-        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small'})
+        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small', 'horizontalalignment':'center'})
         x += month_lengths[month]
-        if n<max:
+        if n < month_count:
             for ax in axs:
-                ax.axvline(x=x+0.5) #The "0.5" puts it in the middle of the day, so it aligns with the tick
+                ax.axvline(x=x) 
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
 # note that if the fontsize is too big, then the title will become the largest thing 
@@ -851,6 +916,10 @@ def make_img_filename(site:str, graph_type:str) ->str:
 
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
+    #Do nothing if we're on the server for now
+    if being_deployed_to_streamlit:
+        return
+
     filename = make_img_filename(site, graph_type)
     figure_path = figure_dir / filename
 
@@ -859,6 +928,7 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         os.remove(figure_path)
     
     if not delete_only:
+        # save the original image
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
         
         #Create a different version of the image that we'll use for the compilation
@@ -881,6 +951,8 @@ def save_figure(site:str, graph_type:str, delete_only=False):
             #if the word 'data' is there then it's one of the error messages, otherwise it's a month
             if not('data' in ge.get_text()):
                 ge.remove()
+        
+        # Now save the cleaned up version
         filename = site + ' - ' + graph_type + ' clean.png'
         figure_path = figure_dir / filename
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
@@ -1034,11 +1106,6 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             st.write(graph)
             
         if make_all_graphs or save_files:
-            #TODO if we want to put _ in the names then a) it neds to happen elsewhere, as this is 
-            #just putting them into the graph type and not the site name, and b) this breaks the
-            #code in the image compilation section because the filename it has (without underscore)
-            #doesn't match ones with the underscore
-            #graph_type = graph_type.replace(' ', '_')
             save_figure(site, graph_type)
     else:
         #No data, so show a message instead. 
@@ -1086,6 +1153,7 @@ def load_weather_data_from_file() -> pd.DataFrame:
 #Filter weather data down to just what we need for a site
 def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     df = load_weather_data_from_file()    
+    site_weather_by_type = {}
     
     #select only rows that match our site
     if site_name in df.index:
@@ -1097,7 +1165,6 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
         # For each type of weather, break out that type into a separate table and 
         # drop it into a dict. Then, reindex the table to match our date range and 
         # fill in empty values
-        site_weather_by_type = {}
         date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
         for w in weather_cols:
             site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
@@ -1110,46 +1177,66 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     return site_weather_by_type
 
 # add the ticks and associated content for the weather graph
-def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:dict):
-    # VERTICAL TICK FORMATTING AND CONTENT
+def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:pd.Series):
+    # TODO:
+    # 1) Clean up where the x-axis formatting code goes, here or in another function
+
+    # TICK FORMATTING AND CONTENT
+    x_min, x_max = x_range
+    x_min -= 0.5
+    x_max += 0.5
     temp_min = 32
     temp_max = 115
     prcp_min = 0
     prcp_max = 2
-    label_xoffset = 0.5
-    label_yoffset = -1
-    tick_width = 0.5
-
+    
     # Adjust the axis limits so all graphs are consistent
     ax1.set_ylim(ymin=prcp_min, ymax=prcp_max) #Sets the max amount of precip to 1.5
     ax2.set_ylim(ymin=temp_min, ymax=temp_max) #Set temp range
+    ax1.set_xlim(x_min, x_max)
+    ax2.set_xlim(x_min, x_max)
 
     # line marking 100F
-    ax2.axline((0,100),slope=0, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
+    ax2.hlines([100], x_min, x_max, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
     
     # doing our own labels so we can customize positions
     tick1y = 100
     tick2y = temp_min+8
+    tick_width = 0.004
+    label_yoffset = -1
+
+    #Using a transform to get the x-coords in axis units, so they stay the same size regardless
+    #how much temperature data we are graphing
+    #https://matplotlib.org/stable/tutorials/advanced/transforms_tutorial.html
+    trans = transforms.blended_transform_factory(ax2.transAxes, ax2.transData)
 
     #blank out part of the 100F line so the label is readable
-    rect = Rectangle((max_x-label_xoffset,tick1y-5),-2,10, facecolor='white', fill=True, edgecolor='none', zorder=2)
+    rect = Rectangle((1-0.005,tick1y-6), -0.03, 12, facecolor='white', 
+                    fill=True, edgecolor='none', zorder=2, transform=trans)
     ax2.add_patch(rect)
-    
+
     #add tick label and ticks
-    ax2.text(max_x-label_xoffset, tick1y+label_yoffset, "100F", 
-            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3)
-    ax2.text(max_x-label_xoffset, tick2y+label_yoffset, f"{temp_min+8}F", 
-            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center')
-    ax2.hlines([tick1y, tick2y], max_x-tick_width, max_x, colors=wg_colors['high'], linewidth=0.5)
+    x_pos = 1 - tick_width  #in axis coordinates, where 0 is far left and 1 is far right
+    ax2.text(x_pos, tick1y+label_yoffset, "100F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3,
+            transform=trans)
+    ax2.text(x_pos, tick2y+label_yoffset, f"{temp_min+8}F", 
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center',
+            transform=trans)
+    ax2.hlines([tick1y, tick2y], 1-tick_width, 1, colors=wg_colors['high'], linewidth=0.5,
+            transform=trans)
     
     #drawing this on the temp axis because drawing on the prcp axis blew up, so have to convert to that scale
     prcp_label_pos1 = (temp_max - temp_min)*(0.5/prcp_max) + temp_min
-    ax2.text(label_xoffset, prcp_label_pos1, f'0.5"',
-            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
+    ax2.text(0+tick_width, prcp_label_pos1, f'0.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
+            transform=trans)
     prcp_label_pos2 = (temp_max - temp_min)*(1.5/prcp_max) + temp_min
-    ax2.text(label_xoffset, prcp_label_pos2, f'1.5"',
-            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center')
-    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5)
+    ax2.text(0+tick_width, prcp_label_pos2, f'1.5"',
+            fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
+            transform=trans)
+    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5,
+            transform=trans)
     # To turn off all default y ticks
     ax1.tick_params(
         axis='y',
@@ -1161,6 +1248,7 @@ def add_weather_graph_yticks(ax1:plt.axes, ax2:plt.axes, max_x:int, wg_colors:di
         which='both',      # both major and minor ticks are affected
         left=False, right=False,  # ticks along the sides are off
         labelleft=False, labelright=False) # labels on the Y are off 
+    return
 
 #Used below to get min temp that isn't zero
 def min_above_zero(s:pd.Series):
@@ -1195,8 +1283,6 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
-        ax1.margins(0,tight=True)
-        ax2.margins(0,tight=True)
 
         plot_title(graph_weather) #site_name + ' ' +  to include site
 
@@ -1205,23 +1291,24 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == weather_prcp:
-                ax1.bar(w.index.values.astype(str), w['value'], color = wg_colors['prcp'], linewidth=0)
+                ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == weather_tmax:
-                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['high'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='.', markersize=2)
             else: #TMIN
-                ax2.plot(w.index.values.astype(str), w['value'], color = wg_colors['low'])
+                ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='.', markersize=2)
         
-        max_x = len(w['value']) - 1
-        add_weather_graph_yticks(ax1, ax2, max_x, wg_colors)
+        x_range = (mpl.dates.date2num(w.index.min()), mpl.dates.date2num(w.index.max()))
+        add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
 
         # HORIZONTAL TICKS AND LABLING 
+        x_min = ax1.get_xlim()[0]
+        x_max = ax1.get_xlim()[1]
         # Need to set xlim so that we don't get an extra gap on either side
-        ax1.set_xlim(0, len(w['value'])-1)
-        # Get the list of ticks and set them 
-        #axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
+        # Get the list of ticks and set them --only needed if we ever want individual dates on the axis
+#        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
         draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
-
+        
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_linewidth(0.5)
         ax1.spines[:].set_visible(True)
@@ -1241,6 +1328,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
                    fontsize='x-small')
+
     else:
         fig = plt.figure()
 
@@ -1354,37 +1442,47 @@ def show_station_info(site_name:str):
 #    check that all "val" columns have a number. 
 #    If any of them have a "---" or not a number then print out the filename of that row.
 def check_tags(df: pd.DataFrame):
-
-    if True or st.sidebar.checkbox('Show errors'):
+    if st.sidebar.checkbox('Show errors', value=True):
         bad_rows = pd.DataFrame()                                               
         #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
-        non_zero_rows = filter_df_by_tags(df, [data_columns[tag_mhm], 
-                                               data_columns[tag_wsm]])
+        non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
+                                               data_col[tag_wsm]])
         bad_rows = pd.concat([bad_rows, 
                               filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
 
         #P1C, P2C throws an error if it's missing courtsong song
         non_zero_rows = filter_df_by_tags(df, edge_c_cols)
         bad_rows = pd.concat([bad_rows,
-                              filter_df_by_tags(non_zero_rows, [data_columns[courtsong]], '=={}'.format(missing_data_flag))])
+                              filter_df_by_tags(non_zero_rows, [data_col[courtsong]], '=={}'.format(missing_data_flag))])
 
         #P1N, P2N throws an error if it's missing alternative song
         non_zero_rows = filter_df_by_tags(df, edge_n_cols)
         bad_rows = pd.concat([bad_rows, 
-                              filter_df_by_tags(non_zero_rows, [data_columns[altsong1]], '=={}'.format(missing_data_flag))])       
+                              filter_df_by_tags(non_zero_rows, [data_col[altsong1]], '=={}'.format(missing_data_flag))])       
 
-        if not(bad_rows.empty):
+        if len(bad_rows):
+            for r in bad_rows[filename_str]:
+                log_error(f"{r} missing song tag")
+
+        if not(bad_rows.empty) or len(error_list):
             with st.expander('See errors'):
-                bad_rows.sort_values(by='filename', inplace=True)
-                st.write('Total errors: {}'.format(len(bad_rows)))
-                
-                #Pull out date so we can format it
-                bad_rows.reset_index(inplace=True)
-                bad_rows.rename(columns={'index':'Date'}, inplace=True)
+                #This code prints a formatted table of just the missing song tag rows, not currently
+                #necessary but here just in case I want to bring this back.
+#                if not(bad_rows.empty):
+#                    bad_rows.sort_values(by='filename', inplace=True)
+#                    #Pull out date so we can format it
+#                    bad_rows.reset_index(inplace=True)
+#                    bad_rows.rename(columns={'index':'Date'}, inplace=True)
+#
+#                    pretty_print_table(bad_rows)
+                    
+                st.write(error_list)
 
-                pretty_print_table(bad_rows)
         else:
             st.write('No tag errors found')
+        
+
+
 
 # Clean up a pivottable so we can display it as a table
 def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
@@ -1437,7 +1535,7 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 # Main
 #
 #
-st.sidebar.title('TRBL Summary')
+st.sidebar.title('TRBL Grapher')
 
 #Load all the data for most of the graphs
 df_original = load_data()
@@ -1469,7 +1567,7 @@ site_counter = 0
 for site in target_sites:
     site_counter += 1
     # Select the site matching the one of interest
-    df_site = df[df[data_columns[site_str]] == site]
+    df_site = df[df[data_col[site_str]] == site]
 
     if df_site.empty:
         st.write('Site {} has no recordings'.format(site))
@@ -1505,38 +1603,50 @@ for site in target_sites:
     # EDGE ANALYSIS
     #   1. Select all rows where one of the following tags
     #       P1C, P1N, P2C, P2N
-    
-    #TODO We found at least one row that should have kicked up an error given the description
-    #   below, why didn't it?
-
     #   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
     #      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
     #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
     #   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
     #   5. Merge the tables together so we get one block of heatmaps
-    #   
-    #TODO add the new things having to do with ONC and YNC tags
 
     pt_edge = pd.DataFrame()
-    edge_data_empty = False
-    for tag in edge_cols:
-        df_for_tag = filter_df_by_tags(df_site, [tag])
-        edge_data_empty = edge_data_empty or len(df_for_tag)
-        if tag in edge_c_cols:
-            target_col = data_columns[courtsong]
-        else:
-            target_col = data_columns[altsong1]
+    have_edge_data = False
+    site_has_YNC_tag = not filter_df_by_tags(df_site, [tag_YNC_p2]).empty
+    check_edge_cols_for_errors(df_site)
 
-        #TODO
-        # Validate that all values in target_col are values and not --- or NaN
-        #if len(df_for_tag.query('`{}` < 0 | `{}` > 1'.format(target_col,target_col))):
-        #    show_error('In edge analysis, tag {} has values in {} that are not 0 or 1'.format(tag, target_col))
+    for tag in edge_cols: # tag_p1c, tag_p2c, tag_p1n, tag_p2n
+        # Get the column we want to filter based on this tag
+        target_tags = [tag]
+        if tag in edge_c_cols:
+            target_cols = [data_col[courtsong]]
+        elif tag == data_col[tag_p1n]:
+            # In this case, a day can only have P1N tag or P1F. It can never have both. We checked this above.
+            # So, if a row has P1F then count SC2, and if a row has P1N then count AltSong1
+            target_tags.append(data_col[tag_p1f])
+            target_cols = [data_col[altsong1], data_col[simplecall2]]
+        else: #tag == p2n
+            if site_has_YNC_tag:
+                target_cols = [data_col[tag_YNC_p2]]
+            else:
+                target_cols = [data_col[altsong1]]
+
 
         # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        # this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-        # had tags but no songs
-        pt_for_tag = make_pivot_table(df_for_tag, [target_col], date_range_dict, preserve_edges=True)
-        pt_for_tag = pt_for_tag.rename({target_col:tag}) #rename the index so that it's the tag, not the song name
+        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        #    had tags but no songs
+        # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
+        #    and it further filters it to the columns that have a non-zero value in the target_col
+        df_for_tag = filter_df_by_tags(df_site, target_tags)
+        have_edge_data = have_edge_data or len(df_for_tag)
+        if tag == data_col[tag_p1n]:
+            pt_cols = {data_col[tag_p1f]:data_col[simplecall2], data_col[tag_p1n]:data_col[altsong1]}
+            pt_for_tag = make_pivot_table(df_for_tag, [], date_range_dict, preserve_edges=True, label_dict=pt_cols)
+
+        else:
+            # Get all the rows where this tag has a value > 0
+            pt_for_tag = make_pivot_table(df_for_tag, target_cols, date_range_dict, preserve_edges=True)
+
+        pt_for_tag = pt_for_tag.rename({target_cols[0]:tag}) #rename the index so that it's the tag, not the song name
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
     # PATTERN MATCHING ANALYSIS
@@ -1568,7 +1678,7 @@ for site in target_sites:
     month_locs = {}  
 
     # Manual analyisis graph
-    cmap = {data_columns[malesong]:'Greens', data_columns[courtsong]:'Oranges', data_columns[altsong2]:'Purples', data_columns[altsong1]:'Blues', 'bad':'Black'}
+    cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
     graph = create_graph(df = pt_manual, 
                         row_names = song_cols, 
                         cmap = cmap, 
@@ -1612,7 +1722,7 @@ for site in target_sites:
                         title = graph_edge)
     if len(month_locs)==0:
         month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_edge, save_files, make_all_graphs, edge_data_empty)
+    output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
 
     #Create a graphic for our legend
     draw_cmap(cmap)
@@ -1625,35 +1735,34 @@ for site in target_sites:
         graph = create_weather_graph(weather_by_type, site)
         output_graph(site, graph_weather, save_files, make_all_graphs)
     
-    #TODO remove the "True" below when we're done debugging
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs)
-        #TODO clean up by deleting all the files with "clean" in their name
+        #TODO clean up by deleting all the files with "clean" in their name?
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
     # Show the table with all the raw data
     with st.expander("See raw data"):
         #Used for making the summary pivot table
-        friendly_names = {data_columns[malesong] : 'M-Male', 
-                          data_columns[courtsong]: 'M-Chorus',
-                          data_columns[altsong2] : 'M-Female', 
-                          data_columns[altsong1] : 'M-Nestling'
+        friendly_names = {data_col[malesong] : 'M-Male', 
+                          data_col[courtsong]: 'M-Chorus',
+                          data_col[altsong2] : 'M-Female', 
+                          data_col[altsong1] : 'M-Nestling'
         }
         summary = []
         summary.append(make_summary_pt(pt_manual, song_cols, friendly_names))
         
-        friendly_names = {data_columns[malesong] : 'MM-Male', 
-                          data_columns[courtsong]: 'MM-Chorus',
-                          data_columns[altsong2] : 'MM-Female', 
-                          data_columns[altsong1] : 'MM-Nestling'
+        friendly_names = {data_col[malesong] : 'MM-Male', 
+                          data_col[courtsong]: 'MM-Chorus',
+                          data_col[altsong2] : 'MM-Female', 
+                          data_col[altsong1] : 'MM-Nestling'
         }
         summary.append(make_summary_pt(pt_mini_manual, song_cols, friendly_names))
 
-        friendly_names =   {data_columns[tag_p1c]: 'E-P1C',
-                            data_columns[tag_p1n]: 'E-P1N',
-                            data_columns[tag_p2c]: 'E-P2C',
-                            data_columns[tag_p2n]: 'E-P2N'
+        friendly_names =   {data_col[tag_p1c]: 'E-P1C',
+                            data_col[tag_p1n]: 'E-P1N',
+                            data_col[tag_p2c]: 'E-P2C',
+                            data_col[tag_p2n]: 'E-P2N'
         }
         summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
 

@@ -1,0 +1,417 @@
+12-Feb-23 10:57:06: Found recordings that have song count > 1 for edge analysis, see log
+12-Feb-23 10:57:06: CNWR T27.2am-2022-05-31_18-00.WAV	Recording has soung count > 1
+12-Feb-23 10:57:06: CNWR T27.2am-2022-06-01_15-00.WAV	Recording has soung count > 1
+12-Feb-23 10:57:15: CNWR T27.2am-2022-05-10_11-00.WAV missing song tag
+12-Feb-23 10:57:15: CNWR T27.2am-2022-05-30_18-00.WAV missing song tag
+12-Feb-23 10:57:15: CNWR T27.2am-2022-07-15_11-00.WAV missing song tag
+12-Feb-23 10:57:15: CNWR T27.2am-2022-06-01_19-00.WAV missing song tag
+12-Feb-23 10:57:15: CNWR T27.2am-2022-06-01_11-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-28_08-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-24_13-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-24_14-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-24_15-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-30_13-00.WAV missing song tag
+12-Feb-23 10:58:01: FRam-2022-04-30_12-00.WAV missing song tag
+12-Feb-23 11:01:06: LSam-2022-04-05_11-00.WAV missing song tag
+12-Feb-23 11:01:06: LSam-2022-05-02_08-00.WAV missing song tag
+12-Feb-23 11:01:06: LSam-2022-05-08_14-00.WAV missing song tag
+12-Feb-23 11:01:06: LSam-2022-05-03_09-00.WAV missing song tag
+12-Feb-23 11:01:06: LSam-2022-05-06_15-00.WAV missing song tag
+12-Feb-23 11:02:04: OR2am-2022-06-03_08-00.WAV missing song tag
+12-Feb-23 11:02:04: OR2am-2022-05-25_07-00.WAV missing song tag
+12-Feb-23 11:02:04: OR2am-2022-05-27_13-00.WAV missing song tag
+12-Feb-23 11:02:12: Found recordings that have both P1F and P1N tags, see log
+12-Feb-23 11:02:12: WA3am-2022-06-06_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-06_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-07_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-08_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-09_17-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:12: WA3am-2022-06-09_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: WA3am-2022-06-09_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: WA3am-2022-06-09_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: WA3am-2022-06-09_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: WA3am-2022-06-09_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: WA3am-2022-06-09_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:02:13: Found recordings that have song count > 1 for edge analysis, see log
+12-Feb-23 11:02:13: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:13: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:02:20: WA3am-2022-05-17_07-00.WAV missing song tag
+12-Feb-23 11:02:20: WA3am-2022-05-17_08-00.WAV missing song tag
+12-Feb-23 11:02:20: WA3am-2022-05-17_19-00.WAV missing song tag
+12-Feb-23 11:02:20: WA3am-2022-06-03_09-00.WAV missing song tag
+12-Feb-23 11:03:54: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 11:03:54: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 11:03:54: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 11:03:55: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 11:03:55: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 11:03:55: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 11:03:56: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 11:03:56: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 11:03:57: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 11:04:00: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 11:04:00: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 11:04:01: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 11:04:02: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 11:04:03: Found recordings that have both P1F and P1N tags, see log
+12-Feb-23 11:04:03: WA3am-2022-06-06_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-06_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-07_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-08_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_17-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: WA3am-2022-06-09_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:04:03: Found recordings that have song count > 1 for edge analysis, see log
+12-Feb-23 11:04:03: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:04:03: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:24: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 11:34:24: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 11:34:24: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 11:34:26: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 11:34:26: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 11:34:26: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 11:34:27: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 11:34:27: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 11:34:27: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 11:34:31: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 11:34:31: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 11:34:32: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 11:34:33: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 11:34:34: Found recordings that have both P1F and P1N tags, see log
+12-Feb-23 11:34:34: WA3am-2022-06-06_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-06_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-07_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_12-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-08_11-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_17-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_09-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_15-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_13-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_14-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_16-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: WA3am-2022-06-09_10-00.WAV	Recording has both P1F and P1N tags
+12-Feb-23 11:34:34: Found recordings that have song count > 1 for edge analysis, see log
+12-Feb-23 11:34:34: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+12-Feb-23 11:34:34: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+12-Feb-23 11:38:07: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 11:38:07: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 11:38:07: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 11:38:09: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 11:38:09: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 11:38:09: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 11:38:10: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 11:38:10: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 11:38:11: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 11:38:18: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 11:38:19: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 11:38:21: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 11:38:22: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:04:16: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:04:16: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:04:16: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:04:18: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:04:18: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:04:18: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:04:19: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:04:19: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:04:19: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:04:24: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:04:24: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:04:26: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:04:27: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:16:58: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:16:58: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:16:58: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:17:00: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:17:00: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:17:00: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:17:01: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:17:01: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:17:01: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:17:08: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:17:09: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:17:11: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:17:12: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:23:09: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:23:09: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:23:09: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:23:11: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:23:11: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:23:11: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:23:12: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:23:12: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:23:12: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:23:16: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:23:16: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:23:17: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:23:18: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:24:48: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:24:48: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:24:48: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:24:49: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:24:49: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:24:50: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:24:50: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:24:51: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:24:51: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:24:54: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:24:54: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:24:55: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:24:56: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:25:36: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:25:36: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:25:36: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:25:37: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:25:37: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:25:37: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:25:38: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:25:39: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:25:39: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:25:45: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:25:46: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:25:48: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:25:49: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:26:42: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:26:42: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:26:42: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:26:44: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:26:44: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:26:44: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:26:45: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:26:45: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:26:45: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:26:49: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:26:49: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:26:51: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:26:52: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 12:55:23: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 12:55:23: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 12:55:23: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 12:55:24: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 12:55:24: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 12:55:25: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 12:55:26: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 12:55:26: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 12:55:26: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 12:55:29: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 12:55:30: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 12:55:31: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 12:55:31: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+12-Feb-23 13:00:50: File data.csv has an unexpected number of columns, 29 instead of 31
+12-Feb-23 13:00:50: Column tag<ONC-p1> missing from file data.csv
+12-Feb-23 13:00:50: Column tag<YNC-p1> missing from file data.csv
+12-Feb-23 13:00:52: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+12-Feb-23 13:00:52: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+12-Feb-23 13:00:52: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+12-Feb-23 13:00:53: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+12-Feb-23 13:00:53: Data for site 2020 Iron Point has the wrong year in it, older than its year
+12-Feb-23 13:00:53: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+12-Feb-23 13:00:57: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+12-Feb-23 13:00:57: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+12-Feb-23 13:00:58: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+12-Feb-23 13:00:58: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+13-Feb-23 10:03:31: File data.csv has an unexpected number of columns, 29 instead of 31
+13-Feb-23 10:03:31: Column tag<ONC-p1> missing from file data.csv
+13-Feb-23 10:03:31: Column tag<YNC-p1> missing from file data.csv
+13-Feb-23 10:03:33: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+13-Feb-23 10:03:33: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+13-Feb-23 10:03:33: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+13-Feb-23 10:03:34: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+13-Feb-23 10:03:34: Data for site 2020 Iron Point has the wrong year in it, older than its year
+13-Feb-23 10:03:34: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+13-Feb-23 10:03:39: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+13-Feb-23 10:03:39: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+13-Feb-23 10:03:41: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+13-Feb-23 10:03:42: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+13-Feb-23 10:29:41: Found recordings that have both P1F and P1N tags, see log
+13-Feb-23 10:29:41: WA3am-2022-06-06_09-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_16-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_10-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_14-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_15-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_11-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_13-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-06_12-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_15-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_16-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_09-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_14-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_12-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_11-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_10-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-07_13-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_16-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_09-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_14-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_15-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_13-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_10-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_12-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-08_11-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_17-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_09-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_15-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_13-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_14-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_16-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: WA3am-2022-06-09_10-00.WAV	Recording has both P1F and P1N tags
+13-Feb-23 10:29:41: Found recordings that have song count > 1 for edge analysis, see log
+13-Feb-23 10:29:41: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-04_19-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-06_14-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-06_07-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:41: WA3am-2022-06-07_19-00.WAV	Recording has soung count > 1
+13-Feb-23 10:29:48: WA3am-2022-05-17_07-00.WAV missing song tag
+13-Feb-23 10:29:48: WA3am-2022-05-17_08-00.WAV missing song tag
+13-Feb-23 10:29:48: WA3am-2022-05-17_19-00.WAV missing song tag
+13-Feb-23 10:29:48: WA3am-2022-06-03_09-00.WAV missing song tag
+13-Feb-23 10:30:00: Found recordings that have song count > 1 for edge analysis, see log
+13-Feb-23 10:30:00: HLam-2019-04-28_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-04-28_11-21.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-04-28_17-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-04-28_18-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-04-28_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-04-28_15-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-01_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-01_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_16-16.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_15-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_10-22.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-26_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-27_18-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-27_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-27_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-27_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-27_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-28_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-28_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-28_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-28_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-29_15-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-29_11-21.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-29_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-29_08-04.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-29_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-05-30_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-06-09_16-16.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-06-09_17-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-06-11_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-06-12_16-16.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_18-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_17-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_19-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_15-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_11-21.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_16-16.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-01_10-22.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_17-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_11-21.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_10-22.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_09-23.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_19-17.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-02_14-18.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-03_10-22.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-03_11-21.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-03_13-19.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-03_16-16.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-03_07-25.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-04_12-20.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-04_08-24.flac	Recording has soung count > 1
+13-Feb-23 10:30:00: HLam-2019-07-04_09-23.flac	Recording has soung count > 1
