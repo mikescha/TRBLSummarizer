@@ -48,16 +48,22 @@ tag_mhe2= 'tag_mhe2'
 tag_ws  = 'tag_ws'
 tag_mh  = 'tag_mh'
 tag_    = 'tag_'
-tag_p1c = 'tag_p1c'
+tag_p1c = 'tag_p1c'  
 tag_p1n = 'tag_p1n'
+#tag_p1na= 'tag_p1na' #DOESN'T EXIST NOW
+tag_p1f = 'tag_p1f'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
-tag_p1f = 'tag_p1f'
+tag_p2f = 'tag_p2f'
+tag_p2na= 'tag_p2na'
+tag_p3c = 'tag_p3c'
+tag_p3n = 'tag_p3n'
+tag_p3f = 'tag_p3f'
+#tag_p3na= 'tag_p3na' #DOESN'T EXIST NOW
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
-tag_ONC_p1 = 'tag<ONC-p1>'
-tag_YNC_p1 = 'tag<YNC-p1>'
 tag_YNC_p2 = 'tag<YNC-p2>'
+tag_YNC_p3 = 'tag<YNC-p3>'
 malesong = 'malesong'
 altsong2 = 'altsong2'
 altsong1 = 'altsong1'
@@ -78,23 +84,26 @@ data_col = {
     'year'       : 'year',
     hour_str     : 'hour', 
     date_str     : 'date',
-    tag_ONC_p1   : 'tag<ONC-p1>', #Older nestling call pulse 1
-    "tag_ONC_p2"  : 'tag<YNC-p1>', #REMOVE WHEN WE GET A NEW DATAFILE
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
+    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 2
     tag_p1c      : 'tag<p1c>',
+    tag_p1f      : 'tag<p1f>',
     tag_p1n      : 'tag<p1n>',
     tag_p2c      : 'tag<p2c>',
+    tag_p2f      : 'tag<p2f>',
     tag_p2n      : 'tag<p2n>',
-    tag_p1f      : 'tag<p1f>',
-    tag_mhe      : 'tag<reviewed-MH-e>', #WENDY this is still in the data file, should it be?
-    tag_mhe2     : 'tag<reviewed-MH-e2>', #WENDY this is still in the data file, should it be?
+    tag_p2na     : 'tag<p2na>',
+    tag_p3c      : 'tag<p3c>',
+    tag_p3f      : 'tag<p3f>',
+    tag_p3n      : 'tag<p3n>',
+    tag_mhe2     : 'tag<reviewed-MH-e2>', 
+    tag_mhe      : 'tag<reviewed-MH-e>',
     tag_mhh      : 'tag<reviewed-MH-h>',
     tag_mhm      : 'tag<reviewed-MH-m>',
     tag_mh       : 'tag<reviewed-MH>',
     tag_wse      : 'tag<reviewed-WS-e>', #WENDY this is in DF but not being used
     tag_wsh      : 'tag<reviewed-WS-h>',
     tag_wsm      : 'tag<reviewed-WS-m>',
-    tag_wsmc     : 'tag<reviewed-WS-mc>', #WENDY this is in DF but not being used
     tag_ws       : 'tag<reviewed-WS>',
     tag_         : 'tag<reviewed>',
     malesong     : 'val<Agelaius tricolor/Common Song>',
@@ -131,19 +140,24 @@ song_cols = [data_col[s] for s in songs]
 all_songs = [malesong, courtsong, altsong2, altsong1, simplecall2] 
 all_song_cols = [data_col[s] for s in all_songs]
 
-#TODO When we get a new data file, update all these lists
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-edge_c_tags = [tag_p1c, tag_p2c] #male chorus
-edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f] #YNC=young nestling call
+edge_c_tags = [tag_p1c, tag_p2c, tag_p3c] #male chorus
+edge_n_tags = [tag_p1n, tag_p2n, tag_p3n] #nestlings, p1 = pulse 1, p2 = pulse 2
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] #YNC=young nestling call
+edge_tag_map = {
+    tag_p1n : [data_col[tag_p1f]],
+    tag_p1n : [data_col[tag_p2f], data_col[tag_p2na]],
+    tag_p1n : [data_col[tag_p3f]],
+}
+
 all_tags = manual_tags + mini_manual_tags + edge_tags
 
 manual_cols = [data_col[t] for t in manual_tags]
 mini_manual_cols = [data_col[t] for t in mini_manual_tags]
 edge_c_cols = [data_col[t] for t in edge_c_tags]
 edge_n_cols = [data_col[t] for t in edge_n_tags]
-all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
+#all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
 edge_cols = edge_c_cols + edge_n_cols #make list of the right length
 edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
@@ -348,6 +362,65 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     return error_found
 
 # Confirm that a date has either a p1f tag or a p1n tag, but not both
+#error cases
+# p1c good with p1c, p1n, p1na,
+#   error with p1f, any p2
+#   error with p1c with any p3
+
+# p1n with p1c, p2c are OK. All other combos are wrong:
+#   p1n with p1f, p1na
+#   p1n with p2n, p2na or p2f
+#   p1n with any p3
+
+# p1f allowed with p2c, p2n, p2na. All other combos are wrong:
+#   p1f error with p1c, p1n, p1na
+#   p1f error with p2f 
+#   p1f error with any p3 tag
+
+# p1na allowed with p1c, p2c
+#   p1n, p1f
+#   p2n, p2na, p2f
+#   any p3
+
+# p2c allowed with p1n, p1f, p1na, p2n, p2na, 
+#   error with p1c
+#   error with p2f
+#   error with p3c, p3n, p3na, p3f
+
+# p2n allowed with p1f, p2c, p3c, 
+#   error with p1c, p1n, p1na
+#   error with p2na, p2f
+#   error with p3n, p3na, p3f
+
+# p2na allowed with p2c, p1f, p3c
+#   p1c, p1n, p1na not allowed
+#   p2n, p2f
+#   p3n, p3na, p3f
+
+# p2f allowed with p3c, p3n, p3na
+#   p1c, p1n, p1na, p1f
+#   p2c, p2n, p2na
+#   p3f
+
+# p3c allowed with p2n, p2na, p2f, p3n, p3na, p3f
+#   error with and p1
+#   error with p2c
+
+# p3n allowed with p2f, p3c, 
+#   error with and p1
+#   error with p2c, p2n, p2na 
+#   error with p3na, p3f
+
+# p3na allowed with p2f, p3c
+#   p1 not allowed
+#   p2c, p2n, p2na, 
+#   p3n, p3na, p3f
+
+# p3f allowed with p3f
+#   p1 not allowed
+#   p2 not allowed
+#   p3 except p3f
+
 def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     error_found = False
 
@@ -376,7 +449,6 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
         show_error("Found recordings that have song count > 1 for edge analysis, see log")
         for f in tag_errors[filename_str]:
             log_error(f"{f}\tRecording has soung count > 1")
-
 
     return error_found 
 
@@ -527,23 +599,27 @@ def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     return temp
 
 # Generate the pivot table for the site
-def make_pivot_table(df: pd.DataFrame, labels:list, date_range_dict:dict, preserve_edges=False, label_dict={}) -> pd.DataFrame:
+def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=False, labels=[], label_dict={}) -> pd.DataFrame:
     if len(df):
         if len(label_dict):
-            #Assumes dict is: {column to filter on: column to count}
-            #In this case, we filter to only columns that match the key, and then count the columns that are non-zero
+            # Assumes dict is: {"column to filter on": "column to count"}
+            # In this case, we filter to only columns that match the key (because the DF being passed in has
+            # columns matching any key in the dict), and then count the columns in that subset that are non-zero.
+            # And then, the result is all merged together
             summary = pd.DataFrame()
             for tag in label_dict:
                 temp = filter_df_by_tags(df, [tag])
+                # If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up 
+                # the number of times that the test 'x>=1' is true
                 temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[date_str]], 
                                     aggfunc = lambda x: (x>=1).sum())
-                temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
                 if len(temp_pt):
-                    summary = pd.concat([summary, temp_pt]).groupby('date').sum()            
-            summary.rename(columns={'temp':tag}, inplace=True) #rename the index so that it's the tag, not the song name
+                    temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
+                    summary = pd.concat([summary, temp_pt]).groupby('date').sum()
+            #rename the index so that it's the song name            
+            summary.rename(columns={'temp':list(label_dict.keys())[0]}, inplace=True) 
         else:
-            #If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up the number of times 
-            #that the test 'x>=1' is true.
+            #If we were passed a list of labels instead of a dict, then use the same logic to count songs
             summary = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
                                     aggfunc = lambda x: (x>=1).sum()) 
 
@@ -573,7 +649,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2022 Hulen Levee - Silveira')
+    #return('2022 Baja 1')
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1590,7 +1666,7 @@ for site in target_sites:
     #       The number of recordings from that set that have AltSong >= 1 
     #     
     df_manual = filter_df_by_tags(df_site, manual_cols)
-    pt_manual = make_pivot_table(df_manual, song_cols, date_range_dict)
+    pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
 
     # MINI-MANUAL ANALYSIS
     # 1. Select all rows with one of the following tags:
@@ -1598,57 +1674,100 @@ for site in target_sites:
     # 2. Make a pivot table as above
     #   
     df_mini_manual = filter_df_by_tags(df_site, mini_manual_cols)
-    pt_mini_manual = make_pivot_table(df_mini_manual, song_cols, date_range_dict)
+    pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
 
     # EDGE ANALYSIS
     #   1. Select all rows where one of the following tags
-    #       P1C, P1N, P2C, P2N
-    #   2. If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
-    #      If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
-    #   3. Make a pivot table with the number of recordings that have CourtshipSong for the tags ending in C
-    #   4. Make another pivot table with the number of recordings that have AlternativeSong for the tags ending in N
-    #   5. Merge the tables together so we get one block of heatmaps
+    #       P1C, P1N, P2C, P2N, P3C, P3N
+    #   2. For tags that end in C, make a pivot table with the number of recordings that have CourtshipSong
+    #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
+    #   4. Merge all the tables together so we get one block of heatmaps
 
     pt_edge = pd.DataFrame()
     have_edge_data = False
-    site_has_YNC_tag = not filter_df_by_tags(df_site, [tag_YNC_p2]).empty
+    has_ync = 'has_ync'
+    ync_tag = 'ync_tag'
+    pf_tag = 'pf_tag'
+    na_tag = 'na_tag'
+    sc_tag = 'sc_tag'
+
+    # The dict below captures all the various tags that need to be factored into the the edge
+    # analysis assocated with P_N phase:
+    #   has_ync: Does this site have any YNC tags of this type?
+    #   ync_tag: The name of the YNC Tag column associated with this stage (i.e. the number after P)
+    #   na_tag : The name of the P_NA tag associated with this stage
+    #   pf_tag : THe name of the P_F tag associated with this stage
+    pn_tag_map = {
+        data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
+                             ync_tag : '',  #YNC_P1 tag not currently being used
+                             na_tag  : '',  #P1NA not currently being used
+                             pf_tag  : data_col[tag_p1f],
+        },
+        data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
+                             ync_tag : data_col[tag_YNC_p2],
+                             na_tag  : data_col[tag_p2na],
+                             pf_tag  : data_col[tag_p2f],
+        },
+        data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
+                             ync_tag : data_col[tag_YNC_p3],
+                             na_tag  : '', #P3NA not currently being used
+                             pf_tag  : data_col[tag_p3f],
+        }
+    }
+
     check_edge_cols_for_errors(df_site)
 
-    for tag in edge_cols: # tag_p1c, tag_p2c, tag_p1n, tag_p2n
-        # Get the column we want to filter based on this tag
-        target_tags = [tag]
-        if tag in edge_c_cols:
-            target_cols = [data_col[courtsong]]
-        elif tag == data_col[tag_p1n]:
-            # In this case, a day can only have P1N tag or P1F. It can never have both. We checked this above.
-            # So, if a row has P1F then count SC2, and if a row has P1N then count AltSong1
-            target_tags.append(data_col[tag_p1f])
-            target_cols = [data_col[altsong1], data_col[simplecall2]]
-        else: #tag == p2n
-            if site_has_YNC_tag:
-                target_cols = [data_col[tag_YNC_p2]]
+    # 
+    # [  P1C  ]
+    #            [P1N, P1NA, P1F] 
+    #                                [  P2C  ]                   
+    #                                           [P2N, P2NA, P2F] 
+    #                                                              [  P3C  ]
+    #                                                                          [P3N, P3NA, P3F] 
+    # 
+    for tag in edge_cols: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
+        tag_dict = {}
+
+        if tag in edge_c_cols: #P1C, P2C, P3C
+            tag_dict[tag] = data_col[courtsong]
+
+        else: #P1N, P2N, P3N
+            # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
+            if pn_tag_map[tag][has_ync]: 
+                #Count YNC tags
+                tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
             else:
-                target_cols = [data_col[altsong1]]
+                #Count altsong1 
+                tag_dict[tag] = data_col[altsong1]
 
+            # For p?na, count altsong1 
+            if len(pn_tag_map[tag][na_tag]):
+                tag_dict[pn_tag_map[tag][na_tag]] = data_col[altsong1]
 
-        # Make our pivot. "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-        #    had tags but no songs
+            # P1F, P2F, P3F: count simplecall2
+            tag_dict[pn_tag_map[tag][pf_tag]] = data_col[simplecall2]
+ 
+        # At this point, the dictionary "tag_dict" has a mapping of all the tags and the columns
+        # that need to be counted for them. It will either be: 
+        #       {"P_C" : "courtsong"}
+        # or
+        #       {"p_n" : "altsong1" OR "YNC",
+        #        "p_na": "altsong1",
+        #        "P_f" : "simplecall2"} 
+        # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
+        df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
+        have_edge_data = have_edge_data or len(df_for_tag)>0
+
         # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
         #    and it further filters it to the columns that have a non-zero value in the target_col
-        df_for_tag = filter_df_by_tags(df_site, target_tags)
-        have_edge_data = have_edge_data or len(df_for_tag)
-        if tag == data_col[tag_p1n]:
-            pt_cols = {data_col[tag_p1f]:data_col[simplecall2], data_col[tag_p1n]:data_col[altsong1]}
-            pt_for_tag = make_pivot_table(df_for_tag, [], date_range_dict, preserve_edges=True, label_dict=pt_cols)
-
-        else:
-            # Get all the rows where this tag has a value > 0
-            pt_for_tag = make_pivot_table(df_for_tag, target_cols, date_range_dict, preserve_edges=True)
-
-        pt_for_tag = pt_for_tag.rename({target_cols[0]:tag}) #rename the index so that it's the tag, not the song name
+        # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
+        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        #    had tags but no songs
+        pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
+
+    #
     # PATTERN MATCHING ANALYSIS
     #
     df_pattern_match = load_pm_data(site, date_range_dict)
@@ -1762,7 +1881,9 @@ if not make_all_graphs and len(df_site):
         friendly_names =   {data_col[tag_p1c]: 'E-P1C',
                             data_col[tag_p1n]: 'E-P1N',
                             data_col[tag_p2c]: 'E-P2C',
-                            data_col[tag_p2n]: 'E-P2N'
+                            data_col[tag_p2n]: 'E-P2N',
+                            data_col[tag_p3c]: 'E-P3C',
+                            data_col[tag_p3n]: 'E-P3N'
         }
         summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
 
@@ -1801,7 +1922,7 @@ if not make_all_graphs and len(df_site):
 
     # Put a box with first and last dates for the Song columns, with counts on that date
     with st.expander("See summary of first and last dates"):  
-        output = get_first_and_last_dates(make_pivot_table(df_site, song_cols, date_range_dict))
+        output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
 
     # Scan the list of tags and flag any where there is "---" for the value. 
