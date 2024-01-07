@@ -21,7 +21,7 @@ from datetime import datetime as dt
 import gc
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
@@ -75,7 +75,8 @@ present = 'present'
 start_str = 'start'
 end_str = 'end'
 
-#Master list of all the columns I need. If columns get added/removed then this needs to update
+# Master list of all the columns I need. If columns get added/removed then this needs to update
+# The dictionary values MUST map to what's in the data file. 
 data_col = {
     filename_str : 'filename', 
     site_str     : 'site', 
@@ -147,8 +148,8 @@ edge_n_tags = [tag_p1n, tag_p2n, tag_p3n] #nestlings, p1 = pulse 1, p2 = pulse 2
 edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] #YNC=young nestling call
 edge_tag_map = {
     tag_p1n : [data_col[tag_p1f]],
-    tag_p1n : [data_col[tag_p2f], data_col[tag_p2na]],
-    tag_p1n : [data_col[tag_p3f]],
+    tag_p2n : [data_col[tag_p2f], data_col[tag_p2na]],
+    tag_p3n : [data_col[tag_p3f]],
 }
 
 all_tags = manual_tags + mini_manual_tags + edge_tags
@@ -259,7 +260,7 @@ def make_date(row):
 #File handling and setup
 #
 #
-@st.experimental_singleton(suppress_st_warning=True)
+@st.cache_resource
 def get_target_sites() -> dict:
     file_summary = {}
     for t in pm_file_types:
@@ -453,7 +454,7 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     return error_found 
 
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
-@st.experimental_singleton(suppress_st_warning=True)
+@st.cache_resource
 def load_data() -> pd.DataFrame:
     data_csv = Path(__file__).parents[0] / files[data_file]
 
@@ -518,7 +519,7 @@ def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
 #   - Drop sites that aren't needed, so we're passing around less data
 #   - Exclude any data where the year of the data doesn't match the target year
 #   - Exclude any data where there aren't recordings on consecutive days  
-@st.experimental_singleton(suppress_st_warning=True)
+@st.cache_resource
 def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
     df_clean = pd.DataFrame()
@@ -1186,7 +1187,7 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
     else:
         #No data, so show a message instead. 
         save_figure(site, graph_type, delete_only=True)
-        site_name_text = '<p style="font-family:sans-serif; color:Black; font-size: 16px;"><b>{}</b></p>'.format(graph_type)
+        site_name_text = '<p style="font-family:sans-serif; font-size: 16px;"><b>{}</b></p>'.format(graph_type) #used to also have color:Black; 
         st.write(site_name_text, unsafe_allow_html=True)
 
         # https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
@@ -1211,7 +1212,7 @@ def output_text(text:str, make_all_graphs:bool):
 #TODO Use the sites file from here in the weather
 
 #Load weather data from file
-@st.experimental_singleton(suppress_st_warning=True)
+@st.cache_resource
 def load_weather_data_from_file() -> pd.DataFrame:
     #Validate the data file format
     headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
@@ -1377,8 +1378,8 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
 
         # HORIZONTAL TICKS AND LABLING 
-        x_min = ax1.get_xlim()[0]
-        x_max = ax1.get_xlim()[1]
+        #x_min = ax1.get_xlim()[0]
+        #x_max = ax1.get_xlim()[1]
         # Need to set xlim so that we don't get an extra gap on either side
         # Get the list of ticks and set them --only needed if we ever want individual dates on the axis
 #        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
@@ -1933,4 +1934,6 @@ if not make_all_graphs and len(df_site):
             st.write(site_list[bad_files])
 
     if st.button('Clear cache'):
-        st.experimental_singleton.clear()
+        get_target_sites().clear()
+        clean_data.clear()
+        load_data.clear()
