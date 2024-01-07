@@ -934,3 +934,119 @@
 07-Jan-24 17:06:11: CNWR27-1am-2021-05-29_11-00.WAV-t9s5rgdtjf8f.flac missing song tag
 07-Jan-24 17:06:11: CNWR27-1am-2021-05-29_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
 07-Jan-24 17:06:11: CNWR27-1am-2021-06-07_08-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:11:01: File data.csv has an unexpected number of columns, 30 instead of 34
+07-Jan-24 17:11:01: Column tag<YNC-p3> missing from file data.csv
+07-Jan-24 17:11:01: Column tag<p2na> missing from file data.csv
+07-Jan-24 17:11:01: Column tag<p3c> missing from file data.csv
+07-Jan-24 17:11:01: Column tag<p3f> missing from file data.csv
+07-Jan-24 17:11:01: Column tag<p3n> missing from file data.csv
+07-Jan-24 17:53:34: File data.csv has an unexpected number of columns, 30 instead of 31
+07-Jan-24 17:53:34: Column tag<p1a> missing from file data.csv
+07-Jan-24 17:53:34: Column tag<p2a> missing from file data.csv
+07-Jan-24 17:56:32: File data.csv has an unexpected number of columns, 30 instead of 31
+07-Jan-24 17:56:32: Column tag<p1a> missing from file data.csv
+07-Jan-24 17:56:32: Column tag<p2a> missing from file data.csv
+07-Jan-24 17:57:17: File data.csv has an unexpected number of columns, 30 instead of 31
+07-Jan-24 17:59:12: Column tag<p1a> missing from file data.csv
+07-Jan-24 17:59:28: Column tag<p2a> missing from file data.csv
+07-Jan-24 18:04:44: File data.csv has an unexpected number of columns, 30 instead of 31
+07-Jan-24 18:04:44: Column tag<p1a> missing from file data.csv
+07-Jan-24 18:04:44: Column tag<p2a> missing from file data.csv
+07-Jan-24 18:16:39: File data.csv has an unexpected number of columns, 30 instead of 31
+07-Jan-24 18:17:06: Column tag<p1a> missing from file data.csv
+07-Jan-24 18:17:09: Column tag<p2a> missing from file data.csv
+07-Jan-24 18:18:23: File errors were found
+07-Jan-24 18:22:25: Column tag<p2a> missing from file data.csv
+07-Jan-24 18:22:25: File errors were found
+07-Jan-24 18:24:19: File data.csv has an unexpected number of columns, 31 instead of 30
+07-Jan-24 18:24:20: File errors were found
+07-Jan-24 18:24:20: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+07-Jan-24 18:24:20: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+07-Jan-24 18:24:20: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+07-Jan-24 18:24:21: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+07-Jan-24 18:24:21: Data for site 2020 Iron Point has the wrong year in it, older than its year
+07-Jan-24 18:24:22: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+07-Jan-24 18:24:27: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Jan-24 18:24:28: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+07-Jan-24 18:24:30: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Jan-24 18:24:31: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+07-Jan-24 18:24:46: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 18:24:46: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 18:25:07: No weather available for 2022 Colusa NWR T27.1
+07-Jan-24 18:25:27: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 18:25:27: CNWR T27.2am-2022-05-31_19-00.WAV	Recording has soung count > 1
+07-Jan-24 18:25:27: CNWR T27.2am-2022-05-31_17-00.WAV	Recording has soung count > 1
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-10_11-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-16_08-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-28_08-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-28_11-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-30_17-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-30_18-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-31_16-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-31_14-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-03_08-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-03_14-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-18_08-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-07-15_11-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-05-31_18-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-01_08-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-01_19-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-01_13-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-01_11-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-01_15-00.WAV missing song tag
+07-Jan-24 18:25:40: CNWR T27.2am-2022-06-02_11-00.WAV missing song tag
+07-Jan-24 18:25:59: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 18:25:59: SJWAam-2022-05-26_15-00.WAV	Recording has soung count > 1
+07-Jan-24 18:26:10: SJWAam-2022-05-11_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-11_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-14_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-14_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-14_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-17_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-17_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-17_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-20_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-20_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-20_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-23_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-23_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-23_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-26_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-26_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-26_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-29_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-29_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-29_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-01_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-01_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-01_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-04_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-04_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-04_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-07_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-07_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-07_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-10_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-10_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-10_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-13_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-13_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-13_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-16_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-16_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-16_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-19_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-19_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-22_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-22_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-22_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-25_08-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-25_14-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-06-25_11-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-25_16-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-25_18-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-27_10-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-29_15-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-30_13-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-30_09-00.WAV missing song tag
+07-Jan-24 18:26:10: SJWAam-2022-05-31_12-00.WAV missing song tag

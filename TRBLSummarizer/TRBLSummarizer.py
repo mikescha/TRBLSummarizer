@@ -50,20 +50,21 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'  
 tag_p1n = 'tag_p1n'
-#tag_p1na= 'tag_p1na' #DOESN'T EXIST NOW
+#tag_p1a = 'tag_p1a' #used to be P1NA
 tag_p1f = 'tag_p1f'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
+tag_p2a = 'tag_p2a'
 tag_p2f = 'tag_p2f'
-tag_p2na= 'tag_p2na'
-tag_p3c = 'tag_p3c'
-tag_p3n = 'tag_p3n'
-tag_p3f = 'tag_p3f'
+#tag_p2na= 'tag_p2na' doesn't exist any more
+#tag_p3c = 'tag_p3c'
+#tag_p3n = 'tag_p3n'
+#tag_p3f = 'tag_p3f'
 #tag_p3na= 'tag_p3na' #DOESN'T EXIST NOW
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_YNC_p2 = 'tag<YNC-p2>'
-tag_YNC_p3 = 'tag<YNC-p3>'
+#tag_YNC_p3 = 'tag<YNC-p3>'
 malesong = 'malesong'
 altsong2 = 'altsong2'
 altsong1 = 'altsong1'
@@ -86,17 +87,18 @@ data_col = {
     hour_str     : 'hour', 
     date_str     : 'date',
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
-    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 2
+#    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 3
     tag_p1c      : 'tag<p1c>',
     tag_p1f      : 'tag<p1f>',
     tag_p1n      : 'tag<p1n>',
+#    tag_p1a      : 'tag<p1a>',
     tag_p2c      : 'tag<p2c>',
     tag_p2f      : 'tag<p2f>',
     tag_p2n      : 'tag<p2n>',
-    tag_p2na     : 'tag<p2na>',
-    tag_p3c      : 'tag<p3c>',
-    tag_p3f      : 'tag<p3f>',
-    tag_p3n      : 'tag<p3n>',
+    tag_p2a      : 'tag<p2a>',
+#    tag_p3c      : 'tag<p3c>',
+#    tag_p3f      : 'tag<p3f>',
+#    tag_p3n      : 'tag<p3n>',
     tag_mhe2     : 'tag<reviewed-MH-e2>', 
     tag_mhe      : 'tag<reviewed-MH-e>',
     tag_mhh      : 'tag<reviewed-MH-h>',
@@ -143,13 +145,16 @@ all_song_cols = [data_col[s] for s in all_songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
 mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-edge_c_tags = [tag_p1c, tag_p2c, tag_p3c] #male chorus
-edge_n_tags = [tag_p1n, tag_p2n, tag_p3n] #nestlings, p1 = pulse 1, p2 = pulse 2
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] #YNC=young nestling call
+#if we get 3rd pulse back, add tag_p3c and tag_p3n to the two lines below
+edge_c_tags = [tag_p1c, tag_p2c] #male chorus
+edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
+#if we get 3rd pulse back, change line below to this:
+#edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] 
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f, tag_p2f, tag_p2a] #add tag_p1a
 edge_tag_map = {
-    tag_p1n : [data_col[tag_p1f]],
-    tag_p2n : [data_col[tag_p2f], data_col[tag_p2na]],
-    tag_p3n : [data_col[tag_p3f]],
+    tag_p1n : [data_col[tag_p1f]], #, data_col[tag_p1a]],
+    tag_p2n : [data_col[tag_p2f], data_col[tag_p2a]],
+#    tag_p3n : [data_col[tag_p3f]],
 }
 
 all_tags = manual_tags + mini_manual_tags + edge_tags
@@ -350,17 +355,17 @@ def get_target_sites() -> dict:
 
 #Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
-    error_found = False
+    #TODO Make every place that uses this function handle the scenario where a list of missing columns is returned
+    errors_found = []
     if len(target_cols) != len(file_cols):
-        error_found = True
         show_error('File {} has an unexpected number of columns, {} instead of {}'.
                    format(file, len(file_cols), len(target_cols)))
-    for col in target_cols:
-        error_found = True
-        if not target_cols[col] in file_cols:
+    for col in target_cols:        
+        if  target_cols[col] not in file_cols:
+            errors_found.append(target_cols[col])
             show_error('Column {} missing from file {}'.format(target_cols[col], file))
     
-    return error_found
+    return errors_found
 
 # Confirm that a date has either a p1f tag or a p1n tag, but not both
 #error cases
@@ -460,14 +465,18 @@ def load_data() -> pd.DataFrame:
 
     #Validate the data file format
     headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
-    confirm_columns(data_col, headers, data_file)
-    
+    missing_columns = confirm_columns(data_col, headers, data_file)  
+
     #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
     usecols = [data_col[filename_str], data_col[site_str], data_col[date_str]]
     for song in all_songs:
         usecols.append(data_col[song])
     for tag in all_tags:
         usecols.append(data_col[tag])
+
+    #remove any columns that are missing from the data file, so we don't ask for them as that will cause
+    #an exception. Hopefully the rest of the code is robust enough to deal...
+    usecols = [item for item in usecols if item not in missing_columns]
 
     df = pd.read_csv(data_csv, 
                      usecols = usecols,
@@ -1051,9 +1060,9 @@ def get_month_locs_from_graph() -> dict:
             months.append(t.get_text())
     x = 0
     m = 0 
-    for l in ax.get_lines():
-        locs[months[m]] = (x, l.get_xdata()[0])
-        x = l.get_xdata()[0]
+    for line in ax.get_lines():
+        locs[months[m]] = (x, line.get_xdata()[0])
+        x = line.get_xdata()[0]
         m+=1
     if x>0:
         locs['max']=x    
@@ -1678,8 +1687,17 @@ for site in target_sites:
     pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
 
     # EDGE ANALYSIS
+    # Goal: 
+    #   1. Draw a rectangle around the outside of all the P_C tags from the first day that has 
+    #      at least 1 recording to the last (orange)
+    #           1. if the data is null, then the rectangles are going to be drawn as connecting lines
+    #   2. Draw a rectangle starting at the first P_N that has at least one recording, and ending
+    #      at the latest date that has either a P_A or P_F
+    #           1. if there is a YNC_P2 then only count recordings that have YNC_P2, do not count the actual P_N
+    #   
+    # Steps:
     #   1. Select all rows where one of the following tags
-    #       P1C, P1N, P2C, P2N, P3C, P3N
+    #       P1C, P1N, P2C, P2N [later: , P3C, P3N]
     #   2. For tags that end in C, make a pivot table with the number of recordings that have CourtshipSong
     #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
     #   4. Merge all the tables together so we get one block of heatmaps
@@ -1689,7 +1707,7 @@ for site in target_sites:
     has_ync = 'has_ync'
     ync_tag = 'ync_tag'
     pf_tag = 'pf_tag'
-    na_tag = 'na_tag'
+    abandon_tag = 'na_tag'
     sc_tag = 'sc_tag'
 
     # The dict below captures all the various tags that need to be factored into the the edge
@@ -1701,30 +1719,30 @@ for site in target_sites:
     pn_tag_map = {
         data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
                              ync_tag : '',  #YNC_P1 tag not currently being used
-                             na_tag  : '',  #P1NA not currently being used
+                             abandon_tag  : "", #data_col[tag_p1a], 
                              pf_tag  : data_col[tag_p1f],
         },
         data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
                              ync_tag : data_col[tag_YNC_p2],
-                             na_tag  : data_col[tag_p2na],
+                             abandon_tag  : data_col[tag_p2a],
                              pf_tag  : data_col[tag_p2f],
         },
-        data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
-                             ync_tag : data_col[tag_YNC_p3],
-                             na_tag  : '', #P3NA not currently being used
-                             pf_tag  : data_col[tag_p3f],
-        }
+#        data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
+#                             ync_tag : data_col[tag_YNC_p3],
+#                             na_tag  : '', #P3NA not currently being used
+#                             pf_tag  : data_col[tag_p3f],
+#        }
     }
 
     check_edge_cols_for_errors(df_site)
 
     # 
     # [  P1C  ]
-    #            [P1N, P1NA, P1F] 
+    #            [P1N, P1A, P1F] 
     #                                [  P2C  ]                   
-    #                                           [P2N, P2NA, P2F] 
+    #                                           [P2N, P2A, P2F] 
     #                                                              [  P3C  ]
-    #                                                                          [P3N, P3NA, P3F] 
+    #                                                                          [P3N, P3A, P3F] 
     # 
     for tag in edge_cols: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
         tag_dict = {}
@@ -1742,8 +1760,8 @@ for site in target_sites:
                 tag_dict[tag] = data_col[altsong1]
 
             # For p?na, count altsong1 
-            if len(pn_tag_map[tag][na_tag]):
-                tag_dict[pn_tag_map[tag][na_tag]] = data_col[altsong1]
+            if len(pn_tag_map[tag][abandon_tag]):
+                tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[altsong1]
 
             # P1F, P2F, P3F: count simplecall2
             tag_dict[pn_tag_map[tag][pf_tag]] = data_col[simplecall2]
@@ -1753,7 +1771,7 @@ for site in target_sites:
         #       {"P_C" : "courtsong"}
         # or
         #       {"p_n" : "altsong1" OR "YNC",
-        #        "p_na": "altsong1",
+        #        "p_a" : "altsong1",
         #        "P_f" : "simplecall2"} 
         # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
         df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
@@ -1883,8 +1901,8 @@ if not make_all_graphs and len(df_site):
                             data_col[tag_p1n]: 'E-P1N',
                             data_col[tag_p2c]: 'E-P2C',
                             data_col[tag_p2n]: 'E-P2N',
-                            data_col[tag_p3c]: 'E-P3C',
-                            data_col[tag_p3n]: 'E-P3N'
+#                            data_col[tag_p3c]: 'E-P3C',
+#                            data_col[tag_p3n]: 'E-P3N'
         }
         summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
 
