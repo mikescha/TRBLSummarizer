@@ -733,3 +733,204 @@
 23-Feb-23 11:54:07: LSam-2022-05-08_13-00.WAV missing song tag
 23-Feb-23 11:54:07: LSam-2022-05-09_13-00.WAV missing song tag
 23-Feb-23 11:54:07: LSam-2022-05-25_16-00.WAV missing song tag
+02-Mar-23 16:38:00: Found recordings that have song count > 1 for edge analysis, see log
+02-Mar-23 16:38:00: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+02-Mar-23 16:47:18: File data.csv has an unexpected number of columns, 35 instead of 34
+02-Mar-23 16:47:20: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+02-Mar-23 16:47:20: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+02-Mar-23 16:47:21: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+02-Mar-23 16:47:23: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+02-Mar-23 16:47:23: Data for site 2020 Iron Point has the wrong year in it, older than its year
+02-Mar-23 16:47:24: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+02-Mar-23 16:47:30: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+02-Mar-23 16:47:30: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+02-Mar-23 16:47:32: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+02-Mar-23 16:47:33: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+02-Mar-23 16:47:35: Found recordings that have song count > 1 for edge analysis, see log
+02-Mar-23 16:47:35: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+02-Mar-23 18:02:34: Found recordings that have song count > 1 for edge analysis, see log
+02-Mar-23 18:02:34: SJWAam-2022-05-26_15-00.WAV	Recording has soung count > 1
+02-Mar-23 18:02:43: SJWAam-2022-05-11_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-11_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-14_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-14_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-14_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-17_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-17_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-17_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-20_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-20_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-20_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-23_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-23_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-23_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-26_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-26_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-26_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-29_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-29_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-29_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-01_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-01_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-01_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-04_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-04_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-04_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-07_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-07_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-07_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-10_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-10_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-10_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-13_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-13_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-13_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-16_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-16_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-16_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-19_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-19_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-22_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-22_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-22_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-25_08-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-25_14-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-06-25_11-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-25_16-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-25_18-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-27_10-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-29_15-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-30_13-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-30_09-00.WAV missing song tag
+02-Mar-23 18:02:43: SJWAam-2022-05-31_12-00.WAV missing song tag
+03-Mar-23 12:48:06: Found recordings that have song count > 1 for edge analysis, see log
+03-Mar-23 12:48:06: SJWAam-2022-05-26_15-00.WAV	Recording has soung count > 1
+03-Mar-23 12:48:11: SJWAam-2022-05-11_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-11_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-14_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-14_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-14_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-17_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-17_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-17_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-20_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-20_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-20_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-23_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-23_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-23_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-26_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-26_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-26_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-29_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-29_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-29_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-01_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-01_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-01_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-04_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-04_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-04_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-07_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-07_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-07_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-10_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-10_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-10_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-13_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-13_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-13_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-16_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-16_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-16_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-19_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-19_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-22_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-22_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-22_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-25_08-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-25_14-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-06-25_11-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-25_16-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-25_18-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-27_10-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-29_15-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-30_13-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-30_09-00.WAV missing song tag
+03-Mar-23 12:48:11: SJWAam-2022-05-31_12-00.WAV missing song tag
+07-Jan-24 16:41:50: File data.csv has an unexpected number of columns, 35 instead of 34
+07-Jan-24 16:41:51: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+07-Jan-24 16:41:51: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+07-Jan-24 16:41:51: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+07-Jan-24 16:41:52: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+07-Jan-24 16:41:52: Data for site 2020 Iron Point has the wrong year in it, older than its year
+07-Jan-24 16:41:53: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+07-Jan-24 16:41:56: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Jan-24 16:41:56: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+07-Jan-24 16:41:57: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Jan-24 16:41:58: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+07-Jan-24 16:41:58: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 16:41:58: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 16:44:43: File data.csv has an unexpected number of columns, 35 instead of 34
+07-Jan-24 16:44:45: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+07-Jan-24 16:44:45: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+07-Jan-24 16:44:45: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+07-Jan-24 16:44:46: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+07-Jan-24 16:44:46: Data for site 2020 Iron Point has the wrong year in it, older than its year
+07-Jan-24 16:44:46: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+07-Jan-24 16:44:49: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Jan-24 16:44:50: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+07-Jan-24 16:44:51: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Jan-24 16:44:51: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+07-Jan-24 16:44:52: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 16:44:52: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 16:51:24: File data.csv has an unexpected number of columns, 35 instead of 34
+07-Jan-24 16:51:26: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+07-Jan-24 16:51:26: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+07-Jan-24 16:51:26: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+07-Jan-24 16:51:27: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+07-Jan-24 16:51:27: Data for site 2020 Iron Point has the wrong year in it, older than its year
+07-Jan-24 16:51:27: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+07-Jan-24 16:51:34: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Jan-24 16:51:35: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+07-Jan-24 16:51:37: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Jan-24 16:51:38: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+07-Jan-24 16:51:41: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 16:51:41: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-17_11-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-17_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-23_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-29_08-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-29_11-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-05-29_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 16:58:53: CNWR27-1am-2021-06-07_08-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:02:04: File data.csv has an unexpected number of columns, 35 instead of 34
+07-Jan-24 17:02:05: Data for site 2018 Iron Point has the wrong year in it, newer than its year
+07-Jan-24 17:02:05: Data for site 2018 Markham Ravine has the wrong year in it, newer than its year
+07-Jan-24 17:02:06: Data for site 2019 Colusa NWR 27-1 AM has the wrong year in it, older than its year
+07-Jan-24 17:02:07: Data for site 2020 Fort Ord has the wrong year in it, older than its year
+07-Jan-24 17:02:07: Data for site 2020 Iron Point has the wrong year in it, older than its year
+07-Jan-24 17:02:07: Data for site 2020 Ohlone - Santa Lucia Preserve has the wrong year in it, older than its year
+07-Jan-24 17:02:15: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Jan-24 17:02:16: Data for site 2022 Newberry Springs - Lake Wainani has the wrong year in it, older than its year
+07-Jan-24 17:02:19: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Jan-24 17:02:20: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+07-Jan-24 17:02:23: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 17:02:23: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 17:03:05: ConEam-2021-05-27_08-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-05-27_14-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-05-30_08-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-05-30_11-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-06-02_08-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-06-05_08-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-06-05_14-00.flac missing song tag
+07-Jan-24 17:03:05: ConEam-2021-06-16_08-00.flac missing song tag
+07-Jan-24 17:04:02: Found recordings that have song count > 1 for edge analysis, see log
+07-Jan-24 17:04:02: RCR1am-2022-04-15_14-00.WAV	Recording has soung count > 1
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-17_11-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-17_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-23_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-29_08-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-29_11-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-05-29_14-00.WAV-t9s5rgdtjf8f.flac missing song tag
+07-Jan-24 17:06:11: CNWR27-1am-2021-06-07_08-00.WAV-t9s5rgdtjf8f.flac missing song tag
