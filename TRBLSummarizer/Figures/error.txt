@@ -1,1 +1,1 @@
-Logging started 10-Jan-24 15:34:5210-Jan-24 15:34:57: No weather available for 2023 West of Davis
+Logging started 10-Jan-24 15:39:2210-Jan-24 15:39:28: No weather available for 2023 Bridge St Pond
