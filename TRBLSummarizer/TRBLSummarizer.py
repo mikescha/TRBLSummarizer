@@ -50,21 +50,21 @@ tag_mh  = 'tag_mh'
 tag_    = 'tag_'
 tag_p1c = 'tag_p1c'  
 tag_p1n = 'tag_p1n'
-#tag_p1a = 'tag_p1a' #used to be P1NA
+tag_p1a = 'tag_p1a' #used to be P1NA
 tag_p1f = 'tag_p1f'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
-tag_p2a = 'tag_p2a'
+#tag_p2a = 'tag_p2a'  #COMMENTING THIS OUT FOR NOW BUT IT WILL BE HERE SOON
 tag_p2f = 'tag_p2f'
 #tag_p2na= 'tag_p2na' doesn't exist any more
-#tag_p3c = 'tag_p3c'
-#tag_p3n = 'tag_p3n'
-#tag_p3f = 'tag_p3f'
+#tag_p3c = 'tag_p3c'  doesn't exist now, might exist in the future
+#tag_p3n = 'tag_p3n'  doesn't exist now, might exist in the future
+#tag_p3f = 'tag_p3f'  doesn't exist now, might exist in the future
 #tag_p3na= 'tag_p3na' #DOESN'T EXIST NOW
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_YNC_p2 = 'tag<YNC-p2>'
-#tag_YNC_p3 = 'tag<YNC-p3>'
+#tag_YNC_p3 = 'tag<YNC-p3>'  doesn't exist now, might exist in the future
 malesong = 'malesong'
 altsong2 = 'altsong2'
 altsong1 = 'altsong1'
@@ -91,11 +91,11 @@ data_col = {
     tag_p1c      : 'tag<p1c>',
     tag_p1f      : 'tag<p1f>',
     tag_p1n      : 'tag<p1n>',
-#    tag_p1a      : 'tag<p1a>',
+    tag_p1a      : 'tag<p1a>',
     tag_p2c      : 'tag<p2c>',
     tag_p2f      : 'tag<p2f>',
     tag_p2n      : 'tag<p2n>',
-    tag_p2a      : 'tag<p2a>',
+#    tag_p2a      : 'tag<p2a>',
 #    tag_p3c      : 'tag<p3c>',
 #    tag_p3f      : 'tag<p3f>',
 #    tag_p3n      : 'tag<p3n>',
@@ -150,10 +150,10 @@ edge_c_tags = [tag_p1c, tag_p2c] #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
 #if we get 3rd pulse back, change line below to this:
 #edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] 
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1f, tag_p2f, tag_p2a] #add tag_p1a
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f] #, tag_p2a]
 edge_tag_map = {
-    tag_p1n : [data_col[tag_p1f]], #, data_col[tag_p1a]],
-    tag_p2n : [data_col[tag_p2f], data_col[tag_p2a]],
+    tag_p1n : [data_col[tag_p1f], data_col[tag_p1a]],
+    tag_p2n : [data_col[tag_p2f]]#, data_col[tag_p2a]],
 #    tag_p3n : [data_col[tag_p3f]],
 }
 
@@ -193,7 +193,7 @@ data_foldername = 'Data/'
 figure_foldername = 'Figures/'
 data_dir = Path(__file__).parents[0] / data_foldername
 figure_dir = Path(__file__).parents[0] / figure_foldername
-data_file = 'data.csv'
+data_file = 'data 2021-2023.csv'
 site_info_file = 'sites.csv'
 weather_file = 'weather_history.csv'
 data_old_file = 'data_old.csv'
@@ -276,7 +276,8 @@ def get_target_sites() -> dict:
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
     all_site_data = pd.read_csv(files[site_info_file], usecols = ['Name', 'Recordings_Count'])
 
-    #Clean it up. Only keep names that start with a 4-digit number. More validation to be done?
+    #Clean it up. Only keep names that start with a 4-digit number. 
+    #TODO More validation to be done?
     all_sites = []
     for s in all_site_data['Name'].tolist():
         if s[0:4].isdigit():
@@ -338,7 +339,7 @@ def get_target_sites() -> dict:
             else: 
                 # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
                 # our pattern, then mark it as Bad.
-                if not(item.name.lower() in files.keys()):
+                if item.name.lower() not in files.keys():
                     file_summary[bad_files].append(item.name)
 
     top_items.close()
@@ -348,8 +349,8 @@ def get_target_sites() -> dict:
     else:
         show_error('No site files found')
 
-    if len(file_summary[bad_files]):
-        show_error('File errors were found')
+#    if len(file_summary[bad_files]):
+#        show_error('File errors were found')
 
     return file_summary
 
@@ -447,6 +448,8 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
                   data_col[tag_p2n] : data_col[altsong1],
     }
     tag_errors = pd.DataFrame()
+
+    #TODO Any columns that start "val" can have counts greater than 1 or "---", do not flag those as errors 
     for e in error_case:
         tag_errors = pd.concat([tag_errors, df.loc[(df[e] >= 1) & (df[error_case[e]] > 1)]])
 
@@ -1023,19 +1026,20 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         #Figure out where the labels are. There's probably a way to do this in one call ...
         #maybe check the last axis?
         if graph_type == graph_weather:
-            ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
-            legend = ax.get_legend()
-            bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
-            yOffset = 0.25
-            bb.y0 += yOffset
-            bb.y1 += yOffset
-            legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
+            if plt.gcf().get_axes(): #Only do this if there are any axes to graph, the weather could be empty
+                ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
+                legend = ax.get_legend()
+                bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+                yOffset = 0.25
+                bb.y0 += yOffset
+                bb.y1 += yOffset
+                legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
         else:
             ax = plt.gca() #in the other graphs, it's in the last axis
         #Go find the month labels and remove them
         for ge in ax.texts:
             #if the word 'data' is there then it's one of the error messages, otherwise it's a month
-            if not('data' in ge.get_text()):
+            if 'data' not in ge.get_text():
                 ge.remove()
         
         # Now save the cleaned up version
@@ -1055,7 +1059,7 @@ def get_month_locs_from_graph() -> dict:
     #graph then we don't care what the composite looks like.
     ax = plt.gca() 
     for t in ax.texts:
-        if not('data' in t.get_text()):
+        if 'data' not in t.get_text():
             # This pulls out the month string for the key of the dict
             months.append(t.get_text())
     x = 0
@@ -1241,7 +1245,7 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     df = load_weather_data_from_file()    
     site_weather_by_type = {}
     
-    #select only rows that match our site
+    #select only rows that match our site 
     if site_name in df.index:
         site_weather = df.loc[[site_name]]
         #select only rows that are in our date range
@@ -1314,11 +1318,11 @@ def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:
     
     #drawing this on the temp axis because drawing on the prcp axis blew up, so have to convert to that scale
     prcp_label_pos1 = (temp_max - temp_min)*(0.5/prcp_max) + temp_min
-    ax2.text(0+tick_width, prcp_label_pos1, f'0.5"',
+    ax2.text(0+tick_width, prcp_label_pos1, '0.5"',
             fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
             transform=trans)
     prcp_label_pos2 = (temp_max - temp_min)*(1.5/prcp_max) + temp_min
-    ax2.text(0+tick_width, prcp_label_pos2, f'1.5"',
+    ax2.text(0+tick_width, prcp_label_pos2, '1.5"',
             fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
             transform=trans)
     ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5,
@@ -1342,7 +1346,7 @@ def min_above_zero(s:pd.Series):
     
     try:
          min_temp = min(temps)
-    except:
+    except Exception:
         min_temp = 0
 
     return min_temp
@@ -1445,7 +1449,7 @@ def style_cells(v):
     result = ''
     if v == 0:
         result = zeroprops
-    elif type(v) == type(pd.Timestamp.now()): #if it's a date, do nothing
+    elif isinstance(v, pd.Timestamp.now()): #if it's a date, do nothing
         result = ''
     else: #it must be a non-date, non-zero value so format it to call it out
         result = nonzeroprops
@@ -1621,6 +1625,8 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 # Main
 #
 #
+init_logging()
+
 st.sidebar.title('TRBL Grapher')
 
 #Load all the data for most of the graphs
@@ -1716,12 +1722,12 @@ for site in target_sites:
         pn_tag_map = {
             data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
                                 ync_tag : '',  #YNC_P1 tag not currently being used
-                                abandon_tag  : "", #data_col[tag_p1a], 
+                                abandon_tag  : data_col[tag_p1a], 
                                 pf_tag  : data_col[tag_p1f],
             },
             data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
                                 ync_tag : data_col[tag_YNC_p2],
-                                abandon_tag  : data_col[tag_p2a],
+                                abandon_tag  : "",#data_col[tag_p2a],
                                 pf_tag  : data_col[tag_p2f],
             },
     #        data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
@@ -1735,11 +1741,9 @@ for site in target_sites:
 
         # 
         # [  P1C  ]
-        #            [P1N, P1A, P1F] 
+        #            [P1N attaches to either P1A | P1F] 
         #                                [  P2C  ]                   
-        #                                           [P2N, P2A, P2F] 
-        #                                                              [  P3C  ]
-        #                                                                          [P3N, P3A, P3F] 
+        #                                           [P2N attaches to either P2A | P2F] 
         # 
         for tag in edge_cols: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
             tag_dict = {}
@@ -1935,7 +1939,7 @@ if not make_all_graphs and len(df_site):
         # Format the summary table so it's easy to read and output it 
         # Learn about formatting
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#
-        union_pt = union_pt.style.applymap(style_cells)
+        union_pt = union_pt.style.map(style_cells)
         union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m-%d-%y')})
         st.dataframe(union_pt)
 
