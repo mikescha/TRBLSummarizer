@@ -1,4 +1,1 @@
-Logging started 10-Jan-24 12:13:2610-Jan-24 12:13:27: File data 2021-2023.csv has an unexpected number of columns, 31 instead of 30
-10-Jan-24 12:13:37: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
-10-Jan-24 12:13:41: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
-10-Jan-24 12:13:42: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+Logging started 10-Jan-24 15:34:5210-Jan-24 15:34:57: No weather available for 2023 West of Davis

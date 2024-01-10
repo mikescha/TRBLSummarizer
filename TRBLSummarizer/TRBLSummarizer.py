@@ -487,11 +487,24 @@ def load_data() -> pd.DataFrame:
                      index_col = [data_col[date_str]])
     return df
 
+#TODO Is this needed
+def set_pm_data_date_range(pm_data:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
+    df_temp = pm_data
+
+    if len(df_temp):
+        pass #anything to do?
+    else: # if the file is empty, make an empty table so the graphing code has something to work with
+        df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
+        df_temp[validated] = 0
+        #pt = pt.reindex(date_range).fillna(0)
+
+    return df_temp
+
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 # These are the files from all the folders named by site. 
 # Note that if there is no data, then there will be an empty file
-# However, if there any missing files then we should return an empty DF
-def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
+# However, if there are any missing files then we should return an empty DF
+def load_pm_data(site:str) -> pd.DataFrame:
 
     # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building.
@@ -513,14 +526,20 @@ def load_pm_data(site:str, date_range_dict:dict) -> pd.DataFrame:
                 #TODO: what if the number of columns is wrong, just continue and get an exception or somehow fail?
                 confirm_columns(site_columns, headers, fname)
 
-                df_temp = pd.read_csv(full_file_name, usecols=usecols)
+                df_temp = pd.read_csv(full_file_name, 
+                                      usecols=usecols)
+                
+                #make a new column that has the date in it
                 df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                #df_temp['date'] = pd.to_datetime(df[['year', 'month', 'day']])
+                #need to make this the index so it looks like the main dataframe
 
-            else: # if the file is empty, make an empty table so the graphing code has something to work with
-                df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
-                df_temp[validated] = 0
-                #pt = pt.reindex(date_range).fillna(0)
-
+                df_temp = df_temp.set_index(date_str)
+            else:
+                #missing file, so log it and break, because if anything is missing then we abandon ship  
+                log_error(f"Missing pattern matching file {full_file_name}")
+                return pd.DataFrame()
+            
             df_temp['type'] = t
             df = pd.concat([df, df_temp])
 
@@ -1016,7 +1035,7 @@ def save_figure(site:str, graph_type:str, delete_only=False):
     if os.path.isfile(figure_path):
         os.remove(figure_path)
     
-    if not delete_only:
+    if not delete_only and plt.gcf().get_axes():
         # save the original image
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
         
@@ -1026,22 +1045,22 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         #Figure out where the labels are. There's probably a way to do this in one call ...
         #maybe check the last axis?
         if graph_type == graph_weather:
-            if plt.gcf().get_axes(): #Only do this if there are any axes to graph, the weather could be empty
-                ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
-                legend = ax.get_legend()
-                bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
-                yOffset = 0.25
-                bb.y0 += yOffset
-                bb.y1 += yOffset
-                legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
+            ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
+            legend = ax.get_legend()
+            bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+            yOffset = 0.25
+            bb.y0 += yOffset
+            bb.y1 += yOffset
+            legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
         else:
             ax = plt.gca() #in the other graphs, it's in the last axis
         #Go find the month labels and remove them
+
         for ge in ax.texts:
             #if the word 'data' is there then it's one of the error messages, otherwise it's a month
             if 'data' not in ge.get_text():
                 ge.remove()
-        
+    
         # Now save the cleaned up version
         filename = site + ' - ' + graph_type + ' clean.png'
         figure_path = figure_dir / filename
@@ -1183,7 +1202,9 @@ def combine_images(site:str, month_locs:dict):
             images = [Image.open(f) for f in site_fig_list]
             composite = concat_images(*images)
             composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
-            composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
+            #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
+            if graph_weather in site_fig_dict.keys():
+                composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
             final = apply_decorations_to_composite(composite, month_locs)
             final.save(composite_path)
     return
@@ -1193,7 +1214,8 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
         if make_all_graphs:
             pass
         else:
-            st.write(graph)
+            if graph.get_axes():
+                st.write(graph)
             
         if make_all_graphs or save_files:
             save_figure(site, graph_type)
@@ -1449,7 +1471,7 @@ def style_cells(v):
     result = ''
     if v == 0:
         result = zeroprops
-    elif isinstance(v, pd.Timestamp.now()): #if it's a date, do nothing
+    elif isinstance(v, pd.Timestamp): #if it's a date, do nothing
         result = ''
     else: #it must be a non-date, non-zero value so format it to call it out
         result = nonzeroprops
@@ -1620,11 +1642,14 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     return output
 
 
+# ===========================================================================================================
+# ===========================================================================================================
 #
+#  Main
 #
-# Main
-#
-#
+# ===========================================================================================================
+# ===========================================================================================================
+
 init_logging()
 
 st.sidebar.title('TRBL Grapher')
@@ -1660,6 +1685,11 @@ for site in target_sites:
     site_counter += 1
     # Select the site matching the one of interest
     df_site = df[df[data_col[site_str]] == site]
+    date_range_dict = {}
+    pt_manual = pd.DataFrame()
+    pt_mini_manual = pd.DataFrame()
+    pt_edge = pd.DataFrame()
+
 
     if not df_site.empty:
         #Using the site of interest, get the first & last dates and give the user the option to customize the range
@@ -1705,7 +1735,6 @@ for site in target_sites:
         #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
         #   4. Merge all the tables together so we get one block of heatmaps
 
-        pt_edge = pd.DataFrame()
         have_edge_data = False
         has_ync = 'has_ync'
         ync_tag = 'ync_tag'
@@ -1786,25 +1815,36 @@ for site in target_sites:
             pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
             pt_edge = pd.concat([pt_edge, pt_for_tag])
 
-
     else:
         st.write('Site {} has no recordings'.format(site))
 
     #
     # PATTERN MATCHING ANALYSIS
     #
-    df_pattern_match = load_pm_data(site, date_range_dict)
-    pt_pm = pd.DataFrame()
+    #Load all the PM files, any errors will return an empty table. For later graphing purposes, 
+    df_pattern_match = load_pm_data(site)
     pm_data_empty = False
-    if len(df_pattern_match):
-        for t in pm_file_types:
-            #For each file type, get the filtered range of just that type
-            df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
-            pm_data_empty = pm_data_empty or len(df_for_file_type)
-            #Build the pivot table for it
-            pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, date_range_dict)
-            #Concat as above
-            pt_pm = pd.concat([pt_pm, pt_for_file_type])
+    pt_pm = pd.DataFrame()
+
+    if not df_pattern_match.empty:
+        #In the scenario where we have PM data but no other data, we need to generate the date range
+        if date_range_dict:
+            pm_date_range_dict = date_range_dict
+        else:
+            pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs)
+
+        if len(df_pattern_match):
+            for t in pm_file_types:
+                #For each file type, get the filtered range of just that type
+                df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
+                pm_data_empty = pm_data_empty or len(df_for_file_type)
+                #Build the pivot table for it
+                pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, pm_date_range_dict)
+                #Concat as above
+                pt_pm = pd.concat([pt_pm, pt_for_file_type])
+    else:
+        st.write("All pattern matching data not available -- missing some or all files")
+
 
     # ------------------------------------------------------------------------------------------------
     # DISPLAY
@@ -1817,54 +1857,59 @@ for site in target_sites:
         show_station_info(site)
 
     #list of month positions in the graphs
-    month_locs = {}  
+    month_locs = {} 
+    #default color map
+    cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
 
     # Manual analyisis graph
-    cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
-    graph = create_graph(df = pt_manual, 
-                        row_names = song_cols, 
-                        cmap = cmap, 
-                        title = graph_man) # add this if we want to include the site name (site + ' ' if save_files else '')
-    # Need to be able to build an image that looks like the graph labels so that it can be drawn
-    # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
-    # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
-    # to accidentally delete our list
-    if len(month_locs)==0:
-        month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_man, save_files, make_all_graphs, len(df_manual))
+    if not pt_manual.empty:
+        graph = create_graph(df = pt_manual, 
+                            row_names = song_cols, 
+                            cmap = cmap, 
+                            title = graph_man) # add this if we want to include the site name (site + ' ' if save_files else '')
+        # Need to be able to build an image that looks like the graph labels so that it can be drawn
+        # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
+        # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
+        # to accidentally delete our list
+        if len(month_locs)==0:
+            month_locs = get_month_locs_from_graph() 
+        output_graph(site, graph_man, save_files, make_all_graphs, len(df_manual))
 
     # MiniManual Analysis
-    graph = create_graph(df = pt_mini_manual, 
-                        row_names = song_cols, 
-                        cmap = cmap, 
-                        raw_data = df_site,
-                        draw_vert_rects = True,
-                        title = 'Mini Manual Analysis')
-    if len(month_locs)==0:
-        month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_miniman, save_files, make_all_graphs, len(df_mini_manual))
+    if not pt_mini_manual.empty:
+        graph = create_graph(df = pt_mini_manual, 
+                            row_names = song_cols, 
+                            cmap = cmap, 
+                            raw_data = df_site,
+                            draw_vert_rects = True,
+                            title = 'Mini Manual Analysis')
+        if len(month_locs)==0:
+            month_locs = get_month_locs_from_graph() 
+        output_graph(site, graph_miniman, save_files, make_all_graphs, len(df_mini_manual))
 
     # Pattern Matching Analysis
-    cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
-    graph = create_graph(df = pt_pm, 
-                        row_names = pm_file_types, 
-                        cmap = cmap_pm, 
-                        title = graph_pm) 
-    if len(month_locs)==0:
-        month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
+    if not pt_pm.empty:
+        cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
+        graph = create_graph(df = pt_pm, 
+                            row_names = pm_file_types, 
+                            cmap = cmap_pm, 
+                            title = graph_pm) 
+        if len(month_locs)==0:
+            month_locs = get_month_locs_from_graph() 
+        output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
     # Edge Analysis
-    cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
-    graph = create_graph(df = pt_edge, 
-                        row_names = edge_cols,
-                        cmap = cmap_edge, 
-                        raw_data = df_site,
-                        draw_horiz_rects = True,
-                        title = graph_edge)
-    if len(month_locs)==0:
-        month_locs = get_month_locs_from_graph() 
-    output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
+    if not pt_edge.empty:
+        cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+        graph = create_graph(df = pt_edge, 
+                            row_names = edge_cols,
+                            cmap = cmap_edge, 
+                            raw_data = df_site,
+                            draw_horiz_rects = True,
+                            title = graph_edge)
+        if len(month_locs)==0:
+            month_locs = get_month_locs_from_graph() 
+        output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
 
     #Create a graphic for our legend
     draw_cmap(cmap)
@@ -1919,13 +1964,14 @@ if not make_all_graphs and len(df_site):
         summary.append(make_summary_pt(pt_pm, pm_file_types, friendly_names))
 
         #Add weather at the end
-        weather_data = pd.DataFrame()
-        for t in weather_cols:
-            weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
-            weather_data.rename(columns={'value':t}, inplace=True)
-            if t != weather_prcp:
-                weather_data[t] = weather_data[t].astype(int)
-        summary.append(weather_data)
+        if len(weather_by_type):
+            weather_data = pd.DataFrame()
+            for t in weather_cols:
+                weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
+                weather_data.rename(columns={'value':t}, inplace=True)
+                if t != weather_prcp:
+                    weather_data[t] = weather_data[t].astype(int)
+            summary.append(weather_data)
 
         # The variable Summary is a list of each dataframe. Now, take all the data and concat it into 
         #a single table
@@ -1940,7 +1986,10 @@ if not make_all_graphs and len(df_site):
         # Learn about formatting
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#
         union_pt = union_pt.style.map(style_cells)
-        union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m-%d-%y')})
+    
+        #Apply formatting to the weather if the weather data is there
+        if len(weather_by_type):
+            union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m-%d-%y')})
         st.dataframe(union_pt)
 
     # Put a box with first and last dates for the Song columns, with counts on that date
