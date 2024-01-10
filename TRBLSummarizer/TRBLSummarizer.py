@@ -1066,8 +1066,9 @@ def save_figure(site:str, graph_type:str, delete_only=False):
         figure_path = figure_dir / filename
         plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
     else:
-        #Write an empty file if there's no data so that we can tell
-        Image.new(mode="RGB", size=(1, 1)).save(figure_path)
+        #TODO If there is no data, what to do? The line below saves an empty image.
+        #Image.new(mode="RGB", size=(1, 1)).save(figure_path)
+        pass
 
     plt.close()
 
