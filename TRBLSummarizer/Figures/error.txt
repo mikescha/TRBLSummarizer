@@ -1,1 +1,11 @@
-Logging started 10-Jan-24 15:46:2010-Jan-24 15:46:25: No weather available for 2023 Hale Road
+Logging started 11-Jan-24 09:35:0611-Jan-24 09:35:07: Found recordings that have song count > 1 for edge analysis, see log
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_09-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_10-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_11-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_12-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_13-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_14-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_15-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-05-07_16-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:07: SJWA.WDam-2023-06-02_15-00.WAV	Recording has soung count > 1
+11-Jan-24 09:35:19: No weather available for 2023 West of Davis
