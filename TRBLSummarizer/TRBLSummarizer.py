@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
+
 import matplotlib as mpl
+mpl.use('WebAgg') 
+
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
-from matplotlib import cm
 from pathlib import Path
 import os
 import calendar
@@ -16,9 +18,12 @@ from itertools import tee
 import random
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime as dt
+from pyinstrument import Profiler
 
 #to force garbage collection and reduce memory use
 import gc
+
+profiling = True
 
 #Set to true before we deploy
 being_deployed_to_streamlit = False
@@ -228,7 +233,7 @@ def init_logging():
         if os.path.isfile(error_file):
             os.remove(error_file)
         with error_file.open("a") as f:
-            f.write(f"Logging started {my_time()}")    
+            f.write(f"Logging started {my_time()}/n")    
 
 def log_error(msg: str):
     global error_list
@@ -1535,7 +1540,6 @@ def pretty_print_table(df:pd.DataFrame):
     #st.write(output_df.to_html(), unsafe_allow_html=True)
     st.table(output_df)
 
-
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
     df = pd.read_csv(files[site_info_file])
@@ -1691,6 +1695,10 @@ else:
 
 # Set format shared by all graphs
 set_global_theme()
+
+if profiling:
+    profiler = Profiler()
+    profiler.start()
 
 site_counter = 0
 for site in target_sites:
@@ -2028,3 +2036,6 @@ if not make_all_graphs and len(df_site):
         clean_data.clear()
         load_data.clear()
 
+if profiling:
+    profiler.stop()
+    profiler.print()
