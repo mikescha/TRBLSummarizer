@@ -238,7 +238,9 @@ def log_error(msg: str):
             f.write(f"{my_time()}: {msg}\n")
 
 def show_error(msg: str):
-    st.error(msg)
+    #Only show the error if we're doing one graph at a time, but log it
+    if not make_all_graphs:
+        st.error(msg)
     log_error(msg)
 
 def pairwise(iterable):
@@ -505,7 +507,6 @@ def set_pm_data_date_range(pm_data:pd.DataFrame, date_range_dict:dict) -> pd.Dat
 # Note that if there is no data, then there will be an empty file
 # However, if there are any missing files then we should return an empty DF
 def load_pm_data(site:str) -> pd.DataFrame:
-
     # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building.
     df = pd.DataFrame()
@@ -679,7 +680,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 # UI and other setup
 # 
 #  
-def get_site_to_analyze(site_list:list) -> str:
+def get_site_to_analyze(site_list:list, my_sidebar) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
     #return('2022 Baja 1')
 
@@ -690,14 +691,14 @@ def get_site_to_analyze(site_list:list) -> str:
             year_list.append(s[0:4])
     year_list.sort(reverse=True)
 
-    target_year = st.sidebar.selectbox('Site year', year_list)
+    target_year = my_sidebar.selectbox('Site year', year_list)
     filtered_sites = sorted([s for s in site_list if target_year in s])
-    return st.sidebar.selectbox('Site to summarize', filtered_sites)
+    return my_sidebar.selectbox('Site to summarize', filtered_sites)
 
 # Set the default date range to the first and last dates for which we have data. In the case that we're
 # automatically generating all the sites, then stop there. Otherwise, show the UI for the date selection
 # and if the user wants a specific range then update our range to reflect that.
-def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
+def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
     df.sort_index(inplace=True)
 
     # Set the default date range to the first and last dates that we have data
@@ -709,8 +710,8 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool) -> dict:
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
         months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
-        start_month = st.sidebar.selectbox("Start month", months1.keys(), index=0)
-        end_month = st.sidebar.selectbox("End month", months2.keys(), index=0)
+        start_month = my_sidebar.selectbox("Start month", months1.keys(), index=0)
+        end_month = my_sidebar.selectbox("End month", months2.keys(), index=0)
 
         #Update the date range if needed
         site_year = df.index[0].year
@@ -767,14 +768,13 @@ def set_global_theme():
     mpl.rcParams.update(custom_params)
 
 
-def output_cmap(save_files):
-    if save_files:
-        filename = 'legend.png'
-        figure_path = figure_dir / filename
-        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+def output_cmap():
+    filename = 'legend.png'
+    figure_path = figure_dir / filename
+    plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
 
-def draw_cmap(cmap:dict):
+def draw_cmap(cmap:dict, make_all_graphs:bool):
     good_cmap = cmap.copy()
     del good_cmap["bad"]
 
@@ -804,7 +804,8 @@ def draw_cmap(cmap:dict):
 #    st.pyplot(fig)
     col1, col3, col5= st.columns([1,4, 1])
     with col3:
-        st.pyplot(fig)
+        if not make_all_graphs:
+            st.pyplot(fig)
     return
 
 
@@ -946,7 +947,8 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
             df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(row))  #get only the nonzero values. 
 
             if len(df_col_nonzero):
-                c = cm.get_cmap(cmap[row] if len(cmap) > 1 else cmap[0], 1)(1)
+                c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](1)
+                #c = cm.get_cmap(cmap[row] if len(cmap) > 1 else cmap[0], 1)(1) #This is deprecated, changed it to above to avoid errors
                 #for debug
                 #c = cm.get_cmap('prism',1)(1)
                 if row in edge_c_cols: #these tags get a box around the whole block
@@ -1212,7 +1214,8 @@ def combine_images(site:str, month_locs:dict):
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
     if data_to_graph:
-        if make_all_graphs:
+        if make_all_graphs: #Don't write the graphs to the screen if we're doing them all to speed it up
+            #st.write(f"Saving {graph_type} for {site}")
             pass
         else:
             if graph.get_axes():
@@ -1555,32 +1558,31 @@ def show_station_info(site_name:str):
 #    check that all "val" columns have a number. 
 #    If any of them have a "---" or not a number then print out the filename of that row.
 def check_tags(df: pd.DataFrame):
-    if st.sidebar.checkbox('Show errors', value=True):
-        bad_rows = pd.DataFrame()                                               
-        #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
-        non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
-                                               data_col[tag_wsm]])
-        bad_rows = pd.concat([bad_rows, 
-                              filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
+    bad_rows = pd.DataFrame()                                               
+    #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
+    non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
+                                            data_col[tag_wsm]])
+    bad_rows = pd.concat([bad_rows, 
+                            filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
 
-        #P1C, P2C throws an error if it's missing courtsong song
-        non_zero_rows = filter_df_by_tags(df, edge_c_cols)
-        bad_rows = pd.concat([bad_rows,
-                              filter_df_by_tags(non_zero_rows, [data_col[courtsong]], '=={}'.format(missing_data_flag))])
+    #P1C, P2C throws an error if it's missing courtsong song
+    non_zero_rows = filter_df_by_tags(df, edge_c_cols)
+    bad_rows = pd.concat([bad_rows,
+                            filter_df_by_tags(non_zero_rows, [data_col[courtsong]], '=={}'.format(missing_data_flag))])
 
-        #P1N, P2N throws an error if it's missing alternative song
-        non_zero_rows = filter_df_by_tags(df, edge_n_cols)
-        bad_rows = pd.concat([bad_rows, 
-                              filter_df_by_tags(non_zero_rows, [data_col[altsong1]], '=={}'.format(missing_data_flag))])       
+    #P1N, P2N throws an error if it's missing alternative song
+    non_zero_rows = filter_df_by_tags(df, edge_n_cols)
+    bad_rows = pd.concat([bad_rows, 
+                            filter_df_by_tags(non_zero_rows, [data_col[altsong1]], '=={}'.format(missing_data_flag))])       
 
-        if len(bad_rows):
-            for r in bad_rows[filename_str]:
-                log_error(f"{r} missing song tag")
+    if len(bad_rows):
+        for r in bad_rows[filename_str]:
+            log_error(f"{r} missing song tag")
 
-        if not(bad_rows.empty) or len(error_list):
-            with st.expander('See errors'):
-                #This code prints a formatted table of just the missing song tag rows, not currently
-                #necessary but here just in case I want to bring this back.
+    if not(bad_rows.empty) or len(error_list):
+        with st.expander('See errors'):
+            #This code prints a formatted table of just the missing song tag rows, not currently
+            #necessary but here just in case I want to bring this back.
 #                if not(bad_rows.empty):
 #                    bad_rows.sort_values(by='filename', inplace=True)
 #                    #Pull out date so we can format it
@@ -1588,13 +1590,13 @@ def check_tags(df: pd.DataFrame):
 #                    bad_rows.rename(columns={'index':'Date'}, inplace=True)
 #
 #                    pretty_print_table(bad_rows)
-                    
-                st.write(error_list)
+                
+            st.write(error_list)
 
-        else:
-            st.write('No tag errors found')
-        
-
+    else:
+        st.write('No tag errors found')
+    
+    return
 
 
 # Clean up a pivottable so we can display it as a table
@@ -1653,8 +1655,6 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 
 init_logging()
 
-st.sidebar.title('TRBL Grapher')
-
 #Load all the data for most of the graphs
 df_original = load_data()
 
@@ -1666,17 +1666,28 @@ df = clean_data(df_original, site_list[site_str])
 del df_original
 gc.collect()
 
-#TODO Make this a UI option
-make_all_graphs = False
+container_top = st.sidebar.container()
+container_mid = st.sidebar.container(border=True)
+container_bottom = st.sidebar.container(border=True)
+
+with container_mid:
+    show_station_info_checkbox = st.checkbox('Show station info', value=True)
+    show_weather_checkbox = st.checkbox('Show station weather', value=True)
+
+with container_bottom:
+    make_all_graphs = st.checkbox('Make all graphs')
+
+container_top.title('TRBL Graphs')
+
 save_files = False
 
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
     target_sites = site_list[site_str]
 else:
-    target_sites = [get_site_to_analyze(site_list[site_str])]
+    target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
     if not being_deployed_to_streamlit:
-        save_files = st.sidebar.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+        save_files = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
 
 # Set format shared by all graphs
 set_global_theme()
@@ -1694,7 +1705,7 @@ for site in target_sites:
 
     if not df_site.empty:
         #Using the site of interest, get the first & last dates and give the user the option to customize the range
-        date_range_dict = get_date_range(df_site, make_all_graphs)
+        date_range_dict = get_date_range(df_site, make_all_graphs, container_top)
 
         #
         # Data Analysis
@@ -1830,9 +1841,9 @@ for site in target_sites:
     if not df_pattern_match.empty:
         #In the scenario where we have PM data but no other data, we need to generate the date range
         if date_range_dict:
-            pm_date_range_dict = date_range_dict
+            pm_date_range_dict = date_range_dict  
         else:
-            pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs)
+            pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs, container_top)
 
         if len(df_pattern_match):
             for t in pm_file_types:
@@ -1850,11 +1861,11 @@ for site in target_sites:
     # ------------------------------------------------------------------------------------------------
     # DISPLAY
     if make_all_graphs:
-        st.subheader(site + ' [' + str(site_counter) + ' of ' + str(len(target_sites)) + ']')
+        st.subheader(f"{site} [{str(site_counter)} of {str(len(target_sites))}]")
     else: 
         st.subheader(site)
 
-    if st.sidebar.checkbox('Show station info', value=True):
+    if show_station_info_checkbox:
         show_station_info(site)
 
     #list of month positions in the graphs
@@ -1912,16 +1923,22 @@ for site in target_sites:
             month_locs = get_month_locs_from_graph() 
         output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
 
-    #Create a graphic for our legend
-    draw_cmap(cmap)
-    output_cmap(save_files)
+    #Create a graphic for our legend, only draw it if needed
+    draw_cmap(cmap, make_all_graphs)
+    if save_files and not make_all_graphs:
+        output_cmap()
 
-    #Show weather, as needed            
-    if st.sidebar.checkbox('Show station weather', True):
-        # Load and parse weather data
-        weather_by_type = get_weather_data(site, date_range_dict)
-        graph = create_weather_graph(weather_by_type, site)
-        output_graph(site, graph_weather, save_files, make_all_graphs)
+    #Show weather, as needed and if available
+    weather_by_type = {}
+    if show_weather_checkbox:
+        # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's 
+        # possible that there is only one of them. 
+        if pm_date_range_dict or date_range_dict:
+            date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
+            # Load and parse weather data
+            weather_by_type = get_weather_data(site, date_to_use)
+            graph = create_weather_graph(weather_by_type, site)
+            output_graph(site, graph_weather, save_files, make_all_graphs)
     
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs)
@@ -1998,8 +2015,9 @@ if not make_all_graphs and len(df_site):
         output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
 
-    # Scan the list of tags and flag any where there is "---" for the value. 
-    check_tags(df_site)
+    # Scan the list of tags and flag any where there is "---" for the value.
+    if container_mid.checkbox('Show errors', value=True): 
+        check_tags(df_site)
 
     if len(site_list[bad_files]) > 0:
         with st.expander("See possibly bad filenames"):  
@@ -2009,3 +2027,4 @@ if not make_all_graphs and len(df_site):
         get_target_sites().clear()
         clean_data.clear()
         load_data.clear()
+
