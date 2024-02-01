@@ -28,14 +28,14 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = False
+being_deployed_to_streamlit = True
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
 #   also gets the boxes drawn like there is data 
 # 
 # Consider adding the code to write to temp files and then allow the composite image to be
-#   downloaded when the script is deployed to streamlite
+#   downloaded when the script is deployed to streamlit
 
 # Constants and Globals
 #
@@ -235,7 +235,7 @@ def init_logging():
     if not being_deployed_to_streamlit:
         remove_file(error_file)
         with error_file.open("a") as f:
-            f.write(f"Logging started {my_time()}/n")    
+            f.write(f"Logging started {my_time()}\n")    
 
 def log_error(msg: str):
     global error_list
