@@ -1716,7 +1716,8 @@ with container_mid:
     show_weather_checkbox = st.checkbox('Show station weather', value=True)
 
 with container_bottom:
-    make_all_graphs = st.checkbox('Make all graphs')
+    if not being_deployed_to_streamlit:
+        make_all_graphs = st.checkbox('Make all graphs')
 
 container_top.title('TRBL Graphs')
 

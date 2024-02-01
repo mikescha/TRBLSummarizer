@@ -22,3 +22,8 @@ Step 4: Run the summarizer locally
 (set flags in the code appropriately)
 
 Step 5 (optional): Upload to the Streamlit site
+1. Go to https://share.streamlit.io/
+2. Click Sign In, and sign in with GitHub credentials
+3. Click the moon icon indicating the app is in Sleep Mode, and follow the prompts
+4. Go here to view the app:
+https://mikescha-trblsummarizer-trblsummarizertrblsummarizer-l93kzs.streamlit.app/
