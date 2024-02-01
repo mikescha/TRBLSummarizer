@@ -28,7 +28,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
@@ -303,8 +303,8 @@ def get_target_sites() -> dict:
         for item in top_items:
             if item.is_dir():
                 #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
-                if item.name in all_sites:
-                    s = item.name
+                s=item.name
+                if s in all_sites:
                     #Get a list of all files in that directory, scan for files that match our pattern
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
@@ -331,15 +331,14 @@ def get_target_sites() -> dict:
                                     if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
                                         file_summary[bad_files].append('Found subfolder in data folder: ' + s)
                                     found_dir_in_subfolder = True
+                            sub_items.close()
                     
                             if not found_file and not empty_dir:
                                 file_summary[bad_files].append('Missing file: ' + s + ' ' + t)
 
                     else:
                         file_summary[bad_files].append('Empty folder: ' + item.name)
-
-                    sub_items.close()
-                
+        
                 else:
                     if item.name.lower() != 'hide' and item.name.lower() != 'old files':
                         file_summary[bad_files].append('Bad folder name: ' + item.name)
@@ -1885,6 +1884,7 @@ for site in target_sites:
     df_pattern_match = load_pm_data(site)
     pm_data_empty = False
     pt_pm = pd.DataFrame()
+    pm_date_range_dict = {}
 
     if not df_pattern_match.empty:
         #In the scenario where we have PM data but no other data, we need to generate the date range
@@ -2075,6 +2075,7 @@ if not make_all_graphs and len(df_site):
         get_target_sites().clear()
         clean_data.clear()
         load_data.clear()
+        load_weather_data_from_file.clear()
 
 if profiling:
     profiler.stop()
