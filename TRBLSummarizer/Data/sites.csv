@@ -38,7 +38,7 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count,Id
 48461,2023 Peterson Ranch Pond - West,34.63307,-118.32,100,America/Los_Angeles,8202,48461
 48440,2023 Peterson Ranch Pond - East,34.63236,-118.318,100,America/Los_Angeles,8203,48440
 48475,2023 Plumas Arboga 2,39.0338,-121.524,100,America/Los_Angeles,3089,48475
-48437,"2023 Plumas Arboga 8, North Regional Pond",39.043,-121.531,100,America/Los_Angeles,5611,48437
+48437,2023 Plumas Arboga 8 - North Regional Pond,39.043,-121.531,100,America/Los_Angeles,5611,48437
 48764,2023 Rancho Jamul North Pond - fix lat lon,32.685,-116.856,100,America/Los_Angeles,9321,48764
 48765,2023 Rancho Jamul Site 1 fix lat lon,32.685,-116.856,100,America/Los_Angeles,9045,48765
 48447,2023 San Luis Bear Creek,37.23928,-120.821,100,America/Los_Angeles,2735,48447
@@ -58,4 +58,3 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count,Id
 32016,Testing Data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227,32016
 32010,Training Data 2021 PA,39.03,-121.537,100,America/Los_Angeles,21,32010
 32015,Training data 2021 RG1,38.863,-121.287,100,America/Los_Angeles,227,32015
-34129,WRONG TIME FIX 2022 Panoche Creek Loc 3,36.591,-120.591,100,America/Los_Angeles,0,34129

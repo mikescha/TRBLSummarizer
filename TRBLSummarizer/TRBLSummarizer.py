@@ -4,12 +4,12 @@ import numpy as np
 import seaborn as sns
 
 import matplotlib as mpl
-mpl.use('WebAgg') 
-
+mpl.use('WebAgg') #Have to select the backend before doing other imports
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
+
 from pathlib import Path
 import os
 import calendar
@@ -19,11 +19,13 @@ import random
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime as dt
 from pyinstrument import Profiler
+import glob
 
 #to force garbage collection and reduce memory use
 import gc
 
-profiling = True
+#Do we want profiling data?
+profiling = False
 
 #Set to true before we deploy
 being_deployed_to_streamlit = False
@@ -192,6 +194,7 @@ graph_edge = 'Edge Analysis'
 graph_pm = 'Pattern Matching Analysis'
 graph_weather = 'Weather'
 graph_names = [graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
+legend_name = 'legend.png'
 
 #Files, paths, etc.
 data_foldername = 'Data/'
@@ -230,8 +233,7 @@ def my_time():
 
 def init_logging():
     if not being_deployed_to_streamlit:
-        if os.path.isfile(error_file):
-            os.remove(error_file)
+        remove_file(error_file)
         with error_file.open("a") as f:
             f.write(f"Logging started {my_time()}/n")    
 
@@ -284,7 +286,6 @@ def get_target_sites() -> dict:
     all_site_data = pd.read_csv(files[site_info_file], usecols = ['Name', 'Recordings_Count'])
 
     #Clean it up. Only keep names that start with a 4-digit number. 
-    #TODO More validation to be done?
     all_sites = []
     for s in all_site_data['Name'].tolist():
         if s[0:4].isdigit():
@@ -363,7 +364,6 @@ def get_target_sites() -> dict:
 
 #Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
-    #TODO Make every place that uses this function handle the scenario where a list of missing columns is returned
     errors_found = []
     if len(target_cols) != len(file_cols):
         show_error('File {} has an unexpected number of columns, {} instead of {}'.
@@ -527,20 +527,23 @@ def load_pm_data(site:str) -> pd.DataFrame:
 
             df_temp = pd.DataFrame()
             if is_non_zero_file(full_file_name):
-                #Validate that all columns exist
+
+                #Validate that all columns exist, and abandon ship if we're missing the date
                 headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
-                #TODO: what if the number of columns is wrong, just continue and get an exception or somehow fail?
-                confirm_columns(site_columns, headers, fname)
-
-                df_temp = pd.read_csv(full_file_name, 
-                                      usecols=usecols)
+                missing_columns = confirm_columns(site_columns, headers, fname)
                 
-                #make a new column that has the date in it
-                df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
-                #df_temp['date'] = pd.to_datetime(df[['year', 'month', 'day']])
-                #need to make this the index so it looks like the main dataframe
+                if date_str not in missing_columns:
+                    df_temp = pd.read_csv(full_file_name, usecols=usecols)
+                    #make a new column that has the date in it
+                    df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                    #df_temp['date'] = pd.to_datetime(df[['year', 'month', 'day']])
+                    #need to make this the index so it looks like the main dataframe
 
-                df_temp = df_temp.set_index(date_str)
+                    df_temp = df_temp.set_index(date_str)
+                else:
+                    #date is missing so we can't do anything!
+                    log_error("Date column is missing from pattern matching file")
+                    return pd.DataFrame()
             else:
                 #missing file, so log it and break, because if anything is missing then we abandon ship  
                 log_error(f"Missing pattern matching file {full_file_name}")
@@ -774,8 +777,7 @@ def set_global_theme():
 
 
 def output_cmap():
-    filename = 'legend.png'
-    figure_path = figure_dir / filename
+    figure_path = figure_dir / legend_name
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
 
@@ -877,6 +879,25 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
 # in the figure which causes the graph to shrink!
 def plot_title(title:str):
     plt.suptitle(' '+title, fontsize=10, x=0, horizontalalignment='left')
+
+def add_watermark(title:str):
+    # Function that adds additional text to the right of the existing suptitle
+    title = ' '+title
+    # Find the suptitle in the figure
+    suptitle = [t for t in plt.gcf().texts if t.get_text() == title][0]
+
+    # Get the figure coordinates of the suptitle without changing its position
+    suptitle_extent = suptitle.get_window_extent(renderer=plt.gcf().canvas.get_renderer())
+
+    # Convert suptitle extent to figure coordinates
+    fig_position = suptitle_extent.transformed(plt.gcf().transFigure.inverted())
+
+    # Add additional red text to the right of the suptitle
+    additional_text = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+    figtext_x = fig_position.x1 + 0.02  # Adjust the value to position the text
+    figtext_y = fig_position.y0 + (fig_position.y1 - fig_position.y0) / 2  # Center vertically
+    plt.figtext(figtext_x, figtext_y, additional_text, ha='left', va='center', color='gray', fontsize=8)
+    
             
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
@@ -1022,13 +1043,30 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         linewidth = 0.5, fill=False, zorder=1000, transform=fig.transFigure, figure=fig)
     fig.patches.extend([rect])
 
+    #if we want to add anything on top of the images, the time to do it is at the end
+    #add_watermark(title)
+
     # return the final plotted heatmap
     return fig
 
 #Helper to ensure we make the filename consistently because this is done from multiple places
-def make_img_filename(site:str, graph_type:str) ->str:
-    return site + ' - ' + graph_type + '.png'
+def make_img_filename(site:str, graph_type:str, extra="") ->str:
+    filename = f"{site} - {graph_type}{extra}.png"
+    return filename
 
+#Helper for when we need to remove a file
+def remove_file(full_path:str) -> bool:
+    result = False
+    try:
+        os.remove(full_path)
+        result = True
+    except FileNotFoundError:
+        result = True
+    except OSError as e:
+        print(f"Error {e} trying to remove file {full_path}")
+        result = False
+    return result
+    
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
     #Do nothing if we're on the server for now
@@ -1037,10 +1075,11 @@ def save_figure(site:str, graph_type:str, delete_only=False):
 
     filename = make_img_filename(site, graph_type)
     figure_path = figure_dir / filename
+    remove_file(figure_path)
 
-    #If the file exists then delete it, so that we make sure a new one is written
-    if os.path.isfile(figure_path):
-        os.remove(figure_path)
+    cleaned_image_filename = make_img_filename(site, graph_type, extra=' clean')    
+    cleaned_figure_path = figure_dir / cleaned_image_filename
+    remove_file(cleaned_figure_path)
     
     if not delete_only and plt.gcf().get_axes():
         # save the original image
@@ -1061,17 +1100,15 @@ def save_figure(site:str, graph_type:str, delete_only=False):
             legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
         else:
             ax = plt.gca() #in the other graphs, it's in the last axis
+        
         #Go find the month labels and remove them
-
         for ge in ax.texts:
             #if the word 'data' is there then it's one of the error messages, otherwise it's a month
             if 'data' not in ge.get_text():
                 ge.remove()
-    
         # Now save the cleaned up version
-        filename = site + ' - ' + graph_type + ' clean.png'
-        figure_path = figure_dir / filename
-        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+        plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches='tight')    
+    
     else:
         #TODO If there is no data, what to do? The line below saves an empty image.
         #Image.new(mode="RGB", size=(1, 1)).save(figure_path)
@@ -1181,40 +1218,31 @@ def combine_images(site:str, month_locs:dict):
     if len(month_locs) == 0:
         return
     
-    composite = site + ' - composite.png'
-    composite_path = figure_dir / composite
+    composite_filename = make_img_filename(site, "composite")
+    composite_path = figure_dir / composite_filename
+    remove_file(composite_path)
 
-    # Get the list of all files that match this site
+    pattern = f"{site} -*clean.png"
+    matching_files = glob.glob(os.path.join(figure_dir, pattern))
+    #clean_site_files = [file for file in matching_files if "clean" in file]  #Can use this if we need to do additional filtering
     site_fig_dict = {}
-    figures = os.scandir(figure_dir)
-    if any(figures):
-        # Get all the figures for this site
-        for fig in figures:
-            if site in fig.name and 'clean' in fig.name and composite not in fig.name:
-                for graph_type in graph_names:
-                    #TODO Need to add some error checking to not crash if somehow none of the graph names are present 
-                    if graph_type in fig.name and os.path.getsize(fig)>1000:
-                        site_fig_dict[graph_type] = fig.path
-            elif 'legend' in fig.name:
-                legend = fig.path
-
-        # Now have the list of figures.  
-        if len(site_fig_dict) > 0:
-            # Building the list of the figures but it needs to be in a specific order so that 
-            # the composite looks right
-            site_fig_list = []
-            graph_names.append('legend')
-            for g in graph_names:
-                if g in site_fig_dict and g != graph_weather:
-                    site_fig_list.append(site_fig_dict[g])
-            images = [Image.open(f) for f in site_fig_list]
-            composite = concat_images(*images)
-            composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
-            #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
-            if graph_weather in site_fig_dict.keys():
-                composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
-            final = apply_decorations_to_composite(composite, month_locs)
-            final.save(composite_path)
+    for graph_type in graph_names:
+        result = [f for f in matching_files if graph_type in f]
+        assert len(result) <= 1
+        if result:
+            site_fig_dict[graph_type] = result[0]
+    legend = figure_dir / legend_name
+     
+    if len(site_fig_dict): 
+        # exclude weather for now, we need to add it after the legend
+        images = [Image.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != graph_weather] 
+        composite = concat_images(*images)
+        composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
+        #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
+        if graph_weather in site_fig_dict.keys():
+            composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
+        final = apply_decorations_to_composite(composite, month_locs)
+        final.save(composite_path)
     return
 
 def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool, data_to_graph=True):
@@ -1223,9 +1251,11 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
             #st.write(f"Saving {graph_type} for {site}")
             pass
         else:
+            #If there is data in the graph, then write it to the screen if we are doing one graphic at a time
             if graph.get_axes():
                 st.write(graph)
-            
+        
+        #Save it to disk if we are either doing all the graphs, or the Save checkbox is checked
         if make_all_graphs or save_files:
             save_figure(site, graph_type)
     else:
@@ -1253,22 +1283,28 @@ def output_text(text:str, make_all_graphs:bool):
 #
 #
 
-#TODO Use the sites file from here in the weather
-
 #Load weather data from file
 @st.cache_resource
 def load_weather_data_from_file() -> pd.DataFrame:
     #Validate the data file format
-    headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
-    weather_cols = {'date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
-                    'lat':'lat', 'lng':'lng', 'alt':'alt'}
-    
-    #TODO what to do if the number of columns is wrong?
-    confirm_columns(weather_cols, headers, weather_file)
-    
-    df = pd.read_csv(files[weather_file], 
-                     parse_dates = [weather_cols['date']],
-                     index_col = [weather_cols['site']])
+    try:
+        headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
+        weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
+                        'lat':'lat', 'lng':'lng', 'alt':'alt'}
+        
+        #This will show an error if something is wrong with the data 
+        missing_columns = confirm_columns(weather_cols, headers, weather_file)
+        
+        if not missing_columns:
+            df = pd.read_csv(files[weather_file], 
+                            parse_dates = [weather_cols['date']],
+                            index_col = [weather_cols['site']])
+        else: #there was an error where we didn't get the right columns so don't try to do anything with the data
+            df = pd.DataFrame()
+
+    except: #something went wrong trhing to get the data, so just return an empty frame
+        df = pd.DataFrame()
+
     return df
 
 #Filter weather data down to just what we need for a site
@@ -1293,7 +1329,8 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
             site_weather_by_type[w]  = site_weather_by_type[w].set_index('date')
             site_weather_by_type[w]  = site_weather_by_type[w].reindex(date_range, fill_value=0)         
     else:
-        show_error('No weather available for ' + site_name)
+        st.write(f"No weather available for {site_name}")
+        #show_error('No weather available for ' + site_name)
 
     return site_weather_by_type
 
