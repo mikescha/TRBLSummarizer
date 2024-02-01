@@ -1718,6 +1718,8 @@ with container_mid:
 with container_bottom:
     if not being_deployed_to_streamlit:
         make_all_graphs = st.checkbox('Make all graphs')
+    else:
+        make_all_graphs = False
 
 container_top.title('TRBL Graphs')
 
