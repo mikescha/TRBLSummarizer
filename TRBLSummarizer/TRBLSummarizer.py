@@ -213,7 +213,7 @@ files = {
     data_old_file : data_dir / data_old_file
 }
 
-pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling']
+pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling', 'Fledgling']
 
 missing_data_flag = -100
 preserve_edges_flag = -99
@@ -534,7 +534,10 @@ def load_pm_data(site:str) -> pd.DataFrame:
                 if date_str not in missing_columns:
                     df_temp = pd.read_csv(full_file_name, usecols=usecols)
                     #make a new column that has the date in it
-                    df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                    if len(df_temp):
+                        df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                    else:
+                        df_temp[date_str] = []
                     #df_temp['date'] = pd.to_datetime(df[['year', 'month', 'day']])
                     #need to make this the index so it looks like the main dataframe
 
@@ -546,8 +549,14 @@ def load_pm_data(site:str) -> pd.DataFrame:
             else:
                 #missing file, so log it and break, because if anything is missing then we abandon ship  
                 log_error(f"Missing pattern matching file {full_file_name}")
-                return pd.DataFrame()
-            
+                #ADDPMJ: Testing what happens if we don't abandon ship here
+                #Need to do something so we get some data
+
+                #return pd.DataFrame()
+
+            #If we had a missing file above and didn't get any data, then don't attempt to concat
+            #the empty DF to the main one, as it changes the data from int to float for some reason            
+#            if len(df_temp):
             df_temp['type'] = t
             df = pd.concat([df, df_temp])
 
@@ -1949,7 +1958,8 @@ for site in target_sites:
 
     # Pattern Matching Analysis
     if not pt_pm.empty:
-        cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 'Old Nestling':'Blues'}
+        cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 
+                   'Old Nestling':'Blues', 'Fledgling':'Reds'}
         graph = create_graph(df = pt_pm, 
                             row_names = pm_file_types, 
                             cmap = cmap_pm, 
@@ -1960,7 +1970,7 @@ for site in target_sites:
 
     # Edge Analysis
     if not pt_edge.empty:
-        cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+        cmap_edge = {c:'Greens' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
         graph = create_graph(df = pt_edge, 
                             row_names = edge_cols,
                             cmap = cmap_edge, 
@@ -2025,7 +2035,8 @@ if not make_all_graphs and len(df_site):
                             pm_file_types[1]: 'PM-F',
                             pm_file_types[2]: 'PM-YN',
                             pm_file_types[3]: 'PM-MN',
-                            pm_file_types[4]: 'PM-ON'
+                            pm_file_types[4]: 'PM-ON',
+                            pm_file_types[5]: 'PM-FL'
         }
         summary.append(make_summary_pt(pt_pm, pm_file_types, friendly_names))
 

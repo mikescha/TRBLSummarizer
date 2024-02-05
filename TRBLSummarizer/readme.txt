@@ -3,18 +3,23 @@ What To Do At The Start Of A New Season
 
 Step 1: Get the latest list of sites and pattern matching jobs from Wendy
 
-Open the tracking spreadsheet here:
+1. Open the tracking spreadsheet here:
 https://docs.google.com/spreadsheets/d/1NQVKtxVv7zmODNuvn45TOYf-j-nU_u3Q1W-6Y_nCh-Y/edit?usp=sharing
 
+2. Download sites.csv and copy it three places:
+    - Weather project
+    - PMJ Downloader project, to the PMJ Source folder
+    - This, the Summarizer project
 
-download sites.csv, copy it 3 places:
-
-download pmj.csv, copy it here
+3. Download pmj.csv and copy it to PMJ Downloader Project
 
 
 Step 2: Download the pattern matching jobs
-(set flags in the code appropriately)
 
+1. In the PMJ Downloader project, make sure the following flag is set correctly:
+    resume_if_possible = True #Set to false if we want to just nuke all the old stuff and start fresh
+
+2. 
 Step 3: Download the weather
 (set flags in the code appropriately)
 
