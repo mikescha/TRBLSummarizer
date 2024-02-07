@@ -542,6 +542,8 @@ def load_pm_data(site:str) -> pd.DataFrame:
                     return pd.DataFrame()
             else:
                 log_error(f"Missing pattern matching file {full_file_name}")
+                #Add an empty date column so we don't have a mismatch for the concat
+                df_temp[date_str] = []
 
             #Finally, add the table that we loaded to the end of the main one
             df_temp['type'] = t
