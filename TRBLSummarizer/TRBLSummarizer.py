@@ -509,11 +509,13 @@ def set_pm_data_date_range(pm_data:pd.DataFrame, date_range_dict:dict) -> pd.Dat
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 # These are the files from all the folders named by site. 
 # Note that if there is no data, then there will be an empty file
-# However, if there are any missing files then we should return an empty DF
+# (Feb 2024: Not doing this anymore:) However, if there are any missing files then we should return an empty DF
 def load_pm_data(site:str) -> pd.DataFrame:
     # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building.
     df = pd.DataFrame()
+    usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
+            site_columns['day'], site_columns[validated]]
 
     # Add the site name so we look into the appropriate folder
     site_dir = data_dir / site
@@ -521,44 +523,29 @@ def load_pm_data(site:str) -> pd.DataFrame:
         for t in pm_file_types:
             fname = site + ' ' + t + '.csv'
             full_file_name = site_dir / fname
-            usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
-                    site_columns['day'], site_columns[validated]]
 
             df_temp = pd.DataFrame()
             if is_non_zero_file(full_file_name):
-
-                #Validate that all columns exist, and abandon ship if we're missing the date
+                #Validate that all columns exist, and abandon ship if we're missing any
                 headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
                 missing_columns = confirm_columns(site_columns, headers, fname)
-                
-                if date_str not in missing_columns:
+                if len(missing_columns) == 0: 
                     df_temp = pd.read_csv(full_file_name, usecols=usecols)
-                    #make a new column that has the date in it
+                    #make a new column that has the date in it, take into account that the table could be empty
                     if len(df_temp):
                         df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
                     else:
                         df_temp[date_str] = []
-                    #df_temp['date'] = pd.to_datetime(df[['year', 'month', 'day']])
-                    #need to make this the index so it looks like the main dataframe
-
-                    df_temp = df_temp.set_index(date_str)
                 else:
-                    #date is missing so we can't do anything!
-                    log_error("Date column is missing from pattern matching file")
+                    #columns are missing so can't do anything!
+                    log_error(f"Columns {missing_columns} are missing from pattern matching file!")
                     return pd.DataFrame()
             else:
-                #missing file, so log it and break, because if anything is missing then we abandon ship  
                 log_error(f"Missing pattern matching file {full_file_name}")
-                #ADDPMJ: Testing what happens if we don't abandon ship here
-                #Need to do something so we get some data
 
-                #return pd.DataFrame()
-
-            #If we had a missing file above and didn't get any data, then don't attempt to concat
-            #the empty DF to the main one, as it changes the data from int to float for some reason            
-#            if len(df_temp):
+            #Finally, add the table that we loaded to the end of the main one
             df_temp['type'] = t
-            df = pd.concat([df, df_temp])
+            df = pd.concat([df, df_temp], ignore_index=True)
 
     return df
 
@@ -685,8 +672,10 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
 # Pivot table for pattern matching is a little different
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
-    summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
-                              aggfunc = lambda x: (x==present).sum())
+    present = site_df[site_df[site_columns[validated]]=="present"]
+    summary = present.pivot_table(index=date_str, values=site_columns[validated], aggfunc='count')
+    #summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
+    #                          aggfunc = lambda x: (x==present).sum())
     summary = summary.rename(columns={validated:type_name})
     return normalize_pt(summary, date_range_dict)
 
