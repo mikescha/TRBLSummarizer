@@ -973,10 +973,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
             df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(row))  #get only the nonzero values. 
 
             if len(df_col_nonzero):
-                c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](1)
-                #c = cm.get_cmap(cmap[row] if len(cmap) > 1 else cmap[0], 1)(1) #This is deprecated, changed it to above to avoid errors
-                #for debug
-                #c = cm.get_cmap('prism',1)(1)
+                c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.85)
                 if row in edge_c_cols: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
