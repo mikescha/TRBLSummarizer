@@ -756,7 +756,8 @@ def set_global_theme():
     line_color = 'gray'
     line_width = '0.75'
     custom_params = {'figure.dpi':dpi, 
-                     'font.family':'Arial', #'sans-serif'
+#                     'font.family':'Arial',                      
+                     'font.family':'sans serif', 
                      'font.size':'12',
                      'font.stretch':'normal',
                      'font.weight':'light',
@@ -1186,13 +1187,19 @@ def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
 
     #Add the title
     draw = ImageDraw.Draw(final)
-    font = ImageFont.truetype("arialbd.ttf", size=title_font_size)
+    if being_deployed_to_streamlit:
+        font = ImageFont.load_default(size=title_font_size)
+    else:
+        font = ImageFont.truetype("arialbd.ttf", size=title_font_size)
     draw.text((width/2,title_height-fudge), site, fill='black', anchor='ms', font=font)
 
     #Add the months
     margin_left = 27 * scale
     margin_right = 1982 * scale
-    font = ImageFont.truetype("arial.ttf", size=month_font_size)
+    if being_deployed_to_streamlit:
+        font = ImageFont.load_default(size=month_font_size)
+    else:
+        font = ImageFont.truetype("arial.ttf", size=month_font_size)
     v_pos = title_height + month_row_height - fudge
     month_row_width = margin_right - margin_left
     
