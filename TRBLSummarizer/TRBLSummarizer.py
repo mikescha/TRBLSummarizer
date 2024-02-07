@@ -291,11 +291,11 @@ def get_target_sites() -> dict:
         if s[0:4].isdigit():
             all_sites.append(s)
     
-    #Get a list of all items in the directory, then check whether a site has a matching folder. 
-    #If it doesn't, there is no Pattern Matching data available, so go ahead and add it.
+    #2/7/24: New approach -- we don't care whether the PM folders have the wrong number of files, 
+    #We will deal with it later in the code. So, just go ahead and add everything, and then flag
+    #the ones that do have errors
     for s in all_sites:
-        if not os.path.isdir(data_dir / s):
-            file_summary[site_str].append(s)
+        file_summary[site_str].append(s)
 
     #Now, go through all the folders and check them
     top_items = os.scandir(data_dir)
@@ -305,10 +305,10 @@ def get_target_sites() -> dict:
                 #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
                 s=item.name
                 if s in all_sites:
+                    #TODO: Of all the rest of the code in this section, what is actually needed now that the PM files are downloaded automatically?
                     #Get a list of all files in that directory, scan for files that match our pattern
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
-
                         if len(pm_file_types) != count_files_in_folder(item):
                             file_summary[bad_files].append('Wrong number of files: ' + item.name)
 
