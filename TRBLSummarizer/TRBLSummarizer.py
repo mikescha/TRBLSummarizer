@@ -723,10 +723,10 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
         #Update the date range if needed
         site_year = df.index[0].year
         if start_month != 'First':
-            date_range_dict[start_str] = '{}-01-{}'.format(months1[start_month], site_year)
+            date_range_dict[start_str] = f'{months1[start_month]}-01-{site_year}'
         if end_month != 'Last':
             last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
-            date_range_dict[end_str] = '{}-{}-{}'.format(months2[end_month], last_day, site_year)
+            date_range_dict[end_str] = f'{months2[end_month]}-{last_day}-{site_year}'
     
     return date_range_dict
 
@@ -1013,7 +1013,9 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         tagged_rows = filter_df_by_tags(raw_data, mini_manual_cols)
         if len(tagged_rows):
             date_list = tagged_rows.index.unique()
-            first = raw_data.index[0]
+            #I'm using df.columns[0] because it represents the date of the first day in the date range.
+            #This accounts for the scenario where the user changed the Start Month.
+            first = df.columns[0]
             box_pos = [(i - first)/pd.Timedelta(days=1) for i in date_list]
 
             _,top = fig.transFigure.inverted().transform(axs[0].transAxes.transform([0,1]))
