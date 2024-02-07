@@ -1,6 +1,4 @@
-Logging started 07-Feb-24 14:23:10
-07-Feb-24 14:23:13: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
-07-Feb-24 14:23:16: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
-07-Feb-24 14:23:17: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
-07-Feb-24 14:23:42: RCRam-2023-04-21_14-00.WAV missing song tag
-07-Feb-24 14:23:42: RCRam-2023-04-24_08-00.WAV missing song tag
+Logging started 07-Feb-24 14:29:35
+07-Feb-24 14:29:38: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
+07-Feb-24 14:29:40: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
+07-Feb-24 14:29:41: Data for site 2022 WC-WR1 has the wrong year in it, older than its year

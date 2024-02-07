@@ -28,7 +28,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = False
+being_deployed_to_streamlit = True
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
