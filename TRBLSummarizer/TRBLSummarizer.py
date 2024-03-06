@@ -206,12 +206,16 @@ site_info_file = 'sites.csv'
 weather_file = 'weather_history.csv'
 data_old_file = 'data_old.csv'
 error_file = figure_dir / 'error.txt'
+summary_file = 'summary.csv'
+
 files = {
     data_file : data_dir / data_file,
     site_info_file : data_dir / site_info_file,
     weather_file : data_dir / weather_file,
-    data_old_file : data_dir / data_old_file
+    data_old_file : data_dir / data_old_file,
+    summary_file : data_dir / summary_file 
 }
+
 
 pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling', 'Fledgling']
 
@@ -470,7 +474,7 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.cache_resource
 def load_data() -> pd.DataFrame:
-    data_csv = Path(__file__).parents[0] / files[data_file]
+    data_csv = files[data_file]
 
     #Validate the data file format
     headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
@@ -551,6 +555,44 @@ def load_pm_data(site:str) -> pd.DataFrame:
 
     return df
 
+
+# Mar 2024: This is the new set of summary data that Wendy created
+# Source data is from the Google Sheet
+@st.cache_resource
+def load_summary_data() -> pd.DataFrame:
+    #Load the summary data and prep it for graphing. 
+    #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
+
+    data_csv = Path(__file__).parents[0] / files[summary_file]
+    pulses = ["P1", "P2","P3","P4"]
+    date_types = ["MC Start", "Inc Start", "Hatch Day", "Last FS > 2", "Fldg Call Date", "Fldg Disp", "Abandoned"]
+    numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
+    date_cols = [p + ' ' + d for p in pulses for d in date_types]
+    numeric_cols = [p + ' ' + n for p in pulses for n in numeric_types]
+
+    date_format = '%m/%d/%Y'
+
+    #Load up the file
+#    df = pd.read_csv(data_csv, parse_dates=True, infer_datetime_format=True)
+    df = pd.read_csv(data_csv)
+
+    #Force-convert date values; you can do this with parse_dates=True in the read_csv above, but it only works
+    #if the entire column is the same type.
+    df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
+
+    # Convert numeric columns to integers. As above, you have to force it this way if the types vary.
+    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce', downcast='integer')
+
+    # So, now the first column is a string, and all other columns are either int or date. Plus, the empty values 
+    # are either "NaN" for ints or "NaT" for dates. 
+
+    # If we want to make those "NaN" or "NaT" into a string we can do this:
+    #for d in date_cols:
+    #    df[d] = df[d].fillna("ND")
+
+    # If we need to do this depends on how the graphing is going to work...
+    
+    return df
 
 #Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
@@ -1712,6 +1754,8 @@ df = clean_data(df_original, site_list[site_str])
 del df_original
 gc.collect()
 
+summary_df = load_summary_data()
+
 container_top = st.sidebar.container()
 container_mid = st.sidebar.container(border=True)
 container_bottom = st.sidebar.container(border=True)
@@ -1754,7 +1798,6 @@ for site in target_sites:
     pt_manual = pd.DataFrame()
     pt_mini_manual = pd.DataFrame()
     pt_edge = pd.DataFrame()
-
 
     if not df_site.empty:
         #Using the site of interest, get the first & last dates and give the user the option to customize the range
