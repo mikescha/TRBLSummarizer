@@ -7,8 +7,10 @@ import matplotlib as mpl
 mpl.use('WebAgg') #Have to select the backend before doing other imports
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
+import matplotlib.dates as mdates
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
+from matplotlib.dates import DateFormatter
 
 from pathlib import Path
 import os
@@ -20,6 +22,7 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime as dt
 from pyinstrument import Profiler
 import glob
+from datetime import timedelta
 
 #to force garbage collection and reduce memory use
 import gc
@@ -216,6 +219,33 @@ files = {
     summary_file : data_dir / summary_file 
 }
 
+# Mar 2024: This is the new set of summary data that Wendy created
+# Source data is from the Google Sheet
+pulse_count = "pulse_count"
+abandoned = "Abandoned"
+pulses = ["P1", "P2", "P3", "P4"]
+summary_first_rec = "First Rec"
+summary_last_rec = "Last Rec"
+summary_edge_dates = [summary_first_rec, summary_last_rec]
+pulse_MC_start = "MC Start"
+pulse_MC_end = "MC End"
+pulse_hatch = "Hatch"
+pulse_first_fldg = "First Fldg Call"
+pulse_last_fldg = "Last Fldg Call"
+pulse_date_types = [pulse_MC_start, pulse_MC_end, pulse_hatch, "Last FS > 2", pulse_first_fldg, pulse_last_fldg, abandoned]
+pulse_numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
+summary_date_cols = [p + ' ' + d for p in pulses for d in pulse_date_types]
+summary_numeric_cols = [p + ' ' + n for p in pulses for n in pulse_numeric_types]
+
+phase_mcs = "Male Chorus"
+phase_inc = "Incubation"
+phase_brd = "Brooding"
+phase_flg = "Fledgling"
+pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
+                phase_inc : [pulse_MC_end, pulse_hatch],
+                phase_brd : [pulse_hatch, pulse_first_fldg],
+                phase_flg : [pulse_first_fldg, pulse_last_fldg]}
+
 
 pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling', 'Fledgling']
 
@@ -280,11 +310,11 @@ def make_date(row):
 #
 @st.cache_resource
 def get_target_sites() -> dict:
-    file_summary = {}
+    results = {}
     for t in pm_file_types:
-        file_summary[t] = []
-    file_summary[bad_files] = []
-    file_summary[site_str] = []
+        results[t] = []
+    results[bad_files] = []
+    results[site_str] = []
 
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
     all_site_data = pd.read_csv(files[site_info_file], usecols = ['Name', 'Recordings_Count'])
@@ -299,7 +329,7 @@ def get_target_sites() -> dict:
     #We will deal with it later in the code. So, just go ahead and add everything, and then flag
     #the ones that do have errors
     for s in all_sites:
-        file_summary[site_str].append(s)
+        results[site_str].append(s)
 
     #Now, go through all the folders and check them
     top_items = os.scandir(data_dir)
@@ -314,7 +344,7 @@ def get_target_sites() -> dict:
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
                         if len(pm_file_types) != count_files_in_folder(item):
-                            file_summary[bad_files].append('Wrong number of files: ' + item.name)
+                            results[bad_files].append('Wrong number of files: ' + item.name)
 
                         for t in pm_file_types:
                             found_file = False
@@ -326,44 +356,44 @@ def get_target_sites() -> dict:
                                 if f.is_file():
                                     f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
                                     if t.lower() == f_type[0:len(t)].lower():
-                                        file_summary[t].append(f.name)
-                                        if s not in file_summary[site_str]: 
-                                            file_summary[site_str].append(s)
+                                        results[t].append(f.name)
+                                        if s not in results[site_str]: 
+                                            results[site_str].append(s)
                                         found_file = True
                                         break
                                 else:
                                     if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
-                                        file_summary[bad_files].append('Found subfolder in data folder: ' + s)
+                                        results[bad_files].append('Found subfolder in data folder: ' + s)
                                     found_dir_in_subfolder = True
                             sub_items.close()
                     
                             if not found_file and not empty_dir:
-                                file_summary[bad_files].append('Missing file: ' + s + ' ' + t)
+                                results[bad_files].append('Missing file: ' + s + ' ' + t)
 
                     else:
-                        file_summary[bad_files].append('Empty folder: ' + item.name)
+                        results[bad_files].append('Empty folder: ' + item.name)
         
                 else:
                     if item.name.lower() != 'hide' and item.name.lower() != 'old files':
-                        file_summary[bad_files].append('Bad folder name: ' + item.name)
+                        results[bad_files].append('Bad folder name: ' + item.name)
             
             else: 
                 # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
                 # our pattern, then mark it as Bad.
                 if item.name.lower() not in files.keys():
-                    file_summary[bad_files].append(item.name)
+                    results[bad_files].append(item.name)
 
     top_items.close()
     
-    if len(file_summary[site_str]):
-        file_summary[site_str].sort()
+    if len(results[site_str]):
+        results[site_str].sort()
     else:
         show_error('No site files found')
 
-#    if len(file_summary[bad_files]):
+#    if len(results[bad_files]):
 #        show_error('File errors were found')
 
-    return file_summary
+    return results
 
 #Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
@@ -556,43 +586,163 @@ def load_pm_data(site:str) -> pd.DataFrame:
     return df
 
 
-# Mar 2024: This is the new set of summary data that Wendy created
-# Source data is from the Google Sheet
+
 @st.cache_resource
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
     #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
 
     data_csv = Path(__file__).parents[0] / files[summary_file]
-    pulses = ["P1", "P2","P3","P4"]
-    date_types = ["MC Start", "Inc Start", "Hatch Day", "Last FS > 2", "Fldg Call Date", "Fldg Disp", "Abandoned"]
-    numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
-    date_cols = [p + ' ' + d for p in pulses for d in date_types]
-    numeric_cols = [p + ' ' + n for p in pulses for n in numeric_types]
-
-    date_format = '%m/%d/%Y'
 
     #Load up the file
-#    df = pd.read_csv(data_csv, parse_dates=True, infer_datetime_format=True)
     df = pd.read_csv(data_csv)
 
     #Force-convert date values; you can do this with parse_dates=True in the read_csv above, but it only works
     #if the entire column is the same type.
-    df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
+    # Mar 7 2024: I think the summary graph is going to be easier if I delay this
+    #df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
 
     # Convert numeric columns to integers. As above, you have to force it this way if the types vary.
-    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors='coerce', downcast='integer')
-
-    # So, now the first column is a string, and all other columns are either int or date. Plus, the empty values 
-    # are either "NaN" for ints or "NaT" for dates. 
+    # Empty values or strings are converted to NaN
+    df[summary_numeric_cols] = df[summary_numeric_cols].apply(pd.to_numeric, errors='coerce', downcast='integer')
 
     # If we want to make those "NaN" or "NaT" into a string we can do this:
     #for d in date_cols:
     #    df[d] = df[d].fillna("ND")
 
-    # If we need to do this depends on how the graphing is going to work...
-    
     return df
+
+# clean up the data for a particular site
+def is_valid_date_string(date_string):
+    try:
+        pd.to_datetime(date_string, format="%m/%d/%Y")
+        return True
+    except ValueError:
+        return False
+
+def convert_to_datetime(date_string):
+    date_format = "%m/%d/%Y"
+    try:
+        return pd.to_datetime(date_string, format=date_format)
+    except ValueError as e:
+        return pd.NaT  # Use pd.NaT for missing or null datetime values
+
+def is_valid_date(timestamp):
+    return not pd.isna(timestamp)
+
+def is_valid_date_pair(phase_data:dict) -> bool:
+    result = False
+    start = phase_data[start_str]
+    end = phase_data[end_str]
+    if is_valid_date(start) and is_valid_date(end):
+        result = True
+    return result
+
+def count_valid_pulses(pulse_data:dict) -> int:
+    #A pulse is considered valid if there is at least one "graphable" date pair
+    count = 0
+    for p in pulses:
+        result = False
+        for phase in pulse_data[p]:
+            if is_valid_date_pair(pulse_data[p][phase]):
+                result = True
+                break
+        count += 1 if result else 0
+
+    return count
+
+def get_val_from_df(df:pd.DataFrame, col):
+    return df.iloc[0,df.columns.get_loc(col)]
+
+def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
+    nd_string = "ND"
+    # This function takes a row from the summary spreadsheet. The goal is to process it as follows:
+    first_rec = get_val_from_df(summary_row, summary_first_rec)
+    last_rec = get_val_from_df(summary_row, summary_last_rec)
+    summary_dict = {
+        summary_first_rec   : convert_to_datetime(first_rec),
+        summary_last_rec    : convert_to_datetime(last_rec),
+    }
+
+    abandoned_dates = {}
+
+    for pulse in pulses:
+        pulse_result = {}
+
+        #Make our list of abandoned dates for later graphing purposes
+        abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse} {abandoned}"))
+        if is_valid_date(abandoned_date):
+            abandoned_dates[pulse] = abandoned_date
+
+        for phase in pulse_phases:
+            start, end = pulse_phases[phase]
+            target1 = f"{pulse} {start}"
+            value1 = get_val_from_df(summary_row, target1)
+            result1 = pd.NaT
+            if is_valid_date_string(value1):
+                #It's a good date, so format it
+                result1 = convert_to_datetime(value1)             
+            elif value1 == "abandoned":
+                if not is_valid_date(abandoned_date):
+                    log_error("A column says Abandoned, but there is not a valid abandoned date")
+                else:
+                    result1 = pd.NaT
+            elif value1 == "before start":
+                result1 = summary_dict[summary_first_rec]
+            elif value1 == "after end":
+                result1 = summary_dict[summary_last_rec]
+            elif value1 == nd_string or value1 == "":
+                #this is OK, we aren't going to draw anything in this case
+                pass
+            else:
+                #if not one of the above, then it's an error
+                log_error("Found invalid data in site summary data")
+
+            target2 = f"{pulse} {end}"
+            value2 = get_val_from_df(summary_row, target2)
+            result2 = pd.NaT
+            if is_valid_date_string(value2):
+                #It's a good date, so format it
+                if phase == phase_flg:
+                    #For fledgling phase, don't subtract one from the end date
+                    delta = pd.Timedelta(days=0)
+                else:
+                    delta = pd.Timedelta(days=1)
+                result2 = convert_to_datetime(value2) - delta
+            elif value2 == "abandoned":
+                if not is_valid_date(abandoned_date):
+                    log_error("A column says Abandoned, but there is not a valid abandoned date")
+                else:
+                    result2 = abandoned_date - pd.Timedelta(days=1)
+            elif value2 == "before start":
+                #In this scenario, the start should be ND, throw an error if not
+                if not value1 == nd_string:
+                    log_error("Found case where end date is 'before start' but start date is not 'ND'")
+            elif value2 == "after end":
+                result2 = summary_dict[summary_last_rec]
+            elif value2 == nd_string:
+                if not value1 == nd_string:
+                    log_error("Second date is ND, but first date is not") 
+            else: #ND, empty, or any other values are not valid here  #TODO If ND, then confirm that the start was also ND else error
+                log_error("Found invalid data in site summary data")
+            
+            pulse_result[phase] = {"start":result1, "end":result2}
+
+        #Add the sets of dates to our master dictionary
+        summary_dict[pulse] = pulse_result
+
+    #Calculate count of valid pulses. If there were zero, then set the count to 1 else we won't get a graph
+    p_count = max(1, count_valid_pulses(summary_dict))
+    summary_dict[pulse_count] = p_count
+
+    #Save our abandoned dates, if any
+    summary_dict[abandoned] = abandoned_dates
+
+    return summary_dict 
+
+
+
+
 
 #Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
@@ -686,7 +836,7 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
             # In this case, we filter to only columns that match the key (because the DF being passed in has
             # columns matching any key in the dict), and then count the columns in that subset that are non-zero.
             # And then, the result is all merged together
-            summary = pd.DataFrame()
+            aggregate_df = pd.DataFrame()
             for tag in label_dict:
                 temp = filter_df_by_tags(df, [tag])
                 # If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up 
@@ -695,20 +845,20 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
                                     aggfunc = lambda x: (x>=1).sum())
                 if len(temp_pt):
                     temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
-                    summary = pd.concat([summary, temp_pt]).groupby('date').sum()
+                    aggregate_df = pd.concat([aggregate_df, temp_pt]).groupby('date').sum()
             #rename the index so that it's the song name            
-            summary.rename(columns={'temp':list(label_dict.keys())[0]}, inplace=True) 
+            aggregate_df.rename(columns={'temp':list(label_dict.keys())[0]}, inplace=True) 
         else:
             #If we were passed a list of labels instead of a dict, then use the same logic to count songs
-            summary = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
+            aggregate_df = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
                                     aggfunc = lambda x: (x>=1).sum()) 
 
         if preserve_edges:
             # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
             # graph later, we'll use this to show where the edges of the analysis were
-            summary = summary.replace(to_replace=0, value=preserve_edges_flag)
+            aggregate_df = aggregate_df.replace(to_replace=0, value=preserve_edges_flag)
 
-        return normalize_pt(summary, date_range_dict)
+        return normalize_pt(aggregate_df, date_range_dict)
     else:
         return pd.DataFrame()
 
@@ -717,11 +867,11 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
     present = site_df[site_df[site_columns[validated]]=="present"]
-    summary = present.pivot_table(index=date_str, values=site_columns[validated], aggfunc='count')
-    #summary = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
+    aggregate = present.pivot_table(index=date_str, values=site_columns[validated], aggfunc='count')
+    #aggregate = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
     #                          aggfunc = lambda x: (x==present).sum())
-    summary = summary.rename(columns={validated:type_name})
-    return normalize_pt(summary, date_range_dict)
+    aggregate = aggregate.rename(columns={validated:type_name})
+    return normalize_pt(aggregate, date_range_dict)
 
 
 #
@@ -753,9 +903,20 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
     # Set the default date range to the first and last dates that we have data
     # Assume that the data cleaning code has removed any extraneous dates, such as if data 
     # is mistagged (i.e. data from 2019 shows up in the 2020 site)
-    date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
-                       end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+    #Need to determine whether we are indexed by date or not
+    date_range_dict = {}
+    if hasattr(df, 'index') and isinstance(df.index, pd.DatetimeIndex):
+        date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
+                           end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+    else:
+        #No index, but it should be findable by the date column    
+        if "date" in df.columns.to_list():
+            date_range_dict = {start_str : df.iloc[0,df.columns.get_loc('date')].strftime("%m-%d-%Y"), 
+                               end_str : df.iloc[len(df)-1,df.columns.get_loc('date')].strftime("%m-%d-%Y")}
     
+    if date_range_dict == {}:
+        log_error("Couldn't find date range!!")
+
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
         months2 = {'Last': '-1',  'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
@@ -763,7 +924,7 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
         end_month = my_sidebar.selectbox("End month", months2.keys(), index=0)
 
         #Update the date range if needed
-        site_year = df.index[0].year
+        site_year = int(date_range_dict[start_str][-4:])
         if start_month != 'First':
             date_range_dict[start_str] = f'{months1[start_month]}-01-{site_year}'
         if end_month != 'Last':
@@ -857,7 +1018,17 @@ def draw_cmap(cmap:dict, make_all_graphs:bool):
             st.pyplot(fig)
     return
 
+def month_days_between_dates(start_date, end_date):
+    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+    start_of_month = pd.Timestamp(start_date) - pd.DateOffset(days=pd.Timestamp(start_date).day - 1)
 
+    result = {}
+    for month_start in pd.date_range(start=start_of_month, end=end_date, freq='MS'):
+        month_name = month_start.strftime('%B')
+        days_in_month = (date_range >= month_start) & (date_range < (month_start + pd.DateOffset(months=1)))
+        result[month_name] = days_in_month.sum()
+    
+    return result
 
 def get_days_per_month(date_list:list) -> dict:
     # Make a list of all the values, but only use the month name. Then, count how many of each 
@@ -894,9 +1065,11 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
+def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, summary_graph=False):
     if weather_graph:
         y = -0.4
+    elif summary_graph:
+        y = summary_graph
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
@@ -914,7 +1087,8 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph = False):
         x += month_lengths[month]
         if n < month_count:
             for ax in axs:
-                ax.axvline(x=x) 
+                ax.axvline(x=x)
+    
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
 # note that if the fontsize is too big, then the title will become the largest thing 
@@ -940,7 +1114,154 @@ def add_watermark(title:str):
     figtext_y = fig_position.y0 + (fig_position.y1 - fig_position.y0) / 2  # Center vertically
     plt.figtext(figtext_x, figtext_y, additional_text, ha='left', va='center', color='gray', fontsize=8)
     
-            
+
+#
+# Custom graphing code to make the summary     
+#
+def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
+    pc = pulse_data[pulse_count]
+
+    #TODO how to use the pulse_count to adjust the height of the graph?
+    #fig, ax = plt.subplots(figsize=(fig_w,(fig_h*1.5) * pulse_data[pulse_count]/4))
+    fig, ax = plt.subplots(figsize=(fig_w,(fig_h*1.5)))
+
+    # Color options here: https://matplotlib.org/stable/gallery/color/named_colors.html
+    phase_color = {
+        phase_mcs : "forestgreen",
+        phase_inc : "darkorchid",
+        phase_brd : "mediumblue",
+        phase_flg : "skyblue"
+    }
+    background_color = "silver"
+    
+    # Configure x-axis limits
+    nesting_start_date = pulse_data[summary_first_rec]
+    nesting_end_date = pulse_data[summary_last_rec]
+    start_date = date_range[start_str]
+    end_date = date_range[end_str]
+    days_per_month = month_days_between_dates(start_date, end_date)
+    ax.set_xlim(pd.Timestamp(start_date), pd.Timestamp(end_date) +timedelta(days=1))
+
+    # Configure y-axis limits
+    ax.set_ylim(bottom=pc, top=0)
+
+    #Add patch covering the background of the entire nesting phase
+    rect_height = pc
+    rect = Rectangle((nesting_start_date, 0), nesting_end_date - nesting_start_date +timedelta(days=1), 
+                     rect_height, color=background_color, alpha=1, zorder=1)
+    ax.add_patch(rect)
+
+    #Draw all our boxes
+    y = 0
+    pulses_graphed = []
+    legend_handles = {}
+
+    for p in pulses:
+        graphed_something = False
+        for phase in pulse_phases:
+            if is_valid_date_pair(pulse_data[p][phase]):
+                phase_start = pulse_data[p][phase][start_str]
+                phase_end = pulse_data[p][phase][end_str]
+                start_point = (phase_start, y)
+                width = phase_end - phase_start + timedelta(days=1)
+                height = 1
+                alpha = 0.6
+                rect = Rectangle(start_point, width, height, 
+                                 color=phase_color[phase], alpha=alpha, 
+                                 label=phase, zorder=2)
+                ax.add_patch(rect)
+                graphed_something = True
+
+                if p not in pulses_graphed:
+                    pulses_graphed.append(p)
+                
+                if phase not in legend_handles:
+                    legend_handles[phase] = rect
+        y += 1 if graphed_something else 0
+
+    for date in pulse_data[abandoned]:
+        y = int(date[1])-1 #This gets the pulse number as an integer from a string like "P1"
+        start_point = (pulse_data[abandoned][date], y)
+        width = timedelta(days=1)
+        height = 1
+        rect = Rectangle(start_point, width, height, 
+                    color='red', alpha=1, zorder=5,
+                    label=abandoned)
+        ax.add_patch(rect)
+        #ax.scatter(pulse_data[abandoned][date], y, marker='D', color='red', s=50, zorder=5)  # Zorder ensures markers appear on top
+
+    # Add the vertical lines and month names
+    draw_axis_labels(days_per_month, [ax], summary_graph=pc+0.2*pc)
+
+    # Configure y-axis and labels for each pulse
+    ax.set_yticklabels(pulses_graphed)
+    ticks = [0.5, 1.5, 2.5, 3.5]
+    ax.set_yticks(ticks[0:pc])
+
+    #Draw borders of graph
+    ax.spines['left'].set_visible(True)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['right'].set_visible(True)
+    ax.spines['top'].set_visible(True)
+    
+    #Legendary!!
+    # Add legend with unique entries
+    #ax.legend(legend_handles.values(), legend_handles.keys(), loc='upper left', bbox_to_anchor=(1, 1))
+
+    # Show Y ticks and labels, and positiion inside the graph
+    ax.tick_params(labelleft=True, left=True)
+    ax.tick_params(axis='y', direction='in', pad=-20, labelsize=10)  # Adjust the pad parameter to fine-tune the position
+    
+    plt.tight_layout()
+
+    debugging = False
+    if debugging:
+        #To help with Debugging, draw lines on the graph for each day
+        #
+        # Draw thin vertical lines at the start of each day
+        for day in pd.date_range(start=start_date,
+                            end=end_date,
+                            freq='D'):
+            ax.axvline(x=day, color='gray', linestyle='--', linewidth=0.5)
+        # Show the day number for every 5th day
+        day_numbers = pd.date_range(start=start_date, end=end_date, freq='3D')
+        ax.set_xticks(day_numbers)
+        ax.set_xticklabels([day.strftime('%m-%d') for day in day_numbers], fontsize=6, rotation=45, ha='center')
+        ax.tick_params(axis='x', direction='inout', pad=0)
+        ax.tick_params(labelbottom=True, bottom=True)
+
+    
+    # Output the data as text
+    st.write(f"Recording start: {start_date}, Recording end: {end_date}")
+    report = ""
+    found_valid_dates=0
+    for p in pulses:
+        empty_pulse = 1
+        for phase in pulse_phases:
+            if is_valid_date_pair(pulse_data[p][phase]):
+                #First time only per pulse, add the title
+                if empty_pulse:
+                    empty_pulse = 0
+                    report += f"-----Pulse {p}-----<br>"
+
+                phase_start = pulse_data[p][phase][start_str].strftime("%m-%d")
+                phase_end = pulse_data[p][phase][end_str].strftime("%m-%d")
+                report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
+                found_valid_dates+=1
+    if found_valid_dates:
+        st.write(report, unsafe_allow_html=True)
+
+    if len(pulse_data[abandoned]):
+        report = "Abandoned:"
+        for a in pulse_data[abandoned]:
+            report += f"{a}: {pulse_data[abandoned][a].strftime('%m-%d')}"
+        st.write(report)
+
+    st.write(fig)
+
+    return fig
+
+
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
                  draw_vert_rects=False, draw_horiz_rects=False,title='') -> plt.figure:
@@ -1688,7 +2009,7 @@ def check_tags(df: pd.DataFrame):
 
 
 # Clean up a pivottable so we can display it as a table
-def make_summary_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
+def make_final_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
     pt = pd.DataFrame()
     pt_temp = site_pt.transpose()
     #Build the column name mapping (<ugly-tag-name> to 'My tag')
@@ -1754,6 +2075,7 @@ df = clean_data(df_original, site_list[site_str])
 del df_original
 gc.collect()
 
+# Load all the summary data
 summary_df = load_summary_data()
 
 container_top = st.sidebar.container()
@@ -1955,6 +2277,20 @@ for site in target_sites:
         st.write("All pattern matching data not available -- missing some or all files")
 
 
+    # 
+    #    Summary data
+    #
+    # What we want to do is break this into a dictionary, with one entry for each pulse. 
+    # Each pulse should have a dictionary mapping any valid dates in the pulse to its column name, 
+    # e.g. {"P1": {"P1 Inc Start":Timestamp('2023-05-01')}}
+    summary_row = summary_df[summary_df.iloc[:, 0] == site]
+
+    # Process the summary data, i.e. figure out if it's correctly structured, adjust for 
+    # "abandoned" and so on, and convert all dates to a date format so it's easy to graph later. 
+    # The graphing should just be executing the plan, not figuring out if there are errors.
+    site_summary_dict = process_site_summary_data(summary_row)
+
+
     # ------------------------------------------------------------------------------------------------
     # DISPLAY
     if make_all_graphs:
@@ -1969,6 +2305,25 @@ for site in target_sites:
     month_locs = {} 
     #default color map
     cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
+
+    #Summary graph -- new 3/2024
+    if make_all_graphs:
+        #Calculate the min and max from across all sites.
+        #TODO Move this to another place as we don't need to recalculate it each time
+        min_date_df = pd.to_datetime(summary_df[summary_first_rec], errors='coerce')
+        valid_dates = min_date_df.dropna()
+        earliest_date = valid_dates.min()
+
+        max_date_df = pd.to_datetime(summary_df[summary_last_rec], errors='coerce')
+        valid_dates = max_date_df.dropna()
+        latest_date = valid_dates.min()
+
+        target_date_range_dict = {start_str:earliest_date.strftime('%m-%d-%Y'),
+                                  end_str:latest_date.strftime('%m-%d-%Y')}
+    else:
+        target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
+                                  end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
+    graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict)
 
     # Manual analyisis graph
     if not pt_manual.empty:
@@ -2046,21 +2401,21 @@ for site in target_sites:
 if not make_all_graphs and len(df_site):
     # Show the table with all the raw data
     with st.expander("See raw data"):
-        #Used for making the summary pivot table
+        #Used for making the overview pivot table
         friendly_names = {data_col[malesong] : 'M-Male', 
                           data_col[courtsong]: 'M-Chorus',
                           data_col[altsong2] : 'M-Female', 
                           data_col[altsong1] : 'M-Nestling'
         }
-        summary = []
-        summary.append(make_summary_pt(pt_manual, song_cols, friendly_names))
+        overview = []
+        overview.append(make_final_pt(pt_manual, song_cols, friendly_names))
         
         friendly_names = {data_col[malesong] : 'MM-Male', 
                           data_col[courtsong]: 'MM-Chorus',
                           data_col[altsong2] : 'MM-Female', 
                           data_col[altsong1] : 'MM-Nestling'
         }
-        summary.append(make_summary_pt(pt_mini_manual, song_cols, friendly_names))
+        overview.append(make_final_pt(pt_mini_manual, song_cols, friendly_names))
 
         friendly_names =   {data_col[tag_p1c]: 'E-P1C',
                             data_col[tag_p1n]: 'E-P1N',
@@ -2069,7 +2424,7 @@ if not make_all_graphs and len(df_site):
 #                            data_col[tag_p3c]: 'E-P3C',
 #                            data_col[tag_p3n]: 'E-P3N'
         }
-        summary.append(make_summary_pt(pt_edge, edge_cols, friendly_names))
+        overview.append(make_final_pt(pt_edge, edge_cols, friendly_names))
 
         friendly_names =   {pm_file_types[0]: 'PM-M',
                             pm_file_types[1]: 'PM-F',
@@ -2078,7 +2433,7 @@ if not make_all_graphs and len(df_site):
                             pm_file_types[4]: 'PM-ON',
                             pm_file_types[5]: 'PM-FL'
         }
-        summary.append(make_summary_pt(pt_pm, pm_file_types, friendly_names))
+        overview.append(make_final_pt(pt_pm, pm_file_types, friendly_names))
 
         #Add weather at the end
         if len(weather_by_type):
@@ -2088,18 +2443,18 @@ if not make_all_graphs and len(df_site):
                 weather_data.rename(columns={'value':t}, inplace=True)
                 if t != weather_prcp:
                     weather_data[t] = weather_data[t].astype(int)
-            summary.append(weather_data)
+            overview.append(weather_data)
 
-        # The variable Summary is a list of each dataframe. Now, take all the data and concat it into 
+        # The variable overview is a list of each dataframe. Now, take all the data and concat it into 
         #a single table
-        union_pt = pd.concat(summary, axis=1)
+        union_pt = pd.concat(overview, axis=1)
 
         # Pop the index out so that we can format it, do this by resetting the index so each 
         # row just gets a number index
         union_pt.reset_index(inplace=True)
         union_pt.rename(columns={'index':'Date'}, inplace=True)
 
-        # Format the summary table so it's easy to read and output it 
+        # Format the overview table so it's easy to read and output it 
         # Learn about formatting
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#
         union_pt = union_pt.style.map(style_cells)
@@ -2110,7 +2465,7 @@ if not make_all_graphs and len(df_site):
         st.dataframe(union_pt)
 
     # Put a box with first and last dates for the Song columns, with counts on that date
-    with st.expander("See summary of first and last dates"):  
+    with st.expander("See overview of first and last dates"):  
         output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
 

@@ -1,0 +1,3 @@
+id,recording,site,year,month,day,hour,minute,species,songtype,x1,x2,y1,y2,frequency,validated,url,score,site_id
+681466950,RJam-2021-03-15_11-56.WAV-gkhlsqiu9ras.flac,2021 Rancho Jamul,2021,3,15,11,56,Agelaius tricolor,Alternative Song,2.656,3.4133333333333336,2156.25,13593.75,24000,(not validated),https://arbimon.org/legacy-api/project/tricolored-blackbird-breeding-phenology/recordings/download/51765132,0.25387276148070576,24119
+681466951,RJam-2021-03-19_08-00.WAV-gkhlsqiu9ras.flac,2021 Rancho Jamul,2021,3,19,8,0,Agelaius tricolor,Alternative Song,49.962666666666664,50.72,2156.25,13593.75,24000,(not validated),https://arbimon.org/legacy-api/project/tricolored-blackbird-breeding-phenology/recordings/download/51765152,0.2515764337056551,24119
