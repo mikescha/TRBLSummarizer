@@ -8,6 +8,7 @@ mpl.use('WebAgg') #Have to select the backend before doing other imports
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 import matplotlib.dates as mdates
+import matplotlib.patches as patches
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 from matplotlib.dates import DateFormatter
@@ -597,9 +598,7 @@ def load_summary_data() -> pd.DataFrame:
     #Load up the file
     df = pd.read_csv(data_csv)
 
-    #Force-convert date values; you can do this with parse_dates=True in the read_csv above, but it only works
-    #if the entire column is the same type.
-    # Mar 7 2024: I think the summary graph is going to be easier if I delay this
+    #If needed, can convert to date values as below, but it doesn't seem necessary
     #df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
 
     # Convert numeric columns to integers. As above, you have to force it this way if the types vary.
@@ -644,9 +643,10 @@ def count_valid_pulses(pulse_data:dict) -> int:
     for p in pulses:
         result = False
         for phase in pulse_data[p]:
-            if is_valid_date_pair(pulse_data[p][phase]):
-                result = True
-                break
+            if phase in pulse_phases.keys(): #Need to skip Abandoned, as it doesn't have a pair of dates
+                if is_valid_date_pair(pulse_data[p][phase]):
+                    result = True
+                    break
         count += 1 if result else 0
 
     return count
@@ -664,7 +664,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
         summary_last_rec    : convert_to_datetime(last_rec),
     }
 
-    abandoned_dates = {}
+#    abandoned_dates = {}
 
     for pulse in pulses:
         pulse_result = {}
@@ -672,7 +672,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
         #Make our list of abandoned dates for later graphing purposes
         abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse} {abandoned}"))
         if is_valid_date(abandoned_date):
-            abandoned_dates[pulse] = abandoned_date
+            pulse_result[abandoned] = abandoned_date 
+#            abandoned_dates[pulse] = abandoned_date
 
         for phase in pulse_phases:
             start, end = pulse_phases[phase]
@@ -736,7 +737,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     summary_dict[pulse_count] = p_count
 
     #Save our abandoned dates, if any
-    summary_dict[abandoned] = abandoned_dates
+#    summary_dict[abandoned] = abandoned_dates
 
     return summary_dict 
 
@@ -984,23 +985,23 @@ def output_cmap():
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
 
-def draw_cmap(cmap:dict, make_all_graphs:bool):
+def draw_cmap_legend(cmap:dict, make_all_graphs:bool):
     good_cmap = cmap.copy()
-    del good_cmap["bad"]
+    # del good_cmap["bad"]
+
+    friendly_names={'Male':'Male\nChorus', 
+                    'Female':'Incubation', 
+                    'Young Nestling':'Brooding', 
+                    "Fledgling":'Fledgling'}
 
     gradient = np.linspace(0, 1, 256)
     gradient = np.vstack((gradient, gradient))
 
     fig = plt.figure(figsize=(fig_w*0.75, fig_h*0.28), layout='constrained')
-    gs = fig.add_gridspec(nrows=1, ncols=len(good_cmap), wspace=0)
+    gs = fig.add_gridspec(nrows=1, ncols=len(friendly_names), wspace=0)
     axs = gs.subplots()
 
-    friendly_names={data_col[malesong]:'Male\nSong', 
-                    data_col[courtsong]:'Male\nChorus', 
-                    data_col[altsong2]:'Female\nSong', 
-                    data_col[altsong1]:'Nestling and\nFledgling Call'}
-
-    for ax, call_type in zip(axs, good_cmap):
+    for ax, call_type in zip(axs, friendly_names):
         ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[good_cmap[call_type]])
 
         ax.text(1.02, 0.5, friendly_names[call_type], verticalalignment='center', horizontalalignment='left',
@@ -1011,7 +1012,6 @@ def draw_cmap(cmap:dict, make_all_graphs:bool):
     for ax in axs:
         ax.set_axis_off()
     
-#    st.pyplot(fig)
     col1, col3, col5= st.columns([1,4, 1])
     with col3:
         if not make_all_graphs:
@@ -1066,16 +1066,21 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, summary_graph=False):
+    font_size = 8
+    target_ax = -1
     if weather_graph:
         y = -0.4
     elif summary_graph:
-        y = summary_graph
+        y = 0.2
+        target_ax = -2
+        font_size = 6  #TODO figure out why the fonts need to be adjusted like this
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
     month_count = len(month_lengths)
     n = 0
-    x = axs[len(axs)-1].get_xlim()[0]
+    x_min, x_max = axs[len(axs)-1].get_xlim()
+    x = x_min
     for month in month_lengths:
         # Center the label on the middle of the month, which is the #-days-in-the-month/2
         #   -1 because the count is 1-based but the axis is 0-based, e.g. if there are 12 days
@@ -1083,11 +1088,19 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
         center_pt = int((month_lengths[month])/2)
         mid = x + center_pt
 
-        axs[len(axs)-1].text(x=mid, y=y, s=month, fontdict={'fontsize':'small', 'horizontalalignment':'center'})
+        axs[target_ax].text(x=mid, y=y, s=month, 
+                     fontsize=font_size, va="bottom", ha="center") 
+
         x += month_lengths[month]
         if n < month_count:
-            for ax in axs:
-                ax.axvline(x=x)
+            if summary_graph:
+                for chart in range(len(axs)+target_ax):
+                    axs[chart].axvline(x=x, color="darkgray")
+
+                pass
+            else:
+                for ax in axs:
+                    ax.axvline(x=x)
     
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
@@ -1120,119 +1133,174 @@ def add_watermark(title:str):
 #
 def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
     pc = pulse_data[pulse_count]
+    chart_height = 0.25  # In inches
+    #Rows_for_labels allows an extra row in the chart for the caption at the bottom, probably want to leave this off 
+    #when doing the combined graph
+    rows_for_labels = 2
+    legend_row = -1
+    label_row = -2
+    figsize = (fig_w, (pc + rows_for_labels) * chart_height) 
 
-    #TODO how to use the pulse_count to adjust the height of the graph?
-    #fig, ax = plt.subplots(figsize=(fig_w,(fig_h*1.5) * pulse_data[pulse_count]/4))
-    fig, ax = plt.subplots(figsize=(fig_w,(fig_h*1.5)))
+    #create a chart that has pc+rows_for_labels rows, and 1 column
+    fig, axs = plt.subplots(pc + rows_for_labels, 1, figsize=figsize, sharex=True, sharey=True) 
 
     # Color options here: https://matplotlib.org/stable/gallery/color/named_colors.html
     phase_color = {
-        phase_mcs : "forestgreen",
-        phase_inc : "darkorchid",
-        phase_brd : "mediumblue",
-        phase_flg : "skyblue"
+        phase_mcs : "seagreen",
+        phase_inc : "mediumpurple",
+        phase_brd : "steelblue",
+        phase_flg : "black"
     }
-    background_color = "silver"
+    background_color = "white"
     
-    # Configure x-axis limits
     nesting_start_date = pulse_data[summary_first_rec]
     nesting_end_date = pulse_data[summary_last_rec]
-    start_date = date_range[start_str]
-    end_date = date_range[end_str]
-    days_per_month = month_days_between_dates(start_date, end_date)
-    ax.set_xlim(pd.Timestamp(start_date), pd.Timestamp(end_date) +timedelta(days=1))
 
-    # Configure y-axis limits
-    ax.set_ylim(bottom=pc, top=0)
-
-    #Add patch covering the background of the entire nesting phase
-    rect_height = pc
-    rect = Rectangle((nesting_start_date, 0), nesting_end_date - nesting_start_date +timedelta(days=1), 
+    days_per_month = month_days_between_dates(date_range[start_str], date_range[end_str])
+    start_date = pd.Timestamp(date_range[start_str])
+    end_date = pd.Timestamp(date_range[end_str])
+    for ax in axs:
+        ax.set_xlim(start_date, end_date + timedelta(days=1))
+    
+    #Add patch covering the background of the entire nesting phase, except for the date row
+    rect_height = 1
+    for row in range(len(axs)+label_row):
+       rect = Rectangle((nesting_start_date, 0), nesting_end_date - nesting_start_date +timedelta(days=1), 
                      rect_height, color=background_color, alpha=1, zorder=1)
-    ax.add_patch(rect)
+       axs[row].add_patch(rect)
 
     #Draw all our boxes
-    y = 0
-    pulses_graphed = []
-    legend_handles = {}
-
-    for p in pulses:
+    pulses_graphed = {}
+    legend_elements = {}
+    row_count = 0
+    abandoned_dict = {}
+    for i, (p, data) in enumerate(pulse_data.items()):
         graphed_something = False
-        for phase in pulse_phases:
-            if is_valid_date_pair(pulse_data[p][phase]):
-                phase_start = pulse_data[p][phase][start_str]
-                phase_end = pulse_data[p][phase][end_str]
-                start_point = (phase_start, y)
-                width = phase_end - phase_start + timedelta(days=1)
+        if p in pulses:
+            for phase in pulse_phases:
+                if is_valid_date_pair(pulse_data[p][phase]):
+                    #Given that the x axis starts at start_date, we need to calculate everything as an offset from there
+                    phase_start = pulse_data[p][phase][start_str]
+                    phase_end = pulse_data[p][phase][end_str]
+                    width = phase_end - phase_start + timedelta(days=1)
+                    color = phase_color[phase]
+                    #Note width is a Timedelta, so use .days to get the int value, but phase_start is a Timestamp, so use .day instead 
+                    axs[row_count].barh(y=0, height=1,
+                                        left=phase_start, width=width.days,  
+                                        label=phase, color=color, align="edge", alpha=1)
+                    graphed_something = True
+
+                    if p not in pulses_graphed:
+                        pulses_graphed[p] = row_count   # save the pulse name plus the axis that it went into
+
+                    if phase not in legend_elements:
+                         legend_elements[phase] = color
+
+            #Apply the marker for abandonded colony on top of the data after we've drawn the row
+            if abandoned in pulse_data[p]:
+                abandoned_dict[p] = pulse_data[p][abandoned]
+                start_point = (pulse_data[p][abandoned],0)
+                width = timedelta(days=1)
                 height = 1
-                alpha = 0.6
                 rect = Rectangle(start_point, width, height, 
-                                 color=phase_color[phase], alpha=alpha, 
-                                 label=phase, zorder=2)
-                ax.add_patch(rect)
-                graphed_something = True
+                            color='red', alpha=1, zorder=5,
+                            label=abandoned)
+                axs[row_count].add_patch(rect)
+                if abandoned not in legend_elements:
+                    legend_elements[abandoned] = 'red'
 
-                if p not in pulses_graphed:
-                    pulses_graphed.append(p)
-                
-                if phase not in legend_handles:
-                    legend_handles[phase] = rect
-        y += 1 if graphed_something else 0
+            #Not all pulses will have graphable data, so we only want to change axis if there was something to graph
+            if graphed_something:
+                row_count += 1
 
-    for date in pulse_data[abandoned]:
-        y = int(date[1])-1 #This gets the pulse number as an integer from a string like "P1"
-        start_point = (pulse_data[abandoned][date], y)
-        width = timedelta(days=1)
-        height = 1
-        rect = Rectangle(start_point, width, height, 
-                    color='red', alpha=1, zorder=5,
-                    label=abandoned)
-        ax.add_patch(rect)
-        #ax.scatter(pulse_data[abandoned][date], y, marker='D', color='red', s=50, zorder=5)  # Zorder ensures markers appear on top
+    # Legendary
+    caption = ""
+    for item in legend_elements:
+        caption += f"{item}: {legend_elements[item]}  "
+    axs[legend_row].text(0.5, 0.5, s=caption, fontsize=6, va="center", ha="center", transform=axs[legend_row].transAxes) 
 
     # Add the vertical lines and month names
-    draw_axis_labels(days_per_month, [ax], summary_graph=pc+0.2*pc)
+    draw_axis_labels(days_per_month, axs, summary_graph=True)
 
-    # Configure y-axis and labels for each pulse
-    ax.set_yticklabels(pulses_graphed)
-    ticks = [0.5, 1.5, 2.5, 3.5]
-    ax.set_yticks(ticks[0:pc])
+    # Draw the labels for each pulse
+    for p in pulses_graphed:
+        axs[pulses_graphed[p]].text(x=start_date + timedelta(days=0.5), y=0.5, s=p, 
+                                    horizontalalignment='left', verticalalignment='center', color='black', fontsize=6)
 
-    #Draw borders of graph
-    ax.spines['left'].set_visible(True)
-    ax.spines['bottom'].set_visible(True)
-    ax.spines['right'].set_visible(True)
-    ax.spines['top'].set_visible(True)
-    
-    #Legendary!!
-    # Add legend with unique entries
-    #ax.legend(legend_handles.values(), legend_handles.keys(), loc='upper left', bbox_to_anchor=(1, 1))
+    #Get the count of rows we ended up making and add spines to each except the last
+    ax_count = len(axs)
+    #If need to adjust anything else about all the charts, do it here
+    for row in range(ax_count):
+        if row == 0:
+            left=True
+            right=True
+            top=True
+            bottom=False
+        elif row > 0 and row < ax_count+label_row:
+            left=True
+            right=True
+            top=False
+            bottom=False
+        elif row == ax_count+label_row:
+            left=False
+            right=False
+            top=True
+            bottom=False
+        elif row == ax_count+legend_row:
+            left=False
+            right=False
+            top=False
+            bottom=False
 
-    # Show Y ticks and labels, and positiion inside the graph
-    ax.tick_params(labelleft=True, left=True)
-    ax.tick_params(axis='y', direction='in', pad=-20, labelsize=10)  # Adjust the pad parameter to fine-tune the position
-    
-    plt.tight_layout()
+        else:
+            pass #ERROR!!!
+        
+        axs[row].spines['left'].set_visible(left)
+        axs[row].spines['right'].set_visible(right)
+        axs[row].spines['top'].set_visible(top)
+        axs[row].spines['bottom'].set_visible(bottom)
+
+        for spine in axs[row].spines.values():
+            spine.set_linewidth(0.4)
+
+        
+        # #Draw borders of graph
+        # for spine in axs[row].spines.values():
+        #     spine.set_linewidth(0.4)
+        #     spine.set_visible(True)
+        #     if row == ax_count+label_row: 
+        #         #turn off the spines we don't want on the bottom space
+        #         axs[row].spines['left'].set_visible(False)
+        #         axs[row].spines['bottom'].set_visible(False)
+        #         axs[row].spines['right'].set_visible(False)
+        #     elif row == ax_count + legend_row:
+        #         spine.set_visible(False)
+        #     else:
+        #         #anything else specific to the main charts and not the space in the footer
+        #         pass
+
+    # Adjust vertical spacing between subplots
+    plt.subplots_adjust(hspace=0)
 
     debugging = False
     if debugging:
         #To help with Debugging, draw lines on the graph for each day
-        #
-        # Draw thin vertical lines at the start of each day
-        for day in pd.date_range(start=start_date,
-                            end=end_date,
-                            freq='D'):
-            ax.axvline(x=day, color='gray', linestyle='--', linewidth=0.5)
-        # Show the day number for every 5th day
+        for row in range(ax_count-label_row):
+            for day in pd.date_range(start=start_date,
+                                end=end_date,
+                                freq='D'):
+                axs[row].axvline(x=day, color='gray', linestyle='--', linewidth=0.5)
+        #Draw ticks only on the bottom one
+        axs[ax_count-1].set_facecolor('none') #make the bottom graph transparent so we can see the ticks from above 
+        bottom_chart = ax_count - 2
         day_numbers = pd.date_range(start=start_date, end=end_date, freq='3D')
-        ax.set_xticks(day_numbers)
-        ax.set_xticklabels([day.strftime('%m-%d') for day in day_numbers], fontsize=6, rotation=45, ha='center')
-        ax.tick_params(axis='x', direction='inout', pad=0)
-        ax.tick_params(labelbottom=True, bottom=True)
+        axs[bottom_chart].set_xticks(day_numbers)
+        axs[bottom_chart].set_xticklabels([day.strftime('%m-%d') for day in day_numbers], fontsize=5, rotation=90, ha='center')
+        axs[bottom_chart].tick_params(axis='x', direction='inout', pad=0)
+        axs[bottom_chart].tick_params(labelbottom=True, bottom=True)
 
-    
     # Output the data as text
-    st.write(f"Recording start: {start_date}, Recording end: {end_date}")
+    st.write(f"First recording: {start_date.strftime('%m-%d')}, Last recording: {end_date.strftime('%m-%d')}")
     report = ""
     found_valid_dates=0
     for p in pulses:
@@ -1248,15 +1316,18 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
                 phase_end = pulse_data[p][phase][end_str].strftime("%m-%d")
                 report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
                 found_valid_dates+=1
-    if found_valid_dates:
-        st.write(report, unsafe_allow_html=True)
 
-    if len(pulse_data[abandoned]):
-        report = "Abandoned:"
-        for a in pulse_data[abandoned]:
-            report += f"{a}: {pulse_data[abandoned][a].strftime('%m-%d')}"
-        st.write(report)
-
+    if found_valid_dates or len(abandoned_dict):
+        with st.expander("Show pulse dates"):
+            st.write(report, unsafe_allow_html=True)
+            if len(abandoned_dict):
+                report = "Abandoned:<br>"
+                for a in abandoned_dict:
+                    report += f"{a}: {abandoned_dict[a].strftime('%m-%d')}"
+                st.write(report, unsafe_allow_html=True)
+    
+    axs[legend_row].cla()
+    
     st.write(fig)
 
     return fig
@@ -2304,7 +2375,17 @@ for site in target_sites:
     #list of month positions in the graphs
     month_locs = {} 
     #default color map
-    cmap = {data_col[malesong]:'Greens', data_col[courtsong]:'Oranges', data_col[altsong2]:'Purples', data_col[altsong1]:'Blues', 'bad':'Black'}
+    cmap = {data_col[malesong]:'Greens', 
+            data_col[courtsong]:'Oranges', 
+            data_col[altsong2]:'Purples', 
+            data_col[altsong1]:'Blues', 
+            'bad':'Black'}
+    cmap_pm = {'Male':'Greens', 
+               'Female':'Purples', 
+               'Young Nestling':'Blues', 
+               'Mid Nestling':'Blues', 
+               'Old Nestling':'Blues', 
+               'Fledgling':'Greys'}
 
     #Summary graph -- new 3/2024
     if make_all_graphs:
@@ -2353,8 +2434,6 @@ for site in target_sites:
 
     # Pattern Matching Analysis
     if not pt_pm.empty:
-        cmap_pm = {'Male':'Greens', 'Female':'Purples', 'Young Nestling':'Blues', 'Mid Nestling':'Blues', 
-                   'Old Nestling':'Blues', 'Fledgling':'Reds'}
         graph = create_graph(df = pt_pm, 
                             row_names = pm_file_types, 
                             cmap = cmap_pm, 
@@ -2377,7 +2456,7 @@ for site in target_sites:
         output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
 
     #Create a graphic for our legend, only draw it if needed
-    draw_cmap(cmap, make_all_graphs)
+    draw_cmap_legend(cmap_pm, make_all_graphs)
     if save_files and not make_all_graphs:
         output_cmap()
 
