@@ -7,11 +7,8 @@ import matplotlib as mpl
 mpl.use('WebAgg') #Have to select the backend before doing other imports
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
-import matplotlib.dates as mdates
-import matplotlib.patches as patches
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
-from matplotlib.dates import DateFormatter
 
 from pathlib import Path
 import os
@@ -248,7 +245,26 @@ pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
                 phase_flg : [pulse_first_fldg, pulse_last_fldg]}
 
 
-pm_file_types = ['Male', 'Female', 'Young Nestling', 'Mid Nestling', 'Old Nestling', 'Fledgling']
+#
+#Pattern Matching Files
+#edit this if we add/remove file types
+pm_file_types = ['Male', 
+                 'Female', 
+                 'Hatchling', 
+                 'Nestling',
+                #  'Young Nestling', 
+                #  'Mid Nestling', 
+                #  'Old Nestling',
+                 'Fledgling', 
+]
+pm_friendly_names = {}
+for f in pm_file_types:
+    if f == "Fledgling":
+        pm_friendly_names[f] = f"PM-{f[0:2]}".upper()
+    else:
+        pm_friendly_names[f] = f"PM-{f[0]}".upper()
+
+
 
 missing_data_flag = -100
 preserve_edges_flag = -99
@@ -545,6 +561,11 @@ def set_pm_data_date_range(pm_data:pd.DataFrame, date_range_dict:dict) -> pd.Dat
 # These are the files from all the folders named by site. 
 # Note that if there is no data, then there will be an empty file
 # (Feb 2024: Not doing this anymore:) However, if there are any missing files then we should return an empty DF
+#TODO: Is this right?                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#Especially now that we're transitioning from one set of files to another, we'll have incomplete
+#sites for some time. Instead, probably should return whatever we get back, adding columns with 
+#the right headers but empty data for any missing columns. Then make the graphing code robust enough
+#to deal with columns with zeros.
 def load_pm_data(site:str) -> pd.DataFrame:
     # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building.
@@ -2344,7 +2365,7 @@ for site in target_sites:
                 pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, pm_date_range_dict)
                 #Concat as above
                 pt_pm = pd.concat([pt_pm, pt_for_file_type])
-    else:
+    else: #TODO Should just graph what we get unless the data is completely missing
         st.write("All pattern matching data not available -- missing some or all files")
 
 
@@ -2384,8 +2405,11 @@ for site in target_sites:
                'Female':'Purples', 
                'Young Nestling':'Blues', 
                'Mid Nestling':'Blues', 
-               'Old Nestling':'Blues', 
-               'Fledgling':'Greys'}
+               'Old Nestling':'Blues',
+               'Fledgling':'Greys',
+               "Hatchling":"Blues",
+               "Nestling" :"Blues"
+               }
 
     #Summary graph -- new 3/2024
     if make_all_graphs:
@@ -2505,14 +2529,8 @@ if not make_all_graphs and len(df_site):
         }
         overview.append(make_final_pt(pt_edge, edge_cols, friendly_names))
 
-        friendly_names =   {pm_file_types[0]: 'PM-M',
-                            pm_file_types[1]: 'PM-F',
-                            pm_file_types[2]: 'PM-YN',
-                            pm_file_types[3]: 'PM-MN',
-                            pm_file_types[4]: 'PM-ON',
-                            pm_file_types[5]: 'PM-FL'
-        }
-        overview.append(make_final_pt(pt_pm, pm_file_types, friendly_names))
+        #Pattern Matching 
+        overview.append(make_final_pt(pt_pm, pm_file_types, pm_friendly_names))
 
         #Add weather at the end
         if len(weather_by_type):
