@@ -1,4 +1,3 @@
-Logging started 07-Feb-24 14:29:35
-07-Feb-24 14:29:38: Data for site 2022 Hulen Levee - Thistle has the wrong year in it, older than its year
-07-Feb-24 14:29:40: Data for site 2022 Sandy Mush S Gurr has the wrong year in it, older than its year
-07-Feb-24 14:29:41: Data for site 2022 WC-WR1 has the wrong year in it, older than its year
+Logging started 12-Mar-24 18:40:19
+12-Mar-24 18:40:21: Missing pattern matching file C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\2023 Hale Road\2023 Hale Road Nestling.csv
+12-Mar-24 18:40:21: Second date is ND, but first date is not: P2 Hatch:after end, P2 First Fldg Call:ND
