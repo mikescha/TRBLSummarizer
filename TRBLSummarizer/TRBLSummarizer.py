@@ -29,7 +29,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
@@ -189,13 +189,42 @@ weather_tmax = 'TMAX'
 weather_tmin = 'TMIN'
 weather_cols = [weather_prcp, weather_tmax, weather_tmin]
 
+graph_summary = "Summary"
 graph_man = 'Manual Analysis'
 graph_miniman = 'Mini Man Analysis'
 graph_edge = 'Edge Analysis'
 graph_pm = 'Pattern Matching Analysis'
 graph_weather = 'Weather'
-graph_names = [graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
+graph_names = [graph_summary, graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
 legend_name = 'legend.png'
+legend_text = {graph_summary: ["Settlement", "Incubation", "Brooding", "Fledgling"],
+               graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call"],
+               graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call", "Fledgling Call"],
+               graph_edge: ["Male Chorus", "Hatchling Call"],
+               graph_pm: ["Male Song", "Female Chatter", "Hatchling/Nestling Call", "Fledgling Call"]
+}
+
+#default color map
+cmap = {data_col[malesong]:'Greens', 
+        data_col[courtsong]:'Oranges', 
+        data_col[altsong2]:'Purples', 
+        data_col[altsong1]:'Blues', 
+        "Fledgling":"Greys"}
+
+#TODO: Combine this dictionary with the one above, to make maintenace easier
+cmap_names = {data_col[malesong]:"Male Song",
+              data_col[courtsong]:"Male Chorus",
+              data_col[altsong2]:"Female Chatter",
+              data_col[altsong1]:"Hatchling/Nestling/\nFledgling Call",
+              "Fledgling":"Fledgling Call"} 
+
+cmap_pm = {"Male":"Greens", 
+           "Female":"Purples", 
+           "Hatchling":"Blues",
+           "Nestling" :"Blues",
+           "Fledgling":'Greys',
+            }
+
 
 #Files, paths, etc.
 data_foldername = 'Data/'
@@ -235,7 +264,7 @@ pulse_numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
 summary_date_cols = [p + ' ' + d for p in pulses for d in pulse_date_types]
 summary_numeric_cols = [p + ' ' + n for p in pulses for n in pulse_numeric_types]
 
-phase_mcs = "Male Chorus"
+phase_mcs = "Settlement"
 phase_inc = "Incubation"
 phase_brd = "Brooding"
 phase_flg = "Fledgling"
@@ -252,14 +281,12 @@ pm_file_types = ['Male',
                  'Female', 
                  'Hatchling', 
                  'Nestling',
-                #  'Young Nestling', 
-                #  'Mid Nestling', 
-                #  'Old Nestling',
                  'Fledgling', 
 ]
 pm_friendly_names = {}
 for f in pm_file_types:
     if f == "Fledgling":
+        #Make the friendly name be "FL", handle it this way as it's the only one where we want two chars
         pm_friendly_names[f] = f"PM-{f[0:2]}".upper()
     else:
         pm_friendly_names[f] = f"PM-{f[0]}".upper()
@@ -744,7 +771,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 result2 = summary_dict[summary_last_rec]
             elif value2 == nd_string:
                 if not value1 == nd_string:
-                    log_error("Second date is ND, but first date is not") 
+                    log_error(f"Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
             else: #ND, empty, or any other values are not valid here  #TODO If ND, then confirm that the start was also ND else error
                 log_error("Found invalid data in site summary data")
             
@@ -1006,38 +1033,37 @@ def output_cmap():
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
 
-def draw_cmap_legend(cmap:dict, make_all_graphs:bool):
-    good_cmap = cmap.copy()
-    # del good_cmap["bad"]
-
-    friendly_names={'Male':'Male\nChorus', 
-                    'Female':'Incubation', 
-                    'Young Nestling':'Brooding', 
-                    "Fledgling":'Fledgling'}
-
+def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
     gradient = np.linspace(0, 1, 256)
     gradient = np.vstack((gradient, gradient))
 
-    fig = plt.figure(figsize=(fig_w*0.75, fig_h*0.28), layout='constrained')
-    gs = fig.add_gridspec(nrows=1, ncols=len(friendly_names), wspace=0)
+    #Create the figure, 25% of the height of the other graphs
+    fig = plt.figure(figsize=(fig_w, fig_h*0.25), layout='constrained')
+    #Add one grid square for each colormap
+    gs = fig.add_gridspec(nrows=1, ncols=len(cmap_names), wspace=0)
     axs = gs.subplots()
 
-    for ax, call_type in zip(axs, friendly_names):
-        ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[good_cmap[call_type]])
-
-        ax.text(1.02, 0.5, friendly_names[call_type], verticalalignment='center', horizontalalignment='left',
-                fontsize=8, transform=ax.transAxes)
+    for ax, call_type in zip(axs, cmap_names):
+        #Draw the gradient
+        ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[cmap[call_type]])
+        #Add a border
         ax.add_patch(Rectangle((0,0), 1, 1, ec='black', fill=False, transform=ax.transAxes))
+        #Add the name
+        ax.text(1.03, 0.5, cmap_names[call_type], verticalalignment='center', horizontalalignment='left',
+                fontsize=6, transform=ax.transAxes)
         
-    # Turn off *all* ticks & spines, not just the ones with colormaps.
+    # Turn off all axes, so we don't draw any ticks, spines, labels, etc.
     for ax in axs:
         ax.set_axis_off()
-    
-    col1, col3, col5= st.columns([1,4, 1])
-    with col3:
-        if not make_all_graphs:
-            st.pyplot(fig)
+
+    if not make_all_graphs:
+        st.pyplot(fig)
+
+    if save_files and not make_all_graphs:
+        output_cmap()
+
     return
+
 
 def month_days_between_dates(start_date, end_date):
     date_range = pd.date_range(start=start_date, end=end_date, freq='D')
@@ -1094,7 +1120,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
     elif summary_graph:
         y = 0.2
         target_ax = -2
-        font_size = 6  #TODO figure out why the fonts need to be adjusted like this
+        font_size = 7  #TODO figure out why the fonts need to be adjusted like this
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
 
@@ -1128,49 +1154,67 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
 # note that if the fontsize is too big, then the title will become the largest thing 
 # in the figure which causes the graph to shrink!
 def plot_title(title:str):
-    plt.suptitle(' '+title, fontsize=10, x=0, horizontalalignment='left')
+    plt.suptitle(' ' + title, x=0, y=1,
+                 fontsize=10, horizontalalignment='left')
 
-def add_watermark(title:str):
-    # Function that adds additional text to the right of the existing suptitle
-    title = ' '+title
-    # Find the suptitle in the figure
-    suptitle = [t for t in plt.gcf().texts if t.get_text() == title][0]
+# Mar 2024, this is unused so I'm going to comment it out for now, but keeping it just in case...
+# def add_watermark(title:str):
+#     # Function that adds additional text to the right of the existing suptitle
+#     title = ' '+title
+#     # Find the suptitle in the figure
+#     suptitle = [t for t in plt.gcf().texts if t.get_text() == title][0]
 
-    # Get the figure coordinates of the suptitle without changing its position
-    suptitle_extent = suptitle.get_window_extent(renderer=plt.gcf().canvas.get_renderer())
+#     # Get the figure coordinates of the suptitle without changing its position
+#     suptitle_extent = suptitle.get_window_extent(renderer=plt.gcf().canvas.get_renderer())
 
-    # Convert suptitle extent to figure coordinates
-    fig_position = suptitle_extent.transformed(plt.gcf().transFigure.inverted())
+#     # Convert suptitle extent to figure coordinates
+#     fig_position = suptitle_extent.transformed(plt.gcf().transFigure.inverted())
 
-    # Add additional red text to the right of the suptitle
-    additional_text = dt.now().strftime("%Y-%m-%d %H:%M:%S")
-    figtext_x = fig_position.x1 + 0.02  # Adjust the value to position the text
-    figtext_y = fig_position.y0 + (fig_position.y1 - fig_position.y0) / 2  # Center vertically
-    plt.figtext(figtext_x, figtext_y, additional_text, ha='left', va='center', color='gray', fontsize=8)
+#     # Add additional red text to the right of the suptitle
+#     additional_text = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+#     figtext_x = fig_position.x1 + 0.02  # Adjust the value to position the text
+#     figtext_y = fig_position.y0 + (fig_position.y1 - fig_position.y0) / 2  # Center vertically
+#     plt.figtext(figtext_x, figtext_y, additional_text, ha='left', va='center', color='gray', fontsize=8)
     
 
 #
 # Custom graphing code to make the summary     
 #
-def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
+def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool) -> plt.figure:
     pc = pulse_data[pulse_count]
-    chart_height = 0.25  # In inches
-    #Rows_for_labels allows an extra row in the chart for the caption at the bottom, probably want to leave this off 
-    #when doing the combined graph
+    #Rows_for_labels allows 1 row for the labels, and 1 row for the legend
     rows_for_labels = 2
-    legend_row = -1
-    label_row = -2
+    legend_row = -1  # means it's the last row
+    label_row = -2   # means it's the second-to-last row
+    total_rows = pc + rows_for_labels    
+
+    #This number is the percentage of the height, starting from the botom of the chart that we're gonig to reserve
+    #for the charts themselves. 
+    gap_for_title = 0.72 + (pc * 0.04)
+#    gap_for_title = 0.88 #Good for 4 rows
+#    gap_for_title = 0.76 #Good for 1 row
+
+    chart_height = 0.25  # In inches
     figsize = (fig_w, (pc + rows_for_labels) * chart_height) 
 
     #create a chart that has pc+rows_for_labels rows, and 1 column
-    fig, axs = plt.subplots(pc + rows_for_labels, 1, figsize=figsize, sharex=True, sharey=True) 
+    fig, axs = plt.subplots(nrows = total_rows, ncols=1, 
+                            figsize=figsize, sharex=True, sharey=True, 
+                            gridspec_kw={'height_ratios': np.repeat(1,total_rows), 
+                                         'left':0, 'right':1, 'bottom':0, 'top':gap_for_title,
+                                         'hspace':0},  #hspace is row spacing (gap between rows)
+    ) 
+
+    plot_title("Inferred Timing of Breeding Stages")
+    plt.subplots_adjust(left=0.0)
 
     # Color options here: https://matplotlib.org/stable/gallery/color/named_colors.html
     phase_color = {
         phase_mcs : "seagreen",
         phase_inc : "mediumpurple",
         phase_brd : "steelblue",
-        phase_flg : "black"
+        phase_flg : "black",
+        "Abandoned" : "red"
     }
     background_color = "white"
     
@@ -1192,7 +1236,9 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
 
     #Draw all our boxes
     pulses_graphed = {}
-    legend_elements = {}
+    #As of now, she wants all phases in the legend, not just the ones that actually occurred. If she changes her mind, 
+    #then uncomment the line below plus the rest as appropriate
+    #legend_elements = {}  
     row_count = 0
     abandoned_dict = {}
     for i, (p, data) in enumerate(pulse_data.items()):
@@ -1214,8 +1260,8 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
                     if p not in pulses_graphed:
                         pulses_graphed[p] = row_count   # save the pulse name plus the axis that it went into
 
-                    if phase not in legend_elements:
-                         legend_elements[phase] = color
+                    # if phase not in legend_elements:
+                    #      legend_elements[phase] = color
 
             #Apply the marker for abandonded colony on top of the data after we've drawn the row
             if abandoned in pulse_data[p]:
@@ -1224,21 +1270,33 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
                 width = timedelta(days=1)
                 height = 1
                 rect = Rectangle(start_point, width, height, 
-                            color='red', alpha=1, zorder=5,
+                            color=phase_color["Abandoned"], alpha=1, zorder=5,
                             label=abandoned)
                 axs[row_count].add_patch(rect)
-                if abandoned not in legend_elements:
-                    legend_elements[abandoned] = 'red'
+                graphed_something = True
+
+                # if abandoned not in legend_elements:
+                #     legend_elements[abandoned] = 'red'
 
             #Not all pulses will have graphable data, so we only want to change axis if there was something to graph
             if graphed_something:
                 row_count += 1
 
-    # Legendary
-    caption = ""
-    for item in legend_elements:
-        caption += f"{item}: {legend_elements[item]}  "
-    axs[legend_row].text(0.5, 0.5, s=caption, fontsize=6, va="center", ha="center", transform=axs[legend_row].transAxes) 
+    # Legendary!
+    box_height = 0.6 #axis coordinates
+    box_buffer = (1 - box_height)/2
+    box_width = 0.06
+    text_width = 0.135
+    gap = 0.005
+    width = box_width + gap + text_width #Comes to 0.2, or 20% of width, as we are doing up to 5 labels
+    total_legend_width = len(phase_color)*width
+    xpos = (1 - total_legend_width)/2 + 0.03 #Give it a little push to the right
+    for i, (caption, color) in enumerate(phase_color.items()):
+        legend_box = Rectangle(xy=(xpos,box_buffer), width=box_width, height=box_height, facecolor=color, transform=ax.transAxes)
+        axs[legend_row].add_patch(legend_box)
+        axs[legend_row].text(xpos+box_width+gap, y=0.5, s=caption, transform=ax.transAxes, 
+                             fontsize=6, color="black", verticalalignment="center")
+        xpos += width
 
     # Add the vertical lines and month names
     draw_axis_labels(days_per_month, axs, summary_graph=True)
@@ -1250,7 +1308,8 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
 
     #Get the count of rows we ended up making and add spines to each except the last
     ax_count = len(axs)
-    #If need to adjust anything else about all the charts, do it here
+    #If need to adjust anything else about all the charts, do it here. Right now, we're just making sure there
+    #is one border drawn around the outside of everything
     for row in range(ax_count):
         if row == 0:
             left=True
@@ -1272,7 +1331,6 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
             right=False
             top=False
             bottom=False
-
         else:
             pass #ERROR!!!
         
@@ -1283,22 +1341,6 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
 
         for spine in axs[row].spines.values():
             spine.set_linewidth(0.4)
-
-        
-        # #Draw borders of graph
-        # for spine in axs[row].spines.values():
-        #     spine.set_linewidth(0.4)
-        #     spine.set_visible(True)
-        #     if row == ax_count+label_row: 
-        #         #turn off the spines we don't want on the bottom space
-        #         axs[row].spines['left'].set_visible(False)
-        #         axs[row].spines['bottom'].set_visible(False)
-        #         axs[row].spines['right'].set_visible(False)
-        #     elif row == ax_count + legend_row:
-        #         spine.set_visible(False)
-        #     else:
-        #         #anything else specific to the main charts and not the space in the footer
-        #         pass
 
     # Adjust vertical spacing between subplots
     plt.subplots_adjust(hspace=0)
@@ -1320,36 +1362,33 @@ def create_summary_graph(pulse_data:dict, date_range:dict) -> plt.figure:
         axs[bottom_chart].tick_params(axis='x', direction='inout', pad=0)
         axs[bottom_chart].tick_params(labelbottom=True, bottom=True)
 
-    # Output the data as text
-    st.write(f"First recording: {start_date.strftime('%m-%d')}, Last recording: {end_date.strftime('%m-%d')}")
-    report = ""
-    found_valid_dates=0
-    for p in pulses:
-        empty_pulse = 1
-        for phase in pulse_phases:
-            if is_valid_date_pair(pulse_data[p][phase]):
-                #First time only per pulse, add the title
-                if empty_pulse:
-                    empty_pulse = 0
-                    report += f"-----Pulse {p}-----<br>"
+    # Output the data as text if we're doing one graph at a time
+    if not make_all_graphs:
+        st.write(f"First recording: {start_date.strftime('%m-%d')}, Last recording: {end_date.strftime('%m-%d')}")
+        report = ""
+        found_valid_dates=0
+        for p in pulses:
+            empty_pulse = 1
+            for phase in pulse_phases:
+                if is_valid_date_pair(pulse_data[p][phase]):
+                    #First time only per pulse, add the title
+                    if empty_pulse:
+                        empty_pulse = 0
+                        report += f"-----Pulse {p}-----<br>"
 
-                phase_start = pulse_data[p][phase][start_str].strftime("%m-%d")
-                phase_end = pulse_data[p][phase][end_str].strftime("%m-%d")
-                report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
-                found_valid_dates+=1
+                    phase_start = pulse_data[p][phase][start_str].strftime("%m-%d")
+                    phase_end = pulse_data[p][phase][end_str].strftime("%m-%d")
+                    report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
+                    found_valid_dates+=1
 
-    if found_valid_dates or len(abandoned_dict):
-        with st.expander("Show pulse dates"):
-            st.write(report, unsafe_allow_html=True)
-            if len(abandoned_dict):
-                report = "Abandoned:<br>"
-                for a in abandoned_dict:
-                    report += f"{a}: {abandoned_dict[a].strftime('%m-%d')}"
+        if found_valid_dates or len(abandoned_dict):
+            with st.expander("Show pulse dates"):
                 st.write(report, unsafe_allow_html=True)
-    
-    axs[legend_row].cla()
-    
-    st.write(fig)
+                if len(abandoned_dict):
+                    report = "Abandoned:<br>"
+                    for a in abandoned_dict:
+                        report += f"{a}: {abandoned_dict[a].strftime('%m-%d')}"
+                    st.write(report, unsafe_allow_html=True)
 
     return fig
 
@@ -1364,7 +1403,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     graph_drawn = []
     
     #distance between top of plot space and chart
-    top_gap = 0.8 if title != '' else 1
+    gap_for_title = 0.8 if title else 1
     #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
     tick_spacing = 0
 
@@ -1372,7 +1411,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     fig, axs = plt.subplots(nrows = row_count, ncols = 1,
                             sharex = 'col', 
                             gridspec_kw={'height_ratios': np.repeat(1,row_count), 
-                                         'left':0, 'right':1, 'bottom':0, 'top':top_gap,
+                                         'left':0, 'right':1, 'bottom':0, 'top':gap_for_title,
                                          'hspace':0},  #hspace is row spacing (gap between rows)
                             figsize=(fig_w,fig_h))
 
@@ -1493,7 +1532,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     # Draw a bounding rectangle around everything except the caption
     rect = plt.Rectangle(
         # (lower-left corner), width, height
-        (0.0, 0.0), 1.0, top_gap, 
+        (0.0, 0.0), 1.0, gap_for_title, 
         linewidth = 0.5, fill=False, zorder=1000, transform=fig.transFigure, figure=fig)
     fig.patches.extend([rect])
 
@@ -1523,7 +1562,7 @@ def remove_file(full_path:str) -> bool:
     
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
-    #Do nothing if we're on the server for now
+    #Do nothing if we're on the server, we can't save files there or download them without a lot of complexity
     if being_deployed_to_streamlit:
         return
 
@@ -1544,23 +1583,27 @@ def save_figure(site:str, graph_type:str, delete_only=False):
 
         #Figure out where the labels are. There's probably a way to do this in one call ...
         #maybe check the last axis?
-        if graph_type == graph_weather:
-            ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
-            legend = ax.get_legend()
-            bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
-            yOffset = 0.25
-            bb.y0 += yOffset
-            bb.y1 += yOffset
-            legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
+        if graph_type == graph_summary:
+            #for the summary graph, we dont want to do anything i don't think
+            pass
         else:
-            ax = plt.gca() #in the other graphs, it's in the last axis
-        
-        #Go find the month labels and remove them
-        for ge in ax.texts:
-            #if the word 'data' is there then it's one of the error messages, otherwise it's a month
-            if 'data' not in ge.get_text():
-                ge.remove()
-        # Now save the cleaned up version
+            if graph_type == graph_weather:
+                ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
+                legend = ax.get_legend()
+                bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+                yOffset = 0.25
+                bb.y0 += yOffset
+                bb.y1 += yOffset
+                legend.set_bbox_to_anchor(bb, transform = ax.transAxes)
+            else:
+                ax = plt.gca() #in the other graphs, it's in the last axis
+            
+            #Go find the month labels and remove them
+            for ge in ax.texts:
+                #if the word 'data' is there then it's one of the error messages, otherwise it's a month
+                if 'data' not in ge.get_text():
+                    ge.remove()
+            # Now save the cleaned up version
         plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches='tight')    
     
     else:
@@ -2395,21 +2438,6 @@ for site in target_sites:
 
     #list of month positions in the graphs
     month_locs = {} 
-    #default color map
-    cmap = {data_col[malesong]:'Greens', 
-            data_col[courtsong]:'Oranges', 
-            data_col[altsong2]:'Purples', 
-            data_col[altsong1]:'Blues', 
-            'bad':'Black'}
-    cmap_pm = {'Male':'Greens', 
-               'Female':'Purples', 
-               'Young Nestling':'Blues', 
-               'Mid Nestling':'Blues', 
-               'Old Nestling':'Blues',
-               'Fledgling':'Greys',
-               "Hatchling":"Blues",
-               "Nestling" :"Blues"
-               }
 
     #Summary graph -- new 3/2024
     if make_all_graphs:
@@ -2428,7 +2456,8 @@ for site in target_sites:
     else:
         target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
                                   end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
-    graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict)
+    graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
+    output_graph(site, graph_summary, save_files, make_all_graphs, len(site_summary_dict))
 
     # Manual analyisis graph
     if not pt_manual.empty:
@@ -2468,7 +2497,7 @@ for site in target_sites:
 
     # Edge Analysis
     if not pt_edge.empty:
-        cmap_edge = {c:'Greens' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+        cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
         graph = create_graph(df = pt_edge, 
                             row_names = edge_cols,
                             cmap = cmap_edge, 
@@ -2478,11 +2507,9 @@ for site in target_sites:
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
         output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
-
-    #Create a graphic for our legend, only draw it if needed
-    draw_cmap_legend(cmap_pm, make_all_graphs)
-    if save_files and not make_all_graphs:
-        output_cmap()
+    
+    #Draw the single legend for the rest of the charts and save to a file if needed
+    draw_legend(cmap, make_all_graphs, save_files)
 
     #Show weather, as needed and if available
     weather_by_type = {}
