@@ -1716,7 +1716,7 @@ def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
 
 # Load all the images that match the site name, combine them into a single composite,
 # and then save that out
-def combine_images(site:str, month_locs:dict):
+def combine_images(site:str, month_locs:dict, include_weather:bool):
     #if there are no months, then we didn't have any data to graph so don't make a composite
     if len(month_locs) == 0:
         return
@@ -1742,7 +1742,7 @@ def combine_images(site:str, month_locs:dict):
         composite = concat_images(*images)
         composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
         #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
-        if graph_weather in site_fig_dict.keys():
+        if graph_weather in site_fig_dict.keys() and include_weather:
             composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
         final = apply_decorations_to_composite(composite, month_locs)
         final.save(composite_path)
@@ -2515,7 +2515,7 @@ for site in target_sites:
                 output_graph(site, graph_weather, save_files, make_all_graphs)
     
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
-        combine_images(site, month_locs)
+        combine_images(site, month_locs, show_weather_checkbox)
         #TODO clean up by deleting all the files with "clean" in their name?
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
