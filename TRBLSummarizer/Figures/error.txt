@@ -1,1 +1,6 @@
-Logging started 13-Mar-24 14:40:53
+Logging started 13-Mar-24 15:08:17
+13-Mar-24 15:08:18: Second date is ND, but first date is not: P2 MC End:05/01/2023, P2 Hatch:ND
+13-Mar-24 15:08:18: Second date is ND, but first date is not: P3 MC End:06/02/2023, P3 Hatch:ND
+13-Mar-24 15:08:18: Second date is ND, but first date is not: P4 MC End:06/24/2023, P4 Hatch:ND
+13-Mar-24 15:08:24: RCRam-2023-04-21_14-00.WAV missing song tag
+13-Mar-24 15:08:24: RCRam-2023-04-24_08-00.WAV missing song tag

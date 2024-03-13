@@ -1112,7 +1112,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
-def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, summary_graph=False):
+def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, summary_graph=False, skip_month_names=False):
     font_size = 8
     target_ax = -1
     if weather_graph:
@@ -1120,6 +1120,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
     elif summary_graph:
         y = 0.2
         target_ax = -2
+        target_ax = -1  #TEMPORARILY
         font_size = 7  #TODO figure out why the fonts need to be adjusted like this
     else:
         y = 1.9+(0.25 if len(axs)>4 else 0)
@@ -1134,9 +1135,9 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
         #   in the month
         center_pt = int((month_lengths[month])/2)
         mid = x + center_pt
-
-        axs[target_ax].text(x=mid, y=y, s=month, 
-                     fontsize=font_size, va="bottom", ha="center") 
+        if not skip_month_names:
+            axs[target_ax].text(x=mid, y=y, s=month, 
+                        fontsize=font_size, va="bottom", ha="center") 
 
         x += month_lengths[month]
         if n < month_count:
@@ -1184,13 +1185,14 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
     pc = pulse_data[pulse_count]
     #Rows_for_labels allows 1 row for the labels, and 1 row for the legend
     rows_for_labels = 2
+    rows_for_labels = 1 #TEMPORARILY GETTING RID OF DATE
     legend_row = -1  # means it's the last row
     label_row = -2   # means it's the second-to-last row
     total_rows = pc + rows_for_labels    
 
-    #This number is the percentage of the height, starting from the botom of the chart that we're gonig to reserve
+    #This number is the percentage of the height, starting from the botom of the chart that we're going to reserve
     #for the charts themselves. 
-    gap_for_title = 0.72 + (pc * 0.04)
+    gap_for_title = 0.62 + (pc * 0.06)  #TEMPORARILY was 0.72, 0.04
 #    gap_for_title = 0.88 #Good for 4 rows
 #    gap_for_title = 0.76 #Good for 1 row
 
@@ -1299,7 +1301,7 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
         xpos += width
 
     # Add the vertical lines and month names
-    draw_axis_labels(days_per_month, axs, summary_graph=True)
+    draw_axis_labels(days_per_month, axs, summary_graph=True, skip_month_names=True)
 
     # Draw the labels for each pulse
     for p in pulses_graphed:
@@ -1321,15 +1323,16 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
             right=True
             top=False
             bottom=False
-        elif row == ax_count+label_row:
-            left=False
-            right=False
-            top=True
-            bottom=False
+        #WAS ...
+        # elif row == ax_count+label_row:
+        #     left=False
+        #     right=False
+        #     top=True
+        #     bottom=False
         elif row == ax_count+legend_row:
             left=False
             right=False
-            top=False
+            top=True
             bottom=False
         else:
             pass #ERROR!!!
