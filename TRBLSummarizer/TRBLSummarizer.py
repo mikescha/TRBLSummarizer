@@ -29,7 +29,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 #TODO
 # 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
@@ -1822,15 +1822,16 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
         mask = (site_weather['date'] >= date_range_dict[start_str]) & (site_weather['date'] <= date_range_dict[end_str])
         site_weather = site_weather.loc[mask]
 
-        # For each type of weather, break out that type into a separate table and 
-        # drop it into a dict. Then, reindex the table to match our date range and 
-        # fill in empty values
-        date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
-        for w in weather_cols:
-            site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
-            #reindex the table to match our date range and fill in empty values
-            site_weather_by_type[w]  = site_weather_by_type[w].set_index('date')
-            site_weather_by_type[w]  = site_weather_by_type[w].reindex(date_range, fill_value=0)         
+        if not site_weather.empty:
+            # For each type of weather, break out that type into a separate table and 
+            # drop it into a dict. Then, reindex the table to match our date range and 
+            # fill in empty values
+            date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+            for w in weather_cols:
+                site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
+                #reindex the table to match our date range and fill in empty values
+                site_weather_by_type[w]  = site_weather_by_type[w].set_index('date')
+                site_weather_by_type[w]  = site_weather_by_type[w].reindex(date_range, fill_value=0)         
     else:
         st.write(f"No weather available for {site_name}")
         #show_error('No weather available for ' + site_name)
@@ -2234,6 +2235,7 @@ save_files = False
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
     target_sites = site_list[site_str]
+    target_sites = [string for string in target_sites if string.startswith("2023 ")]
 else:
     target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
     if not being_deployed_to_streamlit:
@@ -2440,22 +2442,10 @@ for site in target_sites:
     month_locs = {} 
 
     #Summary graph -- new 3/2024
-    if make_all_graphs:
-        #Calculate the min and max from across all sites.
-        #TODO Move this to another place as we don't need to recalculate it each time
-        min_date_df = pd.to_datetime(summary_df[summary_first_rec], errors='coerce')
-        valid_dates = min_date_df.dropna()
-        earliest_date = valid_dates.min()
-
-        max_date_df = pd.to_datetime(summary_df[summary_last_rec], errors='coerce')
-        valid_dates = max_date_df.dropna()
-        latest_date = valid_dates.min()
-
-        target_date_range_dict = {start_str:earliest_date.strftime('%m-%d-%Y'),
-                                  end_str:latest_date.strftime('%m-%d-%Y')}
-    else:
-        target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
-                                  end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
+    #TODO Make a version of this that creates ALL the summary graphs, and only the summary graphs, then 
+    #puts them together into one big picture
+    target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
+                              end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
     graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
     output_graph(site, graph_summary, save_files, make_all_graphs, len(site_summary_dict))
 
@@ -2520,8 +2510,9 @@ for site in target_sites:
             date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
             # Load and parse weather data
             weather_by_type = get_weather_data(site, date_to_use)
-            graph = create_weather_graph(weather_by_type, site)
-            output_graph(site, graph_weather, save_files, make_all_graphs)
+            if weather_by_type:
+                graph = create_weather_graph(weather_by_type, site)
+                output_graph(site, graph_weather, save_files, make_all_graphs)
     
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs)
