@@ -1,3 +1,6 @@
-Logging started 12-Mar-24 18:40:19
-12-Mar-24 18:40:21: Missing pattern matching file C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\2023 Hale Road\2023 Hale Road Nestling.csv
-12-Mar-24 18:40:21: Second date is ND, but first date is not: P2 Hatch:after end, P2 First Fldg Call:ND
+Logging started 12-Mar-24 20:53:11
+12-Mar-24 20:53:28: SRam-2023-04-23_12-00.WAV missing song tag
+12-Mar-24 20:53:28: SRam-2023-04-26_10-00.WAV missing song tag
+12-Mar-24 20:53:28: SRam-2023-04-26_12-00.WAV missing song tag
+12-Mar-24 20:53:28: SRam-2023-04-23_12-00.WAV missing song tag
+12-Mar-24 20:53:28: SRam-2023-04-26_12-00.WAV missing song tag
