@@ -2258,6 +2258,8 @@ for site in target_sites:
     pt_mini_manual = pd.DataFrame()
     pt_edge = pd.DataFrame()
 
+    #TODO Log error if df_site is empty
+    #TODO If dates of PM, Edge, and *-Min
     if not df_site.empty:
         #Using the site of interest, get the first & last dates and give the user the option to customize the range
         date_range_dict = get_date_range(df_site, make_all_graphs, container_top)
