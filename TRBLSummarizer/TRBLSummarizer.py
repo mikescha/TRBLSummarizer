@@ -31,12 +31,6 @@ profiling = False
 #Set to true before we deploy
 being_deployed_to_streamlit = True
 
-#TODO
-# 2022 Foley Ranch A, Edge Analysis, tag p1n is getting the message that there's no data but 
-#   also gets the boxes drawn like there is data 
-# 
-# Consider adding the code to write to temp files and then allow the composite image to be
-#   downloaded when the script is deployed to streamlit
 
 # Constants and Globals
 #
@@ -211,13 +205,13 @@ cmap = {data_col[malesong]:'Greens',
         data_col[altsong1]:'Blues', 
         "Fledgling":"Greys"}
 
-#TODO: Combine this dictionary with the one above, to make maintenace easier
 cmap_names = {data_col[malesong]:"Male Song",
               data_col[courtsong]:"Male Chorus",
               data_col[altsong2]:"Female Chatter",
               data_col[altsong1]:"Hatchling/Nestling/\nFledgling Call",
               "Fledgling":"Fledgling Call"} 
 
+#color map for pattern matching
 cmap_pm = {"Male":"Greens", 
            "Female":"Purples", 
            "Hatchling":"Blues",
@@ -383,7 +377,10 @@ def get_target_sites() -> dict:
                 #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
                 s=item.name
                 if s in all_sites:
-                    #TODO: Of all the rest of the code in this section, what is actually needed now that the PM files are downloaded automatically?
+                    #NOTE: Now that the PM files are downloaded automatically, much of this is no longer necessary. However, it's not 
+                    #      a bad thing to have checks for things like subfolders where they shouldn't be. But if this becomes a 
+                    #      maintenance issue, then I should be able to just kill everything except checking that the count is right. 
+                    
                     #Get a list of all files in that directory, scan for files that match our pattern
                     if any(os.scandir(item)):
                         #Check that each type of expected file is there:
@@ -512,8 +509,22 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
 #   p2 not allowed
 #   p3 except p3f
 
+def fix_bad_values(df:pd.DataFrame):
+    """
+    This function finds columns containing "---", prints a warning message,
+    and replaces all "---" with 0 in-place within the DataFrame. Note that the way python works,
+    I'm actually modifying the original!
+    """
+    for col in df.columns:
+        if col.startswith("tag") and -100 in df[col].values:
+            log_error(f'Column {col} contains "---"')
+            df[col] = df[col].replace(-100, 0)
+
 def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     error_found = False
+
+    #Remove any -100 (were "---" in the original file, converted to numbers in the first cleaning pass) and log it, if there are any
+    fix_bad_values(df)
 
     # For each day, there should be only either P1F or P1N, never both
     tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
@@ -523,25 +534,6 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
         show_error("Found recordings that have both P1F and P1N tags, see log")
         for f in tag_errors[filename_str]: 
             log_error(f"{f}\tRecording has both P1F and P1N tags")
-    
-    # If there's a P1C or P2C tag, then the value for CourtshipSong should be zero or 1, any other value is an error and should be flagged 
-    # If there's a P1N or P2N tag, then the value for AlternativeSong should be zero or 1, any other value is an error and should be flagged 
-    error_case = {data_col[tag_p1c] : data_col[courtsong],
-                  data_col[tag_p2c] : data_col[courtsong],
-                  data_col[tag_p1n] : data_col[altsong1],
-                  data_col[tag_p2n] : data_col[altsong1],
-    }
-    tag_errors = pd.DataFrame()
-
-    #TODO Any columns that start "val" can have counts greater than 1 or "---", do not flag those as errors 
-    for e in error_case:
-        tag_errors = pd.concat([tag_errors, df.loc[(df[e] >= 1) & (df[error_case[e]] > 1)]])
-
-    if len(tag_errors):
-        error_found = True
-        show_error("Found recordings that have song count > 1 for edge analysis, see log")
-        for f in tag_errors[filename_str]:
-            log_error(f"{f}\tRecording has soung count > 1")
 
     return error_found 
 
@@ -571,31 +563,17 @@ def load_data() -> pd.DataFrame:
                      index_col = [data_col[date_str]])
     return df
 
-#TODO Is this needed
-def set_pm_data_date_range(pm_data:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
-    df_temp = pm_data
-
-    if len(df_temp):
-        pass #anything to do?
-    else: # if the file is empty, make an empty table so the graphing code has something to work with
-        df_temp[date_str] = pd.date_range(date_range_dict[start_str], date_range_dict[end_str])
-        df_temp[validated] = 0
-        #pt = pt.reindex(date_range).fillna(0)
-
-    return df_temp
 
 # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
 # These are the files from all the folders named by site. 
-# Note that if there is no data, then there will be an empty file
-# (Feb 2024: Not doing this anymore:) However, if there are any missing files then we should return an empty DF
-#TODO: Is this right?                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#Especially now that we're transitioning from one set of files to another, we'll have incomplete
-#sites for some time. Instead, probably should return whatever we get back, adding columns with 
-#the right headers but empty data for any missing columns. Then make the graphing code robust enough
-#to deal with columns with zeros.
+# If there is a missing file, we want to have the data for that type of pattern be empty, adding columns with 
+# the right headers but empty data for any missing columns. Then make the graphing code robust enough
+# to deal with columns with zeros.
 def load_pm_data(site:str) -> pd.DataFrame:
     # For each type of file for this site, try to load the file. 
-    # Add a column to indicate which type it is. Then append it to the dataframe we're building.
+    # Add a column to indicate which type it is. Then append it to the dataframe we're building. We end up with a 
+    # table that has the site, date, and type columns with all the PM data in rows below. So, if there were 1000 PM 
+    # events for each type, our table would have 5000 rows. 
     df = pd.DataFrame()
     usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
             site_columns['day'], site_columns[validated]]
@@ -608,7 +586,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
             full_file_name = site_dir / fname
 
             df_temp = pd.DataFrame()
-            if is_non_zero_file(full_file_name):
+            if is_non_zero_file(full_file_name): #should never be non-zero, but just in case...
                 #Validate that all columns exist, and abandon ship if we're missing any
                 headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
                 missing_columns = confirm_columns(site_columns, headers, fname)
@@ -624,7 +602,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
                     log_error(f"Columns {missing_columns} are missing from pattern matching file!")
                     return pd.DataFrame()
             else:
-                log_error(f"Missing pattern matching file {full_file_name}")
+                log_error(f"Missing or empty pattern matching file {full_file_name}")
                 #Add an empty date column so we don't have a mismatch for the concat
                 df_temp[date_str] = []
 
@@ -640,7 +618,6 @@ def load_pm_data(site:str) -> pd.DataFrame:
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
     #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
-
     data_csv = Path(__file__).parents[0] / files[summary_file]
 
     #Load up the file
@@ -772,7 +749,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
             elif value2 == nd_string:
                 if not value1 == nd_string:
                     log_error(f"Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
-            else: #ND, empty, or any other values are not valid here  #TODO If ND, then confirm that the start was also ND else error
+            else: #ND, empty, or any other values are not valid here
                 log_error("Found invalid data in site summary data")
             
             pulse_result[phase] = {"start":result1, "end":result2}
@@ -846,7 +823,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     df_clean = df_clean.replace('---', missing_data_flag)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
-    for s in all_songs:
+    for s in all_songs + all_tags:
         df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
 
@@ -930,7 +907,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list, my_sidebar) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return('2022 Baja 1')
+    return("2022 Foley Ranch A")
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1439,12 +1416,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[row].to_frame().transpose()
-        #x_max = len(df_to_graph.columns)*scale
-        #axs[i].imshow(df_to_graph, 
-        #                    cmap = cmap[row] if len(cmap) > 1 else cmap[0],
-        #                    vmin = 0, vmax = heatmap_max if heatmap_max > 0 else 1,
-        #                    interpolation='nearest',
-        #                    origin='upper', extent=(0,x_max,0,x_max/fig_w))
+
         axs[i] = sns.heatmap(data = df_to_graph,
                         ax = axs[i],
                         cmap = cmap[row] if len(cmap) > 1 else cmap[0],
@@ -1456,8 +1428,15 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
         # and not that it's just hard to read!
         if df_clean.loc[row].sum() == 0:
-            axs[i].text(0.5,0.5,'No data for ' + row, 
-                        fontsize='xx-small', fontstyle='italic', color='gray', verticalalignment='center')
+            #The conundrum: at least for edge, it's possible that a row we drew is blank, but the actual
+            #row is going to get some boxes and lines. In this case, there will be -99s in the data, 
+            #and if we find those, we should NOT draw the text that says there is no data 
+            #THIS IS NOT WORKING?
+            if title == "Edge Analysis" and df.loc[row].lt(0).any():
+                pass
+            else:
+                axs[i].text(0.5,0.5,'No data for ' + row, 
+                            fontsize='xx-small', fontstyle='italic', color='gray', verticalalignment='center')
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
@@ -1843,9 +1822,6 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
 
 # add the ticks and associated content for the weather graph
 def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:pd.Series):
-    # TODO:
-    # 1) Clean up where the x-axis formatting code goes, here or in another function
-
     # TICK FORMATTING AND CONTENT
     x_min, x_max = x_range
     x_min -= 0.5
@@ -2110,8 +2086,8 @@ def check_tags(df: pd.DataFrame):
     #Find rows where the columns (ws-m, mh-m) have data, but the song column is missing data
     non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
                                             data_col[tag_wsm]])
-    bad_rows = pd.concat([bad_rows, 
-                            filter_df_by_tags(non_zero_rows, song_cols, '=={}'.format(missing_data_flag))])
+    bad_rows = pd.concat([bad_rows,
+                            filter_df_by_tags(non_zero_rows, song_cols, f'=={missing_data_flag}')])
 
     #P1C, P2C throws an error if it's missing courtsong song
     non_zero_rows = filter_df_by_tags(df, edge_c_cols)
@@ -2129,18 +2105,7 @@ def check_tags(df: pd.DataFrame):
 
     if not(bad_rows.empty) or len(error_list):
         with st.expander('See errors'):
-            #This code prints a formatted table of just the missing song tag rows, not currently
-            #necessary but here just in case I want to bring this back.
-#                if not(bad_rows.empty):
-#                    bad_rows.sort_values(by='filename', inplace=True)
-#                    #Pull out date so we can format it
-#                    bad_rows.reset_index(inplace=True)
-#                    bad_rows.rename(columns={'index':'Date'}, inplace=True)
-#
-#                    pretty_print_table(bad_rows)
-                
             st.write(error_list)
-
     else:
         st.write('No tag errors found')
     
@@ -2168,7 +2133,6 @@ def make_final_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> p
 
 # Retrieve the start and end dates for the analysis from the sidebar and format them appropriately
 def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
-    #TODO Need to ensure the rows aren't missing
     pt_site = pt_site.transpose()
     output = {}
     for song in song_cols:
@@ -2261,8 +2225,6 @@ for site in target_sites:
     pt_mini_manual = pd.DataFrame()
     pt_edge = pd.DataFrame()
 
-    #TODO Log error if df_site is empty
-    #TODO If dates of PM, Edge, and *-Min
     if not df_site.empty:
         #Using the site of interest, get the first & last dates and give the user the option to customize the range
         date_range_dict = get_date_range(df_site, make_all_graphs, container_top)
@@ -2521,7 +2483,6 @@ for site in target_sites:
     
     if not being_deployed_to_streamlit or make_all_graphs or save_files:
         combine_images(site, month_locs, show_weather_checkbox)
-        #TODO clean up by deleting all the files with "clean" in their name?
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
 if not make_all_graphs and len(df_site):
