@@ -907,7 +907,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
 #  
 def get_site_to_analyze(site_list:list, my_sidebar) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    return("2022 Foley Ranch A")
+    #return("2022 Foley Ranch A")
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
