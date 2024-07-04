@@ -300,6 +300,12 @@ error_list = ''
 # Helper functions
 #
 #
+def format_timestamp(ts):
+    if pd.notna(ts):
+        return ts.strftime('%m/%d/%y')
+    else:
+        return "None"
+    
 def my_time():
     return dt.now().strftime('%d-%b-%y %H:%M:%S')
 
@@ -2546,9 +2552,42 @@ if not make_all_graphs and len(df_site):
         st.dataframe(union_pt)
 
     # Put a box with first and last dates for the Song columns, with counts on that date
-    with st.expander("See overview of first and last dates"):  
+    with st.expander("See overview of dates"):  
         output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
+
+        # From pt_pm, get the first date that has a song count >= 4
+        threshold = 4
+
+        for idx, row in pt_pm.iterrows():
+            first_column = None
+            last_column = None
+            nan_count = 0
+            last_valid_column = None
+            
+            # Find the first column with value >= threshold
+            for col in row.index:
+                if pd.notna(row[col]) and row[col] >= threshold:
+                    first_column = col
+                    break
+            
+            # Find the last column with value >= 4 and no more than one preceding NaN
+            for col in reversed(row.index):
+                if col == first_column: 
+                    break
+
+                if pd.notna(row[col]) and row[col] >= threshold:
+                    if last_valid_column is None:
+                        last_valid_column = col
+                    nan_count = 0
+
+                elif pd.isna(row[col]) or (pd.notna(row[col]) and row[col] < threshold):
+                    nan_count += 1
+                    if nan_count > 1:
+                        last_valid_column = None 
+            
+            st.write(f"{row.name}, first: {format_timestamp(first_column)}, last: {format_timestamp(last_valid_column)}")
+
 
     # Scan the list of tags and flag any where there is "---" for the value.
     if container_mid.checkbox('Show errors', value=True): 
