@@ -906,6 +906,77 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
     return normalize_pt(aggregate, date_range_dict)
 
 
+
+def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
+    # Scan through a row of pattern matching data and return pairs of dates such that the first date is preceeded by
+    # NA values and is greater than threshold, while the second date is after the first date and there is no more than
+    # one value less than the threshold or NA between it and the first date
+
+    # Example:
+    # If the row is: 0 0 1 5 6 1 7 0 0 8 1 9 0 10
+    # Then the date pairs to be returned are the dates for 5, 7, 8, and 10
+
+    dates = []
+    last_column = 0
+    looking_for_first = True
+    nan_count = 0
+    skip_ahead = False
+    col = 0
+    while col < len(row):
+        # Go through the entire row
+        if looking_for_first:
+            if pd.notna(row[col]) and row[col] >= threshold:
+                dates.append(row.index[col])
+                last_column = col
+                looking_for_first = False
+        else:
+            # We're looking for two consecutive NA or less than threshold
+            if pd.notna(row[col]) and row[col] >= threshold:
+                last_column = col
+                nan_count = 0            
+            elif pd.isna(row[col]) or (pd.notna(row[col]) and row[col] < threshold):
+                nan_count += 1
+                if nan_count > 1:
+                    # Found it
+                    dates.append(row.index[last_column])
+                    nan_count = 0
+                    looking_for_first = True
+                    skip_ahead = True # Now that we've found a pair, skip forward by the pulse gap and start over
+            else:
+                assert True # I don't think it's possible to get here
+
+        #Either skip ahead by 1 for a normal case, or the pulse gap if we just found a pair
+        if skip_ahead:
+            col += pulse_gap
+            skip_ahead = False
+        else:
+            col += 1 
+    
+    return dates
+
+
+def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
+    # From pt_pm, get the first date that has a song count >= 4
+    threshold = 4
+    pulse_gap = 14
+    result = pd.DataFrame()
+    summary_dict = {"Pulse 1":{}, "Pulse 2":{}, "Pulse 3":{}, "Pulse 4":{}}
+    for idx, row in pt_pm.iterrows():
+        if row.name != "Male":
+            dates = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
+
+            assert len(dates) % 2 == 0, f"{row} does not have matching start/end dates"
+            assert len(dates) <= 8, f"{row} has more than 4 pulses, something is wrong"
+
+            for index, (start, end) in enumerate(zip(dates[::2], dates[1::2]), start=1):
+                summary_dict[f"Pulse {index}"][f"First {row.name}"] = format_timestamp(start)
+                summary_dict[f"Pulse {index}"][f"Last {row.name}"] = format_timestamp(end)
+        
+    result = pd.DataFrame.from_dict(summary_dict, orient='index')
+
+    return result
+
+
 #
 #
 # UI and other setup
@@ -2383,6 +2454,8 @@ for site in target_sites:
                 pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, pm_date_range_dict)
                 #Concat as above
                 pt_pm = pd.concat([pt_pm, pt_for_file_type])
+    
+            #TODO PUT summarize_pm here
     else: #TODO Should just graph what we get unless the data is completely missing
         st.write("All pattern matching data not available -- missing some or all files")
 
@@ -2553,41 +2626,9 @@ if not make_all_graphs and len(df_site):
 
     # Put a box with first and last dates for the Song columns, with counts on that date
     with st.expander("See overview of dates"):  
+        pretty_print_table(summarize_pm(pt_pm))
         output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
-
-        # From pt_pm, get the first date that has a song count >= 4
-        threshold = 4
-
-        for idx, row in pt_pm.iterrows():
-            first_column = None
-            last_column = None
-            nan_count = 0
-            last_valid_column = None
-            
-            # Find the first column with value >= threshold
-            for col in row.index:
-                if pd.notna(row[col]) and row[col] >= threshold:
-                    first_column = col
-                    break
-            
-            # Find the last column with value >= 4 and no more than one preceding NaN
-            for col in reversed(row.index):
-                if col == first_column: 
-                    break
-
-                if pd.notna(row[col]) and row[col] >= threshold:
-                    if last_valid_column is None:
-                        last_valid_column = col
-                    nan_count = 0
-
-                elif pd.isna(row[col]) or (pd.notna(row[col]) and row[col] < threshold):
-                    nan_count += 1
-                    if nan_count > 1:
-                        last_valid_column = None 
-            
-            st.write(f"{row.name}, first: {format_timestamp(first_column)}, last: {format_timestamp(last_valid_column)}")
-
 
     # Scan the list of tags and flag any where there is "---" for the value.
     if container_mid.checkbox('Show errors', value=True): 
