@@ -955,12 +955,24 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     return dates
 
 
+def make_empty_summary_dict() -> dict:
+    base_dict = {"Pulse 1":{}, "Pulse 2":{}, "Pulse 3":{}, "Pulse 4":{}}
+    phases = ["Female", "Hatchling", "Nestling", "Fledgling"]
+
+    for k in base_dict:
+        for phase in phases:
+            base_dict[k][f"First {phase}"] = "None"
+            base_dict[k][f"Last {phase}"] = "None"
+
+    return base_dict
+
 def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     # From pt_pm, get the first date that has a song count >= 4
     threshold = 4
     pulse_gap = 14
+    max_pulse = 0
     result = pd.DataFrame()
-    summary_dict = {"Pulse 1":{}, "Pulse 2":{}, "Pulse 3":{}, "Pulse 4":{}}
+    summary_dict = make_empty_summary_dict()
     for idx, row in pt_pm.iterrows():
         if row.name != "Male":
             dates = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
@@ -971,7 +983,13 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
             for index, (start, end) in enumerate(zip(dates[::2], dates[1::2]), start=1):
                 summary_dict[f"Pulse {index}"][f"First {row.name}"] = format_timestamp(start)
                 summary_dict[f"Pulse {index}"][f"Last {row.name}"] = format_timestamp(end)
-        
+                if index > max_pulse:
+                    max_pulse = index
+
+    #Drop pulses that don't exist
+    for i in range(max_pulse,4):
+        del summary_dict[f"Pulse {i+1}"]               
+    
     result = pd.DataFrame.from_dict(summary_dict, orient='index')
 
     return result
