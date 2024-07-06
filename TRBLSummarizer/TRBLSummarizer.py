@@ -195,7 +195,7 @@ legend_text = {graph_summary: ["Settlement", "Incubation", "Brooding", "Fledglin
                graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call"],
                graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call", "Fledgling Call"],
                graph_edge: ["Male Chorus", "Hatchling Call"],
-               graph_pm: ["Male Song", "Female Chatter", "Hatchling/Nestling Call", "Fledgling Call"]
+               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling Call", "Fledgling Call"]
 }
 
 #default color map
@@ -212,7 +212,8 @@ cmap_names = {data_col[malesong]:"Male Song",
               "Fledgling":"Fledgling Call"} 
 
 #color map for pattern matching
-cmap_pm = {"Male":"Greens", 
+cmap_pm = {"Male Song":"Greens", 
+           "Male Chorus":"Oranges", 
            "Female":"Purples", 
            "Hatchling":"Blues",
            "Nestling" :"Blues",
@@ -271,20 +272,16 @@ pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
 #
 #Pattern Matching Files
 #edit this if we add/remove file types
-pm_file_types = ['Male', 
+#Change: Color Map for Pattern Matching, Legend Text, plus File Types.
+pm_file_types = ['Male Song',
+                 'Male Chorus', 
                  'Female', 
                  'Hatchling', 
                  'Nestling',
                  'Fledgling', 
 ]
-pm_friendly_names = {}
-for f in pm_file_types:
-    if f == "Fledgling":
-        #Make the friendly name be "FL", handle it this way as it's the only one where we want two chars
-        pm_friendly_names[f] = f"PM-{f[0:2]}".upper()
-    else:
-        pm_friendly_names[f] = f"PM-{f[0]}".upper()
-
+pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL"]
+pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
 
 missing_data_flag = -100
