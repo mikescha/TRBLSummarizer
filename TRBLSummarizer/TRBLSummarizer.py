@@ -272,7 +272,8 @@ pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
 #
 #Pattern Matching Files
 #edit this if we add/remove file types
-#Change: Color Map for Pattern Matching, Legend Text, plus File Types.
+#Change: Color Map for Pattern Matching, Legend Text, plus File Types. Also, there are some lists
+#of column names in summarize_pm() that likely need to change
 pm_file_types = ['Male Song',
                  'Male Chorus', 
                  'Female', 
@@ -914,6 +915,9 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     # Then the date pairs to be returned are the dates for 5, 7, 8, and 10
 
     dates = []
+    date_dict = {}
+    pulse = 1
+
     last_column = 0
     looking_for_first = True
     nan_count = 0
@@ -924,6 +928,8 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
         if looking_for_first:
             if pd.notna(row[col]) and row[col] >= threshold:
                 dates.append(row.index[col])
+                date_dict[f"P{pulse}"] = {}
+                date_dict[f"P{pulse}"]["First"] = row.index[col]
                 last_column = col
                 looking_for_first = False
         else:
@@ -936,6 +942,7 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
                 if nan_count > 1:
                     # Found it
                     dates.append(row.index[last_column])
+                    date_dict[f"P{pulse}"]["Last"] = row.index[col]
                     nan_count = 0
                     looking_for_first = True
                     skip_ahead = True # Now that we've found a pair, skip forward by the pulse gap and start over
@@ -949,12 +956,15 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
         else:
             col += 1 
     
+    #If there are an odd number of entries then pad it out by one
+    if (len(dates) % 2) != 0:
+        dates.append(None)
     return dates
 
 
 def make_empty_summary_dict() -> dict:
     base_dict = {"Pulse 1":{}, "Pulse 2":{}, "Pulse 3":{}, "Pulse 4":{}}
-    phases = ["Female", "Hatchling", "Nestling", "Fledgling"]
+    phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
 
     for k in base_dict:
         for phase in phases:
@@ -971,7 +981,7 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     result = pd.DataFrame()
     summary_dict = make_empty_summary_dict()
     for idx, row in pt_pm.iterrows():
-        if row.name != "Male":
+        if row.name != "Male Song":
             dates = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
 
             assert len(dates) % 2 == 0, f"{row} does not have matching start/end dates"
@@ -1455,6 +1465,10 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
 
         if found_valid_dates or len(abandoned_dict):
             with st.expander("Show pulse dates"):
+                st.write("Automatically derived dates:")
+                pretty_print_table(summarize_pm(pt_pm))
+
+                st.write("Manually derived dates:")
                 st.write(report, unsafe_allow_html=True)
                 if len(abandoned_dict):
                     report = "Abandoned:<br>"
@@ -2641,7 +2655,6 @@ if not make_all_graphs and len(df_site):
 
     # Put a box with first and last dates for the Song columns, with counts on that date
     with st.expander("See overview of dates"):  
-        pretty_print_table(summarize_pm(pt_pm))
         output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
         pretty_print_table(pd.DataFrame.from_dict(output))
 
