@@ -284,6 +284,10 @@ pm_file_types = ['Male Song',
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
+first_str = "First"
+last_str = "Last"
+before_first_str = "Before First"
+after_last_str = "After Last"
 
 missing_data_flag = -100
 preserve_edges_flag = -99
@@ -300,7 +304,10 @@ error_list = ''
 #
 def format_timestamp(ts):
     if pd.notna(ts):
-        return ts.strftime('%m/%d/%y')
+        if isinstance(ts, pd.Timestamp):
+            return ts.strftime('%m/%d')
+        elif isinstance(ts, str):
+            return ts
     else:
         return "None"
     
@@ -914,22 +921,22 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     # If the row is: 0 0 1 5 6 1 7 0 0 8 1 9 0 10
     # Then the date pairs to be returned are the dates for 5, 7, 8, and 10
 
-    dates = []
-    date_dict = {}
-    pulse = 1
-
+    dates = {}
     last_column = 0
     looking_for_first = True
     nan_count = 0
     skip_ahead = False
     col = 0
+    pulse = 1
     while col < len(row):
         # Go through the entire row
         if looking_for_first:
             if pd.notna(row[col]) and row[col] >= threshold:
-                dates.append(row.index[col])
-                date_dict[f"P{pulse}"] = {}
-                date_dict[f"P{pulse}"]["First"] = row.index[col]
+                dates[pulse] = {}
+                dates[pulse][first_str] = row.index[col]
+                #If we're at the very beginning, then we don't actually know when it started, so note this
+                dates[pulse][before_first_str] = col == 0
+
                 last_column = col
                 looking_for_first = False
         else:
@@ -941,8 +948,8 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
                 nan_count += 1
                 if nan_count > 1:
                     # Found it
-                    dates.append(row.index[last_column])
-                    date_dict[f"P{pulse}"]["Last"] = row.index[col]
+                    dates[pulse][last_str] = row.index[last_column]
+                    dates[pulse][after_last_str] = False
                     nan_count = 0
                     looking_for_first = True
                     skip_ahead = True # Now that we've found a pair, skip forward by the pulse gap and start over
@@ -953,50 +960,162 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
         if skip_ahead:
             col += pulse_gap
             skip_ahead = False
+            pulse += 1
         else:
             col += 1 
     
-    #If there are an odd number of entries then pad it out by one
-    if (len(dates) % 2) != 0:
-        dates.append(None)
+    #Detect the case where the last phase ended on or after the recorder was pulled
+    if len(dates[len(dates)]) == 2:
+        #We want to capture the last date in the row. Because of "pulse_gap", col could be beyond the end
+        #of the table, so we'll use the value we know is good
+        dates[len(dates)][last_str] = row.index[len(row)-1]
+        dates[len(dates)][after_last_str] = True
+
     return dates
 
 
 def make_empty_summary_dict() -> dict:
-    base_dict = {"Pulse 1":{}, "Pulse 2":{}, "Pulse 3":{}, "Pulse 4":{}}
+    base_dict = {1:{}, 2:{}, 3:{}, 4:{}}
     phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
 
     for k in base_dict:
         for phase in phases:
-            base_dict[k][f"First {phase}"] = "None"
-            base_dict[k][f"Last {phase}"] = "None"
+            base_dict[k][f"{phase}"] = {}
 
     return base_dict
+
+def find_last_non_empty_key(d):
+    for key in reversed(d.keys()):
+        if d[key]:  # Check if the value is non-empty
+            return key
+    return None  # Return None if all values are empty
+
+def current_phase_in_correct_order(target_phase:str, current_phases:dict):
+    result = False 
+    all_phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
+
+    target_position = all_phases.index(target_phase)
+    current_latest_phase = find_last_non_empty_key(current_phases)
+
+    if current_latest_phase in all_phases:
+        latest_position = all_phases.index(current_latest_phase)
+        if target_position <= latest_position:
+            # The one we want to add is earlier or in the same position in the sequence as 
+            # something already there, this means it's in the wrong pulse
+            result = False
+        else:
+            result = True
+    else:
+        # The result was "None", so pulse is currently empty and it's OK to add to it
+        result = True
+    
+    return result
+
+
+
+def clean_pm_dates(dates:dict):
+    #Don't want Male Song in our results
+    del dates["Male Song"]
+
+    first_dates = []
+    for phases, pulses in dates.items():
+        for pulse, date in pulses.items():
+            if "First" in date:
+                first_dates.append((date[first_str], f"{phases}{pulse}"))
+    
+    first_dates.sort(key=lambda x: x[0])
+
+    temp_dict = make_empty_summary_dict()
+
+    #We're now going to fill out the summary dict by walking through the dates in order and placing them where appropriate.
+    #Note that this might require moving a key to a different pulse!
+    for date in first_dates:
+        proposed_pulse = int(date[1][-1:]) #Last digit off the value we built above, convert to int for easy comparison
+        phase = date[1][:-1]
+
+        # We need to ensure that everything is coming in the right order. If we go to add a phase and there is
+        # a phase already present in that pulse that's AFTER the one we're working on, then we need to move the
+        # new phase to the next pulse.
+        correct_pulse = proposed_pulse
+        while not current_phase_in_correct_order(phase, temp_dict[correct_pulse]):
+            correct_pulse += 1 
+        temp_dict[correct_pulse][phase] = dates[phase][proposed_pulse]
+
+        #If the summary dict is empty at the location we want, then add the value from our original dictionary
+        # if temp_dict[proposed_pulse][phase] == {}:
+        #     #This should be the common case
+        #     temp_dict[proposed_pulse][phase] = dates[phase][proposed_pulse]
+        # else:
+        #     #The key was there already, so we need to figure out what to change
+        #     pass
+
+    #Create a new dict by selecting any keys where the subkeys have a value
+    result = {k: v for k, v in temp_dict.items() if v for k2, v2 in v.items() if v2}
+    return result
+
+
+def format_pm_dates(pm_dates:dict):
+    # Convert the timestamp to a string
+    formatted_dict = {}
+    for pulse in pm_dates:
+        pulse_str = f"P {pulse}"
+        formatted_dict[pulse_str] = {}
+
+        for phase in pm_dates[pulse]:
+            formatted_dict[pulse_str][phase] = {}
+            if len(pm_dates[pulse][phase]): #Keys could be empty
+                first_date = format_timestamp(pm_dates[pulse][phase][first_str])
+                last_date = format_timestamp(pm_dates[pulse][phase][last_str])
+                message = ""
+
+                message += "First: "
+                if pm_dates[pulse][phase][before_first_str]:
+                    message += f"On or before {first_date}"
+                else:
+                    message += f"{first_date}"
+
+                message += "<br>"
+                message += "Last: "
+                if pm_dates[pulse][phase][after_last_str]:
+                    message += f"On or after {last_date}"
+                else:
+                    message += f"{last_date}"
+
+                formatted_dict[pulse_str][phase] = message
+            else:
+                #Empty key, put an appropriate message for display purposes
+                formatted_dict[pulse_str][phase] = "No data"
+
+                
+    return formatted_dict
+
 
 def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     # From pt_pm, get the first date that has a song count >= 4
     threshold = 4
     pulse_gap = 14
-    max_pulse = 0
-    result = pd.DataFrame()
-    summary_dict = make_empty_summary_dict()
-    for idx, row in pt_pm.iterrows():
-        if row.name != "Male Song":
-            dates = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
-
-            assert len(dates) % 2 == 0, f"{row} does not have matching start/end dates"
-            assert len(dates) <= 8, f"{row} has more than 4 pulses, something is wrong"
-
-            for index, (start, end) in enumerate(zip(dates[::2], dates[1::2]), start=1):
-                summary_dict[f"Pulse {index}"][f"First {row.name}"] = format_timestamp(start)
-                summary_dict[f"Pulse {index}"][f"Last {row.name}"] = format_timestamp(end)
-                if index > max_pulse:
-                    max_pulse = index
-
-    #Drop pulses that don't exist
-    for i in range(max_pulse,4):
-        del summary_dict[f"Pulse {i+1}"]               
     
+    #Get all the date pairs
+    dates = {}    
+    for idx, row in pt_pm.iterrows():
+        dates[idx] = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
+
+    #Sanity check the data
+    summary_dict = clean_pm_dates(dates)
+    summary_dict = format_pm_dates(summary_dict)
+    #Prep the data for display    
+    # summary_dict = make_empty_summary_dict()
+    # for phase in dates:
+    #     if phase != "Male Song":
+    #         pass
+
+    # for index, (start, end) in enumerate(zip(dates[::2], dates[1::2]), start=1):
+    #     summary_dict[f"Pulse {index}"][f"First {row.name}"] = format_timestamp(start)
+    #     summary_dict[f"Pulse {index}"][f"Last {row.name}"] = format_timestamp(end)
+    #     if index > max_pulse:
+    #         max_pulse = index
+    
+    #Now format this for display. Make a new table where the "1" becomes "Pulse 1"
     result = pd.DataFrame.from_dict(summary_dict, orient='index')
 
     return result
@@ -1009,7 +1128,7 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
 #  
 def get_site_to_analyze(site_list:list, my_sidebar) -> str:
     #debug: to get a specific site, put the name of the site below and uncomment
-    #return("2022 Foley Ranch A")
+    #return("2023 Hale Road")
 
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
@@ -1465,10 +1584,10 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
 
         if found_valid_dates or len(abandoned_dict):
             with st.expander("Show pulse dates"):
-                st.write("Automatically derived dates:")
-                pretty_print_table(summarize_pm(pt_pm))
+                st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
+                pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
 
-                st.write("Manually derived dates:")
+                st.write("<br><b>Manually derived dates:</b>", unsafe_allow_html=True)
                 st.write(report, unsafe_allow_html=True)
                 if len(abandoned_dict):
                     report = "Abandoned:<br>"
@@ -2116,28 +2235,16 @@ def style_center_align(s, props='text-align: center;'):
     return props
 
 # For pretty printing a table
-def pretty_print_table(df:pd.DataFrame):
+def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
     # Do this so that the original DF doesn't get edited, because of how Python handles parameters 
     output_df = df
-    # Formatting note
-    # Note that the line that should work to set alignment doesn't if we are outputting
-    # the table using st.dataframe or st.table. I can set color this way, but alignment
-    # appears to be ignored.
-    #  
-    # The only way to get it to work is to write the table out using st.write, which is
-    # OK for a little table like this but bad for the data table because st.write doesn't
-    # give the interactive table where you scroll to see rows and columns, it puts all 
-    # the data on the page at once!  
-    #
-    # So, eventually all this formatting junk should be moved to a functiona and cleaned up.
-    # style
 
     # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
     for col in output_df.columns:
         new_name = col.replace('<',' ')
         new_name = new_name.replace('>', ' ')
         output_df.rename(columns={col:new_name},inplace=True)
-
+        
     th_props = [
     ('font-size', '14px'),
     ('text-align', 'center'),
@@ -2156,15 +2263,12 @@ def pretty_print_table(df:pd.DataFrame):
     ]
 
     # apply table formatting from above
-    output_df=output_df.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
+    output_df=output_df.style.set_properties(**{'text-align': body_alignment}).set_table_styles(styles)
     #If there is a Date column then format it correctly
     if 'Date' in output_df.columns:
         output_df.format(formatter={'Date':lambda x:x.strftime('%m-%d-%y')})
 
-    #Currently the centering isn't working. The following does center the text but then we lose
-    #the scrolling feature
-    #st.write(output_df.to_html(), unsafe_allow_html=True)
-    st.table(output_df)
+    st.markdown(output_df.to_html(escape=False), unsafe_allow_html=True)
 
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
