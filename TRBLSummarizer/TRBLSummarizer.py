@@ -974,23 +974,40 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     return dates
 
 
-def make_empty_summary_dict() -> dict:
-    base_dict = {1:{}, 2:{}, 3:{}, 4:{}}
+def make_empty_summary_row() -> dict:
+    # Create an empty row for a single pulse
     phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
+    base_dict = {}
+    for phase in phases:
+        base_dict[f"{phase}"] = {}
+    return base_dict
 
+def make_empty_summary_dict() -> dict:
+    # Create the entire empty summary dict, so we don't get key errors
+    base_dict = {1:{}, 2:{}, 3:{}, 4:{}}
     for k in base_dict:
-        for phase in phases:
-            base_dict[k][f"{phase}"] = {}
-
+        base_dict[k] = make_empty_summary_row()
     return base_dict
 
 def find_last_non_empty_key(d):
+    # Walk through a dictionary backwards and return the first non-empty key 
+    # Used to find the last key with data
     for key in reversed(d.keys()):
         if d[key]:  # Check if the value is non-empty
             return key
     return None  # Return None if all values are empty
 
-def current_phase_in_correct_order(target_phase:str, current_phases:dict):
+def  find_first_non_empty_key(d):
+    # Walk through a dictionary forwards and return the first non-empty key 
+    # Used to find the first key with data
+    for key in d.keys():
+        if d[key]:  # Check if the value is non-empty
+            return key
+    return None  # Return None if all values are empty
+
+
+def proposed_pulse_has_later_phase(target_phase:str, current_phases:dict):
+    # Check to see if a pulse already has a date for a phase that is later than the current one.
     result = False 
     all_phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
 
@@ -1012,6 +1029,32 @@ def current_phase_in_correct_order(target_phase:str, current_phases:dict):
     return result
 
 
+def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp, target_pulse:dict):
+    # Is there anything earlier in the target_pulse that is earlier in order than the target_phase?
+    # If so, do the dates make sense?
+
+    # NOTE: It's theoretically possible that we could have female, hatching, etc. be in the wrong
+    # pulse, but Wendy says that in practice it never happens, and it's only Male Chorus that we're 
+    # worried about. 
+    result = False
+    if target_phase == "Nestling":
+        #This is the one that is problematic
+        earliest_phase = find_first_non_empty_key(target_pulse)
+        if earliest_phase is not None:
+            #Any phase will be earlier than Nestling
+            assert earliest_phase != "Nestling", "Should never get a matching phase at this point"
+            #Check that the start date is no closer than this table:
+            valid_date_deltas = {pm_file_types[1]:11, #Male needs to be at least 11 days prior
+                                 pm_file_types[2]:11, #Female can start with male
+                                 pm_file_types[3]:6,  #Hatchling must be at least 6 days prior
+                                 pm_file_types[4]:6,  #Nestling and hatchling can start together
+                                 }
+            earliest_phase_start = target_pulse[earliest_phase][first_str]
+            if target_date - earliest_phase_start < pd.Timedelta(days=valid_date_deltas[earliest_phase]):
+                #we have a problem!
+                result = True
+
+    return result
 
 def clean_pm_dates(dates:dict):
     #Don't want Male Song in our results
@@ -1027,8 +1070,8 @@ def clean_pm_dates(dates:dict):
 
     temp_dict = make_empty_summary_dict()
 
-    #We're now going to fill out the summary dict by walking through the dates in order and placing them where appropriate.
-    #Note that this might require moving a key to a different pulse!
+    # We're now going to fill out the summary dict by walking through the dates in order and placing them where appropriate.
+    # Note that this might require moving a key to a different pulse!
     for date in first_dates:
         proposed_pulse = int(date[1][-1:]) #Last digit off the value we built above, convert to int for easy comparison
         phase = date[1][:-1]
@@ -1037,17 +1080,19 @@ def clean_pm_dates(dates:dict):
         # a phase already present in that pulse that's AFTER the one we're working on, then we need to move the
         # new phase to the next pulse.
         correct_pulse = proposed_pulse
-        while not current_phase_in_correct_order(phase, temp_dict[correct_pulse]):
+        while not proposed_pulse_has_later_phase(phase, temp_dict[correct_pulse]):
             correct_pulse += 1 
-        temp_dict[correct_pulse][phase] = dates[phase][proposed_pulse]
+        
+        # We know which pulse it should go into, but need to check whether there is anything EARLIER...
+        # If there is, it's in the wrong pulse and needs to move to the next pulse.
+        if correct_pulse_has_date_collision(phase, date[0], temp_dict[correct_pulse]):
+            # Copy the current pulse into the next one 
+            # TODO: Need to worry about exceeding the valid number of pulses?
+            temp_dict[correct_pulse+1] = temp_dict[correct_pulse]       
+            #Reset the current pulse to blank
+            temp_dict[correct_pulse] = make_empty_summary_row()
 
-        #If the summary dict is empty at the location we want, then add the value from our original dictionary
-        # if temp_dict[proposed_pulse][phase] == {}:
-        #     #This should be the common case
-        #     temp_dict[proposed_pulse][phase] = dates[phase][proposed_pulse]
-        # else:
-        #     #The key was there already, so we need to figure out what to change
-        #     pass
+        temp_dict[correct_pulse][phase] = dates[phase][proposed_pulse]
 
     #Create a new dict by selecting any keys where the subkeys have a value
     result = {k: v for k, v in temp_dict.items() if v for k2, v2 in v.items() if v2}
@@ -1058,7 +1103,7 @@ def format_pm_dates(pm_dates:dict):
     # Convert the timestamp to a string
     formatted_dict = {}
     for pulse in pm_dates:
-        pulse_str = f"P {pulse}"
+        pulse_str = f"Pulse {pulse}"
         formatted_dict[pulse_str] = {}
 
         for phase in pm_dates[pulse]:
