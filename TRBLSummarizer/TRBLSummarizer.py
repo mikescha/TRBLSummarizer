@@ -292,7 +292,7 @@ after_last_str = "After Last"
 valid_pm_date_deltas = {pm_file_types[1]:0, #Male Chorus to Female can be 0 days
                         pm_file_types[2]:5, #Female to Hatchling must be at least 5 days
                         pm_file_types[3]:0, #Hatchling to Nestling can be 0 days
-                        pm_file_types[4]:6, #Nestling to Fledgling must be at least 6 days
+                        pm_file_types[4]:3, #Nestling to Fledgling must be at least 3 days
                         pm_file_types[5]:0, #Nestling to Nestling is zero, here to make math easy
                         }
 
@@ -972,7 +972,7 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
             col += 1 
     
     #Detect the case where the last phase ended on or after the recorder was pulled
-    if len(dates[len(dates)]) == 2:
+    if dates and len(dates[len(dates)]) == 2:
         #We want to capture the last date in the row. Because of "pulse_gap", col could be beyond the end
         #of the table, so we'll use the value we know is good
         dates[len(dates)][last_str] = row.index[len(row)-1]
@@ -1030,7 +1030,7 @@ def find_correct_pulse(target_phase:str, target_date:pd.Timestamp, proposed_puls
 
                 #BUT, if it's a Hatchling and the one that's after it is a Nestling, that's OK if the dates are close
                 if target_phase == "Hatchling" and current_latest_phase == "Nestling":
-                    if abs(current_dates[correct_pulse]["Nestling"][first_str] - target_date) < pd.Timedelta(days=5):
+                    if abs(current_dates[correct_pulse]["Nestling"][first_str] - target_date) <= pd.Timedelta(days=6):
                         break
 
                 correct_pulse += 1                
@@ -1085,6 +1085,15 @@ def clean_pm_dates(dates:dict):
                 first_dates.append((date[first_str], f"{phases}{pulse}"))
     
     first_dates.sort(key=lambda x: x[0]) ###IS THIS SORTING ENOUGH, IF NEST AND FLEDG ARE ON SAME DATE THEN NEST SHOULD BE FIRST
+
+    previous = None
+    for date in first_dates:
+        if previous:
+            if previous[0] == date[0]:
+                previous_pos = pm_file_types[previous[1][:-1]]
+                date_pos = pm_file_types[date[1][:-1]]
+                assert previous_pos<date_pos, "Sorting needs to be improved"
+            previous = date
 
     temp_dict = make_empty_summary_dict()
 
