@@ -289,6 +289,13 @@ last_str = "Last"
 before_first_str = "Before First"
 after_last_str = "After Last"
 
+valid_pm_date_deltas = {pm_file_types[1]:0, #Male Chorus to Female can be 0 days
+                        pm_file_types[2]:5, #Female to Hatchling must be at least 5 days
+                        pm_file_types[3]:0, #Hatchling to Nestling can be 0 days
+                        pm_file_types[4]:6, #Nestling to Fledgling must be at least 6 days
+                        pm_file_types[5]:0, #Nestling to Nestling is zero, here to make math easy
+                        }
+
 missing_data_flag = -100
 preserve_edges_flag = -99
 
@@ -1006,27 +1013,34 @@ def  find_first_non_empty_key(d):
     return None  # Return None if all values are empty
 
 
-def proposed_pulse_has_later_phase(target_phase:str, current_phases:dict):
+def find_correct_pulse(target_phase:str, target_date:pd.Timestamp, proposed_pulse:int, current_dates:dict):
     # Check to see if a pulse already has a date for a phase that is later than the current one.
-    result = False 
+    correct_pulse = proposed_pulse
     all_phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
-
     target_position = all_phases.index(target_phase)
-    current_latest_phase = find_last_non_empty_key(current_phases)
 
-    if current_latest_phase in all_phases:
-        latest_position = all_phases.index(current_latest_phase)
-        if target_position <= latest_position:
-            # The one we want to add is earlier or in the same position in the sequence as 
-            # something already there, this means it's in the wrong pulse
-            result = False
+    while True:
+        current_latest_phase = find_last_non_empty_key(current_dates[correct_pulse])
+
+        if current_latest_phase in all_phases:
+            latest_position = all_phases.index(current_latest_phase)
+            if target_position <= latest_position:
+                # The one we want to add is earlier or in the same position in the sequence as 
+                # something already there, this means it's in the wrong pulse
+
+                #BUT, if it's a Hatchling and the one that's after it is a Nestling, that's OK if the dates are close
+                if target_phase == "Hatchling" and current_latest_phase == "Nestling":
+                    if abs(current_dates[correct_pulse]["Nestling"][first_str] - target_date) < pd.Timedelta(days=5):
+                        break
+
+                correct_pulse += 1                
+            else:
+                break
         else:
-            result = True
-    else:
-        # The result was "None", so pulse is currently empty and it's OK to add to it
-        result = True
+            # The result was "None", so pulse is currently empty and it's OK to add to it
+            break
     
-    return result
+    return correct_pulse
 
 
 def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp, target_pulse:dict):
@@ -1036,21 +1050,25 @@ def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp,
     # NOTE: It's theoretically possible that we could have female, hatching, etc. be in the wrong
     # pulse, but Wendy says that in practice it never happens, and it's only Male Chorus that we're 
     # worried about. 
+
     result = False
-    if target_phase == "Nestling":
+    if target_phase == "Fledgling":
         #This is the one that is problematic
-        earliest_phase = find_first_non_empty_key(target_pulse)
-        if earliest_phase is not None:
+        earlier_phase = find_last_non_empty_key(target_pulse)
+        if earlier_phase is not None:
             #Any phase will be earlier than Nestling
-            assert earliest_phase != "Nestling", "Should never get a matching phase at this point"
-            #Check that the start date is no closer than this table:
-            valid_date_deltas = {pm_file_types[1]:11, #Male needs to be at least 11 days prior
-                                 pm_file_types[2]:11, #Female can start with male
-                                 pm_file_types[3]:6,  #Hatchling must be at least 6 days prior
-                                 pm_file_types[4]:6,  #Nestling and hatchling can start together
-                                 }
-            earliest_phase_start = target_pulse[earliest_phase][first_str]
-            if target_date - earliest_phase_start < pd.Timedelta(days=valid_date_deltas[earliest_phase]):
+            assert earlier_phase != "Fledgling", "Should never get a matching phase at this point"
+
+            #Check that the start date is no closer that it should be
+            earlier_phase_start = target_pulse[earlier_phase][first_str]
+            min_delta = 0 
+            start_adding = False
+            for item in pm_file_types:
+                if item == earlier_phase:
+                    start_adding = True 
+                min_delta += valid_pm_date_deltas[item] if start_adding else 0
+
+            if (target_date - earlier_phase_start) <= pd.Timedelta(days=min_delta):
                 #we have a problem!
                 result = True
 
@@ -1066,7 +1084,7 @@ def clean_pm_dates(dates:dict):
             if "First" in date:
                 first_dates.append((date[first_str], f"{phases}{pulse}"))
     
-    first_dates.sort(key=lambda x: x[0])
+    first_dates.sort(key=lambda x: x[0]) ###IS THIS SORTING ENOUGH, IF NEST AND FLEDG ARE ON SAME DATE THEN NEST SHOULD BE FIRST
 
     temp_dict = make_empty_summary_dict()
 
@@ -1079,10 +1097,8 @@ def clean_pm_dates(dates:dict):
         # We need to ensure that everything is coming in the right order. If we go to add a phase and there is
         # a phase already present in that pulse that's AFTER the one we're working on, then we need to move the
         # new phase to the next pulse.
-        correct_pulse = proposed_pulse
-        while not proposed_pulse_has_later_phase(phase, temp_dict[correct_pulse]):
-            correct_pulse += 1 
-        
+        correct_pulse = find_correct_pulse(phase, date[0], proposed_pulse, temp_dict)
+
         # We know which pulse it should go into, but need to check whether there is anything EARLIER...
         # If there is, it's in the wrong pulse and needs to move to the next pulse.
         if correct_pulse_has_date_collision(phase, date[0], temp_dict[correct_pulse]):
