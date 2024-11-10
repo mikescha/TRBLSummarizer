@@ -627,6 +627,10 @@ def load_pm_data(site:str) -> pd.DataFrame:
             #Finally, add the table that we loaded to the end of the main one
             df_temp['type'] = t
             df = pd.concat([df, df_temp], ignore_index=True)
+    
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+        df.set_index("date", inplace=True)
 
     return df
 
@@ -797,6 +801,9 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
     df_clean = pd.DataFrame()
     for site in site_list:
+        if site_str not in df.columns:
+            break
+
         df_site = df[df[site_str] == site]
 
         #used to ensure anything outside this year gets dropped
@@ -842,7 +849,8 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in all_songs + all_tags:
-        df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
+        if data_col[s] in df_clean.columns:
+            df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
 
 
@@ -1197,9 +1205,6 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
 # 
 #  
 def get_site_to_analyze(site_list:list, my_sidebar) -> str:
-    #debug: to get a specific site, put the name of the site below and uncomment
-    #return("2023 Hale Road")
-
     #Calculate the list of years, sort it backwards so most recent is at the top
     year_list = []
     for s in site_list:
@@ -1214,25 +1219,33 @@ def get_site_to_analyze(site_list:list, my_sidebar) -> str:
 # Set the default date range to the first and last dates for which we have data. In the case that we're
 # automatically generating all the sites, then stop there. Otherwise, show the UI for the date selection
 # and if the user wants a specific range then update our range to reflect that.
+# Assume that the data cleaning code has removed any extraneous dates, such as if data 
+# is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
-    df.sort_index(inplace=True)
-
-    # Set the default date range to the first and last dates that we have data
-    # Assume that the data cleaning code has removed any extraneous dates, such as if data 
-    # is mistagged (i.e. data from 2019 shows up in the 2020 site)
-    #Need to determine whether we are indexed by date or not
-    date_range_dict = {}
-    if hasattr(df, 'index') and isinstance(df.index, pd.DatetimeIndex):
-        date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
-                           end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+    date_range_dict_new = {}
+    if df.index.name == "date":
+        date_range_dict = {start_str : df.index.min().strftime("%m-%d-%Y"), 
+                             end_str : df.index.max().strftime("%m-%d-%Y")}
     else:
-        #No index, but it should be findable by the date column    
-        if "date" in df.columns.to_list():
-            date_range_dict = {start_str : df.iloc[0,df.columns.get_loc('date')].strftime("%m-%d-%Y"), 
-                               end_str : df.iloc[len(df)-1,df.columns.get_loc('date')].strftime("%m-%d-%Y")}
+        date_range_dict = {start_str : df["date"].min().strftime("%m-%d-%Y"), 
+                             end_str : df["date"].max().strftime("%m-%d-%Y")}
+
+    # #OLD WAY
+    # df.sort_index(inplace=True)
+
+    # #Need to determine whether we are indexed by date or not
+    # date_range_dict = {}
+    # if hasattr(df, 'index') and isinstance(df.index, pd.DatetimeIndex):
+    #     date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
+    #                        end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
+    # else:
+    #     #No index, but it should be findable by the date column    
+    #     if "date" in df.columns.to_list():
+    #         date_range_dict = {start_str : df.iloc[0,df.columns.get_loc('date')].strftime("%m-%d-%Y"), 
+    #                            end_str : df.iloc[len(df)-1,df.columns.get_loc('date')].strftime("%m-%d-%Y")}
     
-    if date_range_dict == {}:
-        log_error("Couldn't find date range!!")
+    # if date_range_dict == {}:
+    #     log_error("Couldn't find date range!!")
 
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
@@ -1247,7 +1260,7 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
         if end_month != 'Last':
             last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
             date_range_dict[end_str] = f'{months2[end_month]}-{last_day}-{site_year}'
-    
+
     return date_range_dict
 
 
@@ -2458,9 +2471,10 @@ df = clean_data(df_original, site_list[site_str])
 del df_original
 gc.collect()
 
-# Load all the summary data
+# Load all the summary data, note that this doesn't exist for 2024 and beyond right now (Nov 2024)
 summary_df = load_summary_data()
 
+# Set up the sidebar with three zones so it looks like we want
 container_top = st.sidebar.container()
 container_mid = st.sidebar.container(border=True)
 container_bottom = st.sidebar.container(border=True)
@@ -2482,11 +2496,14 @@ save_files = False
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
     target_sites = site_list[site_str]
-    target_sites = [string for string in target_sites if string.startswith("2023 ")]
+    target_sites = [string for string in target_sites if string.startswith("2024 ")]
 else:
     target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
     if not being_deployed_to_streamlit:
         save_files = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+
+    #debug: to get a specific site, put the name of the site below and uncomment
+    #target_sites = ["2023 Hale Road"]
 
 # Set format shared by all graphs
 set_global_theme()
@@ -2637,6 +2654,7 @@ for site in target_sites:
     #
     #Load all the PM files, any errors will return an empty table. For later graphing purposes, 
     df_pattern_match = load_pm_data(site)
+    df_pattern_match = clean_data(df_pattern_match, [site])
     pm_data_empty = False
     pt_pm = pd.DataFrame()
     pm_date_range_dict = {}
@@ -2674,7 +2692,11 @@ for site in target_sites:
     # Process the summary data, i.e. figure out if it's correctly structured, adjust for 
     # "abandoned" and so on, and convert all dates to a date format so it's easy to graph later. 
     # The graphing should just be executing the plan, not figuring out if there are errors.
-    site_summary_dict = process_site_summary_data(summary_row)
+    # 11/2024 - the graph could be empty, so need to handle that
+    if len(summary_row):
+        site_summary_dict = process_site_summary_data(summary_row)
+    else:
+        site_summary_dict = {}
 
 
     # ------------------------------------------------------------------------------------------------
@@ -2693,10 +2715,11 @@ for site in target_sites:
     #Summary graph -- new 3/2024
     #TODO Make a version of this that creates ALL the summary graphs, and only the summary graphs, then 
     #puts them together into one big picture
-    target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
-                              end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
-    graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
-    output_graph(site, graph_summary, save_files, make_all_graphs, len(site_summary_dict))
+    if len(site_summary_dict):
+        target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
+                                end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
+        graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
+        output_graph(site, graph_summary, save_files, make_all_graphs, len(site_summary_dict))
 
     # Manual analyisis graph
     if not pt_manual.empty:
