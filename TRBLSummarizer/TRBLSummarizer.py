@@ -2675,7 +2675,7 @@ for site in target_sites:
     
             #TODO PUT summarize_pm here
     else: #TODO Should just graph what we get unless the data is completely missing
-        error_msgs.append["All pattern matching data not available -- missing some or all files"]
+        error_msgs.append("All pattern matching data not available, missing some or all files")
 
 
     # 
