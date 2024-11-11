@@ -2124,7 +2124,6 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
                 site_weather_by_type[w]  = site_weather_by_type[w].reindex(date_range, fill_value=0)         
     else:
         st.write(f"No weather available for {site_name}")
-        #show_error('No weather available for ' + site_name)
 
     return site_weather_by_type
 
@@ -2367,9 +2366,7 @@ def show_station_info(site_name:str):
     #We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
     #https://developers.google.com/maps/documentation/urls/get-started
     map = 'https://www.google.com/maps/search/?api=1&query={}%2C{}'.format(site_info['Latitude'], site_info['Longitude'])
-    st.write('About this site: [Location in Google Maps]({}), Elevation {} ft, {} Recordings'.
-             format(map, site_info['Altitude'], site_info['Recordings_Count']))
-
+    st.write(f"About this site: [Google Maps Link]({map}), elevation {site_info['Altitude']} ft, {site_info['Recordings_Count']} recordings")
 
 # If any tag column has "reviewed" in the title AND the value for a row (a recording) is 1, then 
 #    check that all "val" columns have a number. 
@@ -2459,6 +2456,7 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 # ===========================================================================================================
 
 init_logging()
+error_msgs = []
 
 #Load all the data for most of the graphs
 df_original = load_data()
@@ -2647,8 +2645,7 @@ for site in target_sites:
             pt_edge = pd.concat([pt_edge, pt_for_tag])
 
     else:
-        st.write('Site {} has no recordings'.format(site))
-
+        error_msgs.append("Site has no manual annotations")
     #
     # PATTERN MATCHING ANALYSIS
     #
@@ -2678,7 +2675,7 @@ for site in target_sites:
     
             #TODO PUT summarize_pm here
     else: #TODO Should just graph what we get unless the data is completely missing
-        st.write("All pattern matching data not available -- missing some or all files")
+        error_msgs.append["All pattern matching data not available -- missing some or all files"]
 
 
     # 
@@ -2705,6 +2702,10 @@ for site in target_sites:
         st.subheader(f"{site} [{str(site_counter)} of {str(len(target_sites))}]")
     else: 
         st.subheader(site)
+    
+    if len(error_msgs):
+        for error_msg in error_msgs:
+            st.write(f":red-background[{error_msg}]")
 
     if show_station_info_checkbox:
         show_station_info(site)
