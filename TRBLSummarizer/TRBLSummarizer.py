@@ -1666,10 +1666,10 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
                     found_valid_dates+=1
 
         if found_valid_dates or len(abandoned_dict):
-            with st.expander("Show pulse dates"):
-                st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
-                pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
-
+            # with st.expander("Show pulse dates"):
+            #     st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
+            #     pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
+            with st.expander("Show manually derived dates:"):
                 st.write("<br><b>Manually derived dates:</b>", unsafe_allow_html=True)
                 st.write(report, unsafe_allow_html=True)
                 if len(abandoned_dict):
@@ -2756,6 +2756,11 @@ for site in target_sites:
                             title = graph_pm) 
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
+
+        with st.expander("Show pulse dates from Pattern Matching"):
+            #st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
+            pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
+
         output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
     # Edge Analysis

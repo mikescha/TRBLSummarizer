@@ -31,4 +31,4 @@ Step 5 (optional): Upload to the Streamlit site
 2. Click Sign In, and sign in with GitHub credentials
 3. Click the moon icon indicating the app is in Sleep Mode, and follow the prompts
 4. Go here to view the app:
-https://mikescha-trblsummarizer-trblsummarizertrblsummarizer-l93kzs.streamlit.app/
+https://trblsummarizer.streamlit.app/
