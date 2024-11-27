@@ -949,6 +949,8 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
     return normalize_pt(aggregate, date_range_dict)
 
 
+def song_count_sufficient(value, threshold):
+    return pd.notna(value) and value >= threshold
 
 def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     # Scan through a row of pattern matching data and return pairs of dates such that the first date is preceeded by
@@ -962,37 +964,39 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     dates = {}
     last_column = 0
     looking_for_first = True
-    nan_count = 0
+    consecutive_dates_below_threshold = 0
     skip_ahead = False
     col = 0
     pulse = 1
-    while col < len(row):
-        # Go through the entire row
+    CONSECUTIVE_THRESHOLD = 2
+    while col < len(row):       
         if looking_for_first:
-            if pd.notna(row[col]) and row[col] >= threshold:
-                dates[pulse] = {}
-                dates[pulse][first_str] = row.index[col]
-                #If we're at the very beginning, then we don't actually know when it started, so note this
-                dates[pulse][before_first_str] = col == 0
-
+            if song_count_sufficient(row[col], threshold):
+                column_date = row.index[col]
+                dates[pulse] = {
+                    first_str : column_date,
+                    #If we're at the very beginning, then we don't actually know when it started, so note this
+                    before_first_str : col == 0
+                }
                 last_column = col
                 looking_for_first = False
         else:
             # We're looking for two consecutive NA or less than threshold
-            if pd.notna(row[col]) and row[col] >= threshold:
+            if song_count_sufficient(row[col], threshold):
                 last_column = col
-                nan_count = 0            
-            elif pd.isna(row[col]) or (pd.notna(row[col]) and row[col] < threshold):
-                nan_count += 1
-                if nan_count > 1:
-                    # Found it
-                    dates[pulse][last_str] = row.index[last_column]
-                    dates[pulse][after_last_str] = False
-                    nan_count = 0
-                    looking_for_first = True
+                consecutive_dates_below_threshold = 0            
+            else: #No data, or at least there wasn't enough calls
+                consecutive_dates_below_threshold += 1
+                if consecutive_dates_below_threshold >= CONSECUTIVE_THRESHOLD: 
+                    # Found enough consecutive dates below threshold to consider that the pulse ended
+                    column_date = row.index[last_column]
+                    dates[pulse].update({
+                        last_str : column_date,
+                        after_last_str : False
+                    })
+                    consecutive_dates_below_threshold = 0
+                    looking_for_first = True # Now that we found the end, we're looking for the first date in the next pulse
                     skip_ahead = True # Now that we've found a pair, skip forward by the pulse gap and start over
-            else:
-                assert True # I don't think it's possible to get here
 
         #Either skip ahead by 1 for a normal case, or the pulse gap if we just found a pair
         if skip_ahead:
@@ -1006,8 +1010,10 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     if dates and len(dates[len(dates)]) == 2:
         #We want to capture the last date in the row. Because of "pulse_gap", col could be beyond the end
         #of the table, so we'll use the value we know is good
-        dates[len(dates)][last_str] = row.index[len(row)-1]
-        dates[len(dates)][after_last_str] = True
+        dates[len(dates)].update({
+            last_str : row.index[len(row)-1],
+            after_last_str : True
+        })
 
     return dates
 
