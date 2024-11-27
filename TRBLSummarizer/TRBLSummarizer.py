@@ -232,13 +232,15 @@ weather_file = 'weather_history.csv'
 data_old_file = 'data_old.csv'
 error_file = figure_dir / 'error.txt'
 summary_file = 'summary.csv'
+dates_file = 'analyzed dates.csv'
 
 files = {
     data_file : data_dir / data_file,
     site_info_file : data_dir / site_info_file,
     weather_file : data_dir / weather_file,
     data_old_file : data_dir / data_old_file,
-    summary_file : data_dir / summary_file 
+    summary_file : data_dir / summary_file, 
+    dates_file : data_dir / dates_file
 }
 
 # Mar 2024: This is the new set of summary data that Wendy created
@@ -309,6 +311,27 @@ error_list = ''
 # Helper functions
 #
 #
+def append_to_csv(df, site, csv_filename):
+    # Replace <br> with \n in the DataFrame
+    df = df.replace(r"<br>", "\n", regex=True)
+
+    # Flatten the DataFrame into one row with columns prefixed by the row index
+    flat_data = {f"{pulse} {category}": value for pulse, category, value in df.stack().reset_index().values}
+    flat_data["Site"] = site  # Add the site as a separate column
+
+    # Convert the flattened data to a DataFrame
+    flat_df = pd.DataFrame([flat_data])
+
+    # Reorder columns to make "Site" the first column
+    columns = ["Site"] + [col for col in flat_df.columns if col != "Site"]
+    flat_df = flat_df[columns]
+
+    # Append to CSV, creating it if it doesn't exist
+    with open(csv_filename, 'a',  newline='') as f:
+        write_header = f.tell() == 0  # Write header only if file is empty
+        flat_df.to_csv(f, index=False, header=write_header)
+
+
 def format_timestamp(ts):
     if pd.notna(ts):
         if isinstance(ts, pd.Timestamp):
@@ -1181,17 +1204,6 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     #Sanity check the data
     summary_dict = clean_pm_dates(dates)
     summary_dict = format_pm_dates(summary_dict)
-    #Prep the data for display    
-    # summary_dict = make_empty_summary_dict()
-    # for phase in dates:
-    #     if phase != "Male Song":
-    #         pass
-
-    # for index, (start, end) in enumerate(zip(dates[::2], dates[1::2]), start=1):
-    #     summary_dict[f"Pulse {index}"][f"First {row.name}"] = format_timestamp(start)
-    #     summary_dict[f"Pulse {index}"][f"Last {row.name}"] = format_timestamp(end)
-    #     if index > max_pulse:
-    #         max_pulse = index
     
     #Now format this for display. Make a new table where the "1" becomes "Pulse 1"
     result = pd.DataFrame.from_dict(summary_dict, orient='index')
@@ -2495,6 +2507,11 @@ save_files = False
 if make_all_graphs:
     target_sites = site_list[site_str]
     target_sites = [string for string in target_sites if string.startswith("2024 ")]
+
+    # This is the file where we write all the dates we extracted from the data
+    if os.path.exists(files[dates_file]):
+        os.remove(files[dates_file])
+
 else:
     target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
     if not being_deployed_to_streamlit:
@@ -2759,7 +2776,11 @@ for site in target_sites:
 
         with st.expander("Show pulse dates from Pattern Matching"):
             #st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
-            pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
+            summarized_data = summarize_pm(pt_pm)
+            pretty_print_table(summarized_data, body_alignment="left")
+
+            if (make_all_graphs):
+                append_to_csv(summarized_data, site, files[dates_file])
 
         output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
