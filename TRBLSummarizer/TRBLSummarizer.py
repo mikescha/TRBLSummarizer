@@ -2545,6 +2545,7 @@ with container_bottom:
 container_top.title('TRBL Graphs')
 
 save_files = False
+save_composite = False
 
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
@@ -2566,7 +2567,7 @@ else:
     if not being_deployed_to_streamlit:
         save_files = False
         save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
-
+    
     #debug: to get a specific site, put the name of the site below and uncomment
     #target_sites = ["2023 Hale Road"]
 
