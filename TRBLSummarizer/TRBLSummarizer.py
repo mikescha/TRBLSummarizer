@@ -1198,7 +1198,6 @@ def format_pm_dates(pm_dates:dict):
                 #Empty key, put an appropriate message for display purposes
                 formatted_dict[pulse_str][phase] = "No data"
 
-                
     return formatted_dict
 
 
@@ -1219,7 +1218,7 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     #Now format this for display. Make a new table where the "1" becomes "Pulse 1"
     result = pd.DataFrame.from_dict(summary_dict, orient='index')
 
-    return result
+    return result, dates
 
 
 #
@@ -1836,6 +1835,55 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
     # return the final plotted heatmap
     return fig
+
+
+def add_pulse_overlays(graph, summarized_data:pd.DataFrame, date_range:dict):
+    # For each of the derived summary dates, draw a line on the graph
+    # Top row of graph is Male Song, nothing goes there
+
+    # For each of the other rows, we want to draw a bar to the left of the start date, a line to the end date, and then a line just 
+    # after the end dates
+
+    graph_start_date = pd.to_datetime(date_range["start"])
+    for idx, phase_type in enumerate(pm_file_types): 
+        if phase_type in summarized_data:
+            for pulse in summarized_data[phase_type]:
+                pulse_dates = summarized_data[phase_type][pulse]
+                assert first_str in pulse_dates
+                assert last_str in pulse_dates
+
+                overlay_start = (pulse_dates[first_str] - graph_start_date).days
+                overlay_end = (pulse_dates[last_str] - graph_start_date).days + 1 
+                target_ax = graph.axes[idx]
+                # graph.axes[idx].axvspan(
+                #     xmin=overlay_start,
+                #     xmax=overlay_end,
+                #     color="yellow",
+                #     alpha=0.3  # Transparency
+                # )
+
+                # Get y-axis limits
+                ymin, ymax = target_ax.get_ylim()
+
+                # Create a rectangle spanning the range
+                rect = Rectangle(
+                    (overlay_start, ymin),           # Bottom-left corner (x, y)
+                    overlay_end - overlay_start,     # Width (difference in dates)
+                    ymax - ymin,                     # Height
+                    edgecolor="red",                 # Outline color
+                    facecolor="none",                # Transparent fill
+                    linewidth=2                      # Outline width
+                )
+
+                # Add the rectangle to the axis
+                target_ax.add_patch(rect)                            
+        else:
+            # do anything for missing rows?
+            pass
+
+    return
+
+
 
 #Helper to ensure we make the filename consistently because this is done from multiple places
 def make_img_filename(site:str, graph_type:str, extra="") ->str:
@@ -2485,6 +2533,7 @@ container_bottom = st.sidebar.container(border=True)
 with container_mid:
     show_station_info_checkbox = st.checkbox('Show station info', value=True)
     show_weather_checkbox = st.checkbox('Show station weather', value=True)
+    show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
 
 with container_bottom:
     if not being_deployed_to_streamlit:
@@ -2765,13 +2814,14 @@ for site in target_sites:
                             cmap = cmap_pm, 
                             title = graph_pm) 
         if len(month_locs)==0:
-            month_locs = get_month_locs_from_graph() 
+            month_locs = get_month_locs_from_graph() #BUG This returned nothing for the PM Graph, what's it used for
+
+        summarized_data, raw_pm_dates = summarize_pm(pt_pm)
+        if show_PM_dates:
+            add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
 
         with st.expander("Show pulse dates from Pattern Matching"):
-            #st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
-            summarized_data = summarize_pm(pt_pm)
             pretty_print_table(summarized_data, body_alignment="left")
-
             if (make_all_graphs):
                 append_to_csv(summarized_data, site, files[dates_file])
 
