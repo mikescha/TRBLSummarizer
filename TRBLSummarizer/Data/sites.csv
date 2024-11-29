@@ -173,7 +173,7 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 63113,2024 Markham Ravine 3,38.88972,-121.465,,America/Los_Angeles,1229
 63114,2024 Merced NWR - Cottonwood Trail,37.19891,-120.599,,America/Los_Angeles,5612
 63087,2024 Moore Lake - confirm lat lon,36.45885,-121.799,,America/Los_Angeles,5912
-63089,2024 Newberry Springs,34.877,-116.606,,America/Los_Angeles,1639
+66012,2024 Newberry Springs,34.877,-116.606,,America/Los_Angeles,1639
 63049,2024 Ohlone - Santa Lucia Preserve,36.508,-121.879,,America/Los_Angeles,5908
 63086,2024 OR Eureka Lane,44.57824,-121.194,,America/Los_Angeles,5110
 65471,2024 Panoche Creek Preserve - Dollar Marsh East - fix lat lon,36.591,-120.769,,America/Los_Angeles,7788
@@ -182,6 +182,7 @@ Id,Name,Latitude,Longitude,Altitude,Timezone,Recordings_Count
 63656,2024 Rancho Jamul - Main Pond 1,32.685,-116.856,,America/Los_Angeles,9409
 63657,2024 Rancho Jamul - Main Pond 2,32.685,-116.856,,America/Los_Angeles,7386
 63468,2024 Rancho Jamul - North Pond,32.685,-116.856,,America/Los_Angeles,6096
+63089,2024 SJWA Thistle NW of Bridge Street Pond,33.86235,-117.076,,America/Los_Angeles,1224
 63738,2024 Sedgwick,34.995,-120.042,,America/Los_Angeles,8740
 63116,2024 WA Harder Spring,46.657,-118.499,,America/Los_Angeles,9452
 63465,2024 WA McCain Pond,48.852,-119.183,,America/Los_Angeles,9011

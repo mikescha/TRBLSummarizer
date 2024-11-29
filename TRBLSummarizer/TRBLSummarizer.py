@@ -971,7 +971,7 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
     CONSECUTIVE_THRESHOLD = 2
     while col < len(row):       
         if looking_for_first:
-            if song_count_sufficient(row[col], threshold):
+            if song_count_sufficient(row.iloc[col], threshold):
                 column_date = row.index[col]
                 dates[pulse] = {
                     first_str : column_date,
@@ -982,7 +982,7 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
                 looking_for_first = False
         else:
             # We're looking for two consecutive NA or less than threshold
-            if song_count_sufficient(row[col], threshold):
+            if song_count_sufficient(row.iloc[col], threshold):
                 last_column = col
                 consecutive_dates_below_threshold = 0            
             else: #No data, or at least there wasn't enough calls
@@ -1240,30 +1240,12 @@ def get_site_to_analyze(site_list:list, my_sidebar) -> str:
 # Assume that the data cleaning code has removed any extraneous dates, such as if data 
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
-    date_range_dict_new = {}
     if df.index.name == "date":
         date_range_dict = {start_str : df.index.min().strftime("%m-%d-%Y"), 
                              end_str : df.index.max().strftime("%m-%d-%Y")}
     else:
         date_range_dict = {start_str : df["date"].min().strftime("%m-%d-%Y"), 
                              end_str : df["date"].max().strftime("%m-%d-%Y")}
-
-    # #OLD WAY
-    # df.sort_index(inplace=True)
-
-    # #Need to determine whether we are indexed by date or not
-    # date_range_dict = {}
-    # if hasattr(df, 'index') and isinstance(df.index, pd.DatetimeIndex):
-    #     date_range_dict = {start_str : df.index[0].strftime("%m-%d-%Y"), 
-    #                        end_str : df.index[len(df)-1].strftime("%m-%d-%Y")}
-    # else:
-    #     #No index, but it should be findable by the date column    
-    #     if "date" in df.columns.to_list():
-    #         date_range_dict = {start_str : df.iloc[0,df.columns.get_loc('date')].strftime("%m-%d-%Y"), 
-    #                            end_str : df.iloc[len(df)-1,df.columns.get_loc('date')].strftime("%m-%d-%Y")}
-    
-    # if date_range_dict == {}:
-    #     log_error("Couldn't find date range!!")
 
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
