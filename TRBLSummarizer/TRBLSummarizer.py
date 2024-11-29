@@ -192,10 +192,10 @@ graph_weather = 'Weather'
 graph_names = [graph_summary, graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
 legend_name = 'legend.png'
 legend_text = {graph_summary: ["Settlement", "Incubation", "Brooding", "Fledgling"],
-               graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call"],
-               graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling/Fledgling Call", "Fledgling Call"],
+               graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"],
+               graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
                graph_edge: ["Male Chorus", "Hatchling Call"],
-               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling Call", "Fledgling Call"]
+               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"]
 }
 
 #default color map
@@ -208,8 +208,8 @@ cmap = {data_col[malesong]:'Greens',
 cmap_names = {data_col[malesong]:"Male Song",
               data_col[courtsong]:"Male Chorus",
               data_col[altsong2]:"Female Chatter",
-              data_col[altsong1]:"Hatchling/Nestling/\nFledgling Call",
-              "Fledgling":"Fledgling Call"} 
+              data_col[altsong1]:"Hatchling/Nestling/\nFledgling",
+              "Fledgling":"Fledgling"} 
 
 #color map for pattern matching
 cmap_pm = {"Male Song":"Greens", 
@@ -683,18 +683,16 @@ def load_summary_data() -> pd.DataFrame:
 
 # clean up the data for a particular site
 def is_valid_date_string(date_string):
-    try:
-        pd.to_datetime(date_string, format="%m/%d/%Y")
-        return True
-    except ValueError:
+    result = pd.to_datetime(date_string, format="%m/%d/%Y", errors="coerce")
+    if pd.isna(result):
         return False
+    else:
+        return True 
 
 def convert_to_datetime(date_string):
     date_format = "%m/%d/%Y"
-    try:
-        return pd.to_datetime(date_string, format=date_format)
-    except ValueError as e:
-        return pd.NaT  # Use pd.NaT for missing or null datetime values
+    result = pd.to_datetime(date_string, format=date_format, errors="coerce")
+    return result  # Will return pd.NaT for missing or null datetime values
 
 def is_valid_date(timestamp):
     return not pd.isna(timestamp)
@@ -722,19 +720,23 @@ def count_valid_pulses(pulse_data:dict) -> int:
     return count
 
 def get_val_from_df(df:pd.DataFrame, col):
-    return df.iloc[0,df.columns.get_loc(col)]
+    result = df.iloc[0,df.columns.get_loc(col)]
+    return result
 
 def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     nd_string = "ND"
     # This function takes a row from the summary spreadsheet. The goal is to process it as follows:
     first_rec = get_val_from_df(summary_row, summary_first_rec)
     last_rec = get_val_from_df(summary_row, summary_last_rec)
+
+    #TODO Is this the best way to handle the zero recording case?
+    if pd.isna(first_rec):
+        return {}
+
     summary_dict = {
         summary_first_rec   : convert_to_datetime(first_rec),
         summary_last_rec    : convert_to_datetime(last_rec),
     }
-
-#    abandoned_dates = {}
 
     for pulse in pulses:
         pulse_result = {}
@@ -743,12 +745,11 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
         abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse} {abandoned}"))
         if is_valid_date(abandoned_date):
             pulse_result[abandoned] = abandoned_date 
-#            abandoned_dates[pulse] = abandoned_date
 
         for phase in pulse_phases:
             start, end = pulse_phases[phase]
             target1 = f"{pulse} {start}"
-            value1 = get_val_from_df(summary_row, target1)
+            value1 = get_val_from_df(summary_row, target1) #TODO Test case where it's actually ND in the table instead of blank
             result1 = pd.NaT
             if is_valid_date_string(value1):
                 #It's a good date, so format it
@@ -762,7 +763,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 result1 = summary_dict[summary_first_rec]
             elif value1 == "after end":
                 result1 = summary_dict[summary_last_rec]
-            elif value1 == nd_string or value1 == "":
+            elif value1 == nd_string or value1 == "" or pd.isna(value1):
                 #this is OK, we aren't going to draw anything in this case
                 pass
             else:
@@ -794,6 +795,10 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
             elif value2 == nd_string:
                 if not value1 == nd_string:
                     log_error(f"Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
+            elif pd.isna(value2):
+                # Blank cell, should be OK if value1 is also blank
+                if not pd.isna(value1):
+                    log_error("Found invalid data in site summary data")
             else: #ND, empty, or any other values are not valid here
                 log_error("Found invalid data in site summary data")
             
