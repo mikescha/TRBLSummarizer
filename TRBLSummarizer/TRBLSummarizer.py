@@ -29,7 +29,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 
 # Constants and Globals
@@ -230,7 +230,7 @@ data_file = 'data 2021-2023.csv'
 site_info_file = 'sites.csv'
 weather_file = 'weather_history.csv'
 data_old_file = 'data_old.csv'
-error_file = figure_dir / 'error.txt'
+error_file = Path(__file__).parents[0] / 'error.txt'
 summary_file = 'summary.csv'
 dates_file = 'analyzed dates.csv'
 
@@ -240,7 +240,7 @@ files = {
     weather_file : data_dir / weather_file,
     data_old_file : data_dir / data_old_file,
     summary_file : data_dir / summary_file, 
-    dates_file : data_dir / dates_file
+    dates_file : Path(__file__).parents[0] / dates_file
 }
 
 # Mar 2024: This is the new set of summary data that Wendy created
@@ -1314,8 +1314,10 @@ def set_global_theme():
 
 
 def output_cmap():
+    #Save the legend, unless it's already there
     figure_path = figure_dir / legend_name
-    plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+    if not os.path.exists(figure_path):
+        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
 
 
 def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
@@ -1344,7 +1346,7 @@ def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
     if not make_all_graphs:
         st.pyplot(fig)
 
-    if save_files and not make_all_graphs:
+    if save_files:
         output_cmap()
 
     return
@@ -1919,7 +1921,7 @@ def save_figure(site:str, graph_type:str, delete_only=False):
     
     if not delete_only and plt.gcf().get_axes():
         # save the original image
-        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
+        #plt.savefig(figure_path, dpi='figure', bbox_inches='tight')
         
         #Create a different version of the image that we'll use for the compilation
         #plt.suptitle('')  #if we want to remove the titles but I don't think we do
@@ -2509,7 +2511,6 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
 # ===========================================================================================================
 
 init_logging()
-error_msgs = []
 
 #Load all the data for most of the graphs
 df_original = load_data()
@@ -2553,11 +2554,18 @@ if make_all_graphs:
     # This is the file where we write all the dates we extracted from the data
     if os.path.exists(files[dates_file]):
         os.remove(files[dates_file])
+    
+    # For now, I'm not saving all the files, only the composite because it's taking up too much space. 
+    # When she needs all the files, we'll bring this back
+    # Make sure to fix it here and in the Else statement below
+    save_files = False
+    save_composite = True
 
 else:
     target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
     if not being_deployed_to_streamlit:
-        save_files = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+        save_files = False
+        save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
 
     #debug: to get a specific site, put the name of the site below and uncomment
     #target_sites = ["2023 Hale Road"]
@@ -2571,6 +2579,7 @@ if profiling:
 
 site_counter = 0
 for site in target_sites:
+    error_msgs = []
     site_counter += 1
     # Select the site matching the one of interest
     df_site = df[df[data_col[site_str]] == site]
@@ -2822,7 +2831,7 @@ for site in target_sites:
 
         with st.expander("Show pulse dates from Pattern Matching"):
             pretty_print_table(summarized_data, body_alignment="left")
-            if (make_all_graphs):
+            if make_all_graphs:
                 append_to_csv(summarized_data, site, files[dates_file])
 
         output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
@@ -2841,7 +2850,7 @@ for site in target_sites:
         output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
     
     #Draw the single legend for the rest of the charts and save to a file if needed
-    draw_legend(cmap, make_all_graphs, save_files)
+    draw_legend(cmap, make_all_graphs, save_composite)
 
     #Show weather, as needed and if available
     weather_by_type = {}
@@ -2856,7 +2865,7 @@ for site in target_sites:
                 graph = create_weather_graph(weather_by_type, site)
                 output_graph(site, graph_weather, save_files, make_all_graphs)
     
-    if not being_deployed_to_streamlit or make_all_graphs or save_files:
+    if not being_deployed_to_streamlit or make_all_graphs or save_composite:
         combine_images(site, month_locs, show_weather_checkbox)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
@@ -2938,6 +2947,8 @@ if not make_all_graphs and len(df_site):
         clean_data.clear()
         load_data.clear()
         load_weather_data_from_file.clear()
+    
+    plt.close("all")
 
 if profiling:
     profiler.stop()
