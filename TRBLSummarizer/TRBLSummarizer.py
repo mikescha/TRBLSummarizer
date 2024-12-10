@@ -2567,10 +2567,10 @@ def make_one_row_pm_summary(df: pd.DataFrame):
 
     phases = ["Male", "Female", "Hatch", "Fledge"]
     phase_colors = {
-        phases[0] : "orange",
-        phases[1] : "purple",
-        phases[2] : "cyan",
-        phases[3] : "navy"
+        phases[0] : "#ED7D31",
+        phases[1] : "#7030A0",
+        phases[2] : "#58A1CF",
+        phases[3] : "#08519C"
     }
 
     male = df.loc["Male Chorus"]
