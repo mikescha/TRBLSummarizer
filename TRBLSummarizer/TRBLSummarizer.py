@@ -1734,7 +1734,11 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     graph_drawn = []
     
     #distance between top of plot space and chart
-    gap_for_title = 0.8 if title else 1
+    if title == graph_pm:
+        gap_for_title = 0.9
+    else:
+        gap_for_title = 0.8 if title else 1
+
     #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
     tick_spacing = 0
 
@@ -1750,7 +1754,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                             figsize=(fig_w,fig_height))
 
     # If we have one, add the title for the graph and set appropriate formatting
-    if len(title)>0:
+    if len(title) :
         plot_title(title)
     
     # Ensure that we have a row for each index. If a row is missing, add it with zero values
@@ -2606,7 +2610,7 @@ def make_one_row_pm_summary(df: pd.DataFrame):
                         width_per_phase,    # Width
                         1,                  # Full height
                         facecolor=phase_colors[phase],
-                        edgecolor="None"
+                        edgecolor="none"
                     ))
                     x_start += width_per_phase  # Increment y_start for the next phase
     
@@ -2615,12 +2619,13 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     ax.set_xlim(0, x_axis_len)
     ax.set_ylim(0, 1)
     ax.set_xticks(range(x_axis_len))
+    ax.grid(axis='x', color='black', linewidth=0.25)  # Grid lines as borders
+
     #ax.set_xticklabels(x_axis_len)    #raise TypeError(f"{labels:=} must be a sequence") from None
     ax.set_yticks([])
-    ax.set_title("Phase Frequencies by Date", fontsize=10, horizontalalignment='left')
+    ax.set_title(" Phase Frequencies by Date", loc='left', fontsize=8, ha='left')
     #exterior border
     ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=1))
-
     st.write(fig)
 
     return
