@@ -204,13 +204,16 @@ cmap = {data_col[malesong]:'Greens',
         data_col[courtsong]:'Oranges', 
         data_col[altsong2]:'Purples', 
         data_col[altsong1]:'Blues', 
-        "Fledgling":"Blues"}
+        "Fledgling":"Blues"
+}
 
 cmap_names = {data_col[malesong]:"Male Song",
               data_col[courtsong]:"Male Chorus",
               data_col[altsong2]:"Female Chatter",
               data_col[altsong1]:"Hatchling/Nestling/\nFledgling",
-              "Fledgling":"Fledgling"} 
+#   temporarily don't need this
+#              "Fledgling":"Fledgling",
+} 
 
 #color map for pattern matching
 cmap_pm = {"Male Song":         "Greens", 
@@ -675,6 +678,8 @@ def load_pm_data(site:str) -> pd.DataFrame:
 
             #Finally, add the table that we loaded to the end of the main one
             df_temp["type"] = t
+            # Ensure all columns in df_temp have explicit dtypes to avoid warning
+            df_temp = df_temp.astype("object")
             df = pd.concat([df, df_temp], ignore_index=True)
     
     if "date" in df.columns:
