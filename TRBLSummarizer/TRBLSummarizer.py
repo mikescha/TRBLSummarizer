@@ -2610,22 +2610,27 @@ def make_one_row_pm_summary(df: pd.DataFrame):
                         width_per_phase,    # Width
                         1,                  # Full height
                         facecolor=phase_colors[phase],
-                        edgecolor="none"
+                        edgecolor="none",
+                        alpha=1
                     ))
                     x_start += width_per_phase  # Increment y_start for the next phase
-    
+        ax.add_line(Line2D(
+                    [date_idx, date_idx], # Bottom-left corner
+                    [0, 1],             # Full height
+                    color="black",
+                    linewidth=0.25,
+        ))
     # Configure plot
     x_axis_len = len(data.columns)
     ax.set_xlim(0, x_axis_len)
     ax.set_ylim(0, 1)
     ax.set_xticks(range(x_axis_len))
-    ax.grid(axis='x', color='black', linewidth=0.25)  # Grid lines as borders
+    #ax.grid(axis='x', color='black', linewidth=0.25)  # Grid lines as borders
 
-    #ax.set_xticklabels(x_axis_len)    #raise TypeError(f"{labels:=} must be a sequence") from None
     ax.set_yticks([])
     ax.set_title(" Phase Frequencies by Date", loc='left', fontsize=8, ha='left')
     #exterior border
-    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=1))
+    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=0.75))
     st.write(fig)
 
     return
