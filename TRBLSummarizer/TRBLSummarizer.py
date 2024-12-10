@@ -1066,7 +1066,7 @@ def make_empty_summary_row() -> dict:
 
 def make_empty_summary_dict() -> dict:
     # Create the entire empty summary dict, so we don't get key errors
-    base_dict = {1:{}, 2:{}, 3:{}, 4:{}}
+    base_dict = {1:{}, 2:{}, 3:{}, 4:{}, 5:{}}
     for k in base_dict:
         base_dict[k] = make_empty_summary_row()
     return base_dict
@@ -1167,13 +1167,13 @@ def clean_pm_dates(dates:dict):
     
     first_dates.sort(key=lambda x: x[0]) ###IS THIS SORTING ENOUGH, IF NEST AND FLEDG ARE ON SAME DATE THEN NEST SHOULD BE FIRST
 
-    previous = None
+    previous = None #TODO #BUG this code isn't doing anything, why is it here?
     for date in first_dates:
         if previous:
             if previous[0] == date[0]:
                 #NOTE Dec 2024, changed this from using all pm_file_types to pm_song_types so that the 
                 #       insect calls aren't considered and shouldn't affect anything
-                previous_pos = pm_song_types[previous[1][:-1]]
+                previous_pos = pm_song_types[previous[1][:-1]] #BUG should this be [-1:] to get the number off?
                 date_pos = pm_song_types[date[1][:-1]]
                 assert previous_pos<date_pos, "Sorting needs to be improved"
             previous = date
@@ -2040,6 +2040,7 @@ def get_month_locs_from_graph() -> dict:
     for line in ax.get_lines():
         locs[months[m]] = (x, line.get_xdata()[0])
         x = line.get_xdata()[0]
+        assert type(x) is np.float64
         m+=1
     if x>0:
         locs['max']=x    
