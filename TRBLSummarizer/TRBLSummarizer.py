@@ -1165,19 +1165,11 @@ def clean_pm_dates(dates:dict):
             if "First" in date:
                 first_dates.append((date[first_str], f"{phases}{pulse}"))
     
-    first_dates.sort(key=lambda x: x[0]) ###IS THIS SORTING ENOUGH, IF NEST AND FLEDG ARE ON SAME DATE THEN NEST SHOULD BE FIRST
+    #TODO I'm not sure if this sorting is sufficient. Multiple sort passes may be necessary to get the pulses 
+    #   in the right order
+    first_dates.sort(key=lambda x: x[0]) 
 
-    previous = None #TODO #BUG this code isn't doing anything, why is it here?
-    for date in first_dates:
-        if previous:
-            if previous[0] == date[0]:
-                #NOTE Dec 2024, changed this from using all pm_file_types to pm_song_types so that the 
-                #       insect calls aren't considered and shouldn't affect anything
-                previous_pos = pm_song_types[previous[1][:-1]] #BUG should this be [-1:] to get the number off?
-                date_pos = pm_song_types[date[1][:-1]]
-                assert previous_pos<date_pos, "Sorting needs to be improved"
-            previous = date
-
+    #Generate a blank dictionary so that we don't end up with any key errors
     temp_dict = make_empty_summary_dict()
 
     # We're now going to fill out the summary dict by walking through the dates in order and placing them where appropriate.
