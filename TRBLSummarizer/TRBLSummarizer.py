@@ -2562,6 +2562,70 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     return output
 
 
+def make_one_row_pm_summary(df: pd.DataFrame):
+    #Trial of new graphing approach
+
+    phases = ["Male", "Female", "Hatch", "Fledge"]
+    phase_colors = {
+        phases[0] : "orange",
+        phases[1] : "purple",
+        phases[2] : "cyan",
+        phases[3] : "navy"
+    }
+
+    male = df.loc["Male Chorus"]
+    female = df.loc["Female"]
+    hatch = df.loc[["Hatchling", "Nestling"]].sum()
+    fledge = df.loc["Fledgling"]
+
+    data = pd.DataFrame({
+        phases[0] : male,
+        phases[1] : female,
+        phases[2] : hatch,
+        phases[3] : fledge
+    }).T
+
+    #Use the default width and double the height since we're graphing so much data
+    fig, ax = plt.subplots(figsize=(fig_w, fig_h/2))
+
+    for date_idx, date in enumerate(data):
+        min_value = 2
+        total_phases = sum(data[date] > min_value)
+        if total_phases > 0:
+            # Compute rectangle width (split evenly based on total phases for the day)
+            width_per_phase = 1 / total_phases
+            x_start = date_idx
+
+            # Loop through phases
+            for phase_idx, phase in enumerate(phases):
+                value = data[date][phase]
+                if value > min_value:
+                    # Draw rectangle
+                    ax.add_patch(Rectangle(
+                        (x_start, 0),       # Bottom-left corner
+                        width_per_phase,    # Width
+                        1,                  # Full height
+                        facecolor=phase_colors[phase],
+                        edgecolor="None"
+                    ))
+                    x_start += width_per_phase  # Increment y_start for the next phase
+    
+    # Configure plot
+    x_axis_len = len(data.columns)
+    ax.set_xlim(0, x_axis_len)
+    ax.set_ylim(0, 1)
+    ax.set_xticks(range(x_axis_len))
+    #ax.set_xticklabels(x_axis_len)    #raise TypeError(f"{labels:=} must be a sequence") from None
+    ax.set_yticks([])
+    ax.set_title("Phase Frequencies by Date", fontsize=10, horizontalalignment='left')
+    #exterior border
+    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=1))
+
+    st.write(fig)
+
+    return
+
+
 # ===========================================================================================================
 # ===========================================================================================================
 #
@@ -2885,6 +2949,7 @@ for site in target_sites:
                             row_names = pm_file_types, 
                             cmap = cmap_pm, 
                             title = graph_pm) 
+        
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
 
@@ -2898,6 +2963,8 @@ for site in target_sites:
                 append_to_csv(summarized_data, site, files[dates_file])
 
         output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
+
+        make_one_row_pm_summary(df = pt_pm)
 
     # Edge Analysis
     if not pt_edge.empty:
