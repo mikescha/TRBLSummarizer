@@ -2614,12 +2614,12 @@ def make_one_row_pm_summary(df: pd.DataFrame):
                         alpha=1
                     ))
                     x_start += width_per_phase  # Increment y_start for the next phase
-        ax.add_line(Line2D(
-                    [date_idx, date_idx], # Bottom-left corner
-                    [0, 1],             # Full height
-                    color="black",
-                    linewidth=0.25,
-        ))
+        # ax.add_line(Line2D(
+        #             [date_idx, date_idx], # Bottom-left corner
+        #             [0, 1],             # Full height
+        #             color="black",
+        #             linewidth=0.25,
+        # ))
     # Configure plot
     x_axis_len = len(data.columns)
     ax.set_xlim(0, x_axis_len)
