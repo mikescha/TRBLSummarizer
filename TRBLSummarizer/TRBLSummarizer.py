@@ -195,7 +195,8 @@ legend_text = {graph_summary: ["Settlement", "Incubation", "Brooding", "Fledglin
                graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"],
                graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
                graph_edge: ["Male Chorus", "Hatchling Call"],
-               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"]
+               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling", 
+                          "Insect 30", "Insect 31", "Insect 32", "Insect 33", "Pacific Tree Frog", "Red-legged Frog", "Bull Frog"]
 }
 
 #default color map
@@ -203,7 +204,7 @@ cmap = {data_col[malesong]:'Greens',
         data_col[courtsong]:'Oranges', 
         data_col[altsong2]:'Purples', 
         data_col[altsong1]:'Blues', 
-        "Fledgling":"Greys"}
+        "Fledgling":"Blues"}
 
 cmap_names = {data_col[malesong]:"Male Song",
               data_col[courtsong]:"Male Chorus",
@@ -212,13 +213,19 @@ cmap_names = {data_col[malesong]:"Male Song",
               "Fledgling":"Fledgling"} 
 
 #color map for pattern matching
-cmap_pm = {"Male Song":"Greens", 
-           "Male Chorus":"Oranges", 
-           "Female":"Purples", 
-           "Hatchling":"Blues",
-           "Nestling" :"Blues",
-           "Fledgling":'Greys',
-            }
+cmap_pm = {"Male Song":         "Greens", 
+           "Male Chorus":       "Oranges", 
+           "Female":            "Purples", 
+           "Hatchling":         "Blues",
+           "Nestling" :         "Blues",
+           "Fledgling":         "Blues",
+           "Insect 30":         "Greys",
+           "Insect 31":   	    "Greys",
+           "Insect 32":         "Greys",	
+           "Insect 33":         "Greys",
+           "Pacific Tree Frog": "Greys",	
+           "Red-legged Frog":   "Greys",
+           "Bull Frog":         "Greys"}
 
 
 #Files, paths, etc.
@@ -276,14 +283,29 @@ pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
 #edit this if we add/remove file types
 #Change: Color Map for Pattern Matching, Legend Text, plus File Types. Also, there are some lists
 #of column names in summarize_pm() that likely need to change
-pm_file_types = ['Male Song',
-                 'Male Chorus', 
-                 'Female', 
-                 'Hatchling', 
-                 'Nestling',
-                 'Fledgling', 
-]
-pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL"]
+pm_song_types = ["Male Song",
+                 "Male Chorus", 
+                 "Female", 
+                 "Hatchling", 
+                 "Nestling",
+                 "Fledgling"]
+
+#NOTE Dec 2024: The file names are matching what the PM Downloader does, which is missing the "sp" from the name
+#       so to prevent having to re-download everything we'll leave it this way and change it in the graph
+#       rendering code or elsewhere as necessary. If this changes, need to update the cmap and the legend text
+pm_insect_sp30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
+pm_frog_pactf = "Pacific Tree Frog"
+pm_other_types = [pm_insect_sp30,
+                 "Insect 31",	
+                 "Insect 32",	
+                 "Insect 33",	
+                 pm_frog_pactf,	
+                 "Red-legged Frog",
+                 "Bull Frog"]
+
+#Abbreviations are used in the summary table, to reduce column width
+pm_file_types = pm_song_types + pm_other_types
+pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
 first_str = "First"
@@ -291,11 +313,11 @@ last_str = "Last"
 before_first_str = "Before First"
 after_last_str = "After Last"
 
-valid_pm_date_deltas = {pm_file_types[1]:0, #Male Chorus to Female can be 0 days
-                        pm_file_types[2]:5, #Female to Hatchling must be at least 5 days
-                        pm_file_types[3]:0, #Hatchling to Nestling can be 0 days
-                        pm_file_types[4]:3, #Nestling to Fledgling must be at least 3 days
-                        pm_file_types[5]:0, #Nestling to Nestling is zero, here to make math easy
+valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
+                        pm_song_types[2]:5, #Female to Hatchling must be at least 5 days
+                        pm_song_types[3]:0, #Hatchling to Nestling can be 0 days
+                        pm_song_types[4]:3, #Nestling to Fledgling must be at least 3 days
+                        pm_song_types[5]:0, #Nestling to Nestling is zero, here to make math easy
                         }
 
 missing_data_flag = -100
@@ -410,62 +432,62 @@ def get_target_sites() -> dict:
     for s in all_sites:
         results[site_str].append(s)
 
-    #Now, go through all the folders and check them
-    top_items = os.scandir(data_dir)
-    if any(top_items):
-        for item in top_items:
-            if item.is_dir():
-                #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
-                s=item.name
-                if s in all_sites:
-                    #NOTE: Now that the PM files are downloaded automatically, much of this is no longer necessary. However, it's not 
-                    #      a bad thing to have checks for things like subfolders where they shouldn't be. But if this becomes a 
-                    #      maintenance issue, then I should be able to just kill everything except checking that the count is right. 
+    #NOTE: Dec 2024: We're in transition where we're adding files for insects to some but not all sites.
+    # So, because we're downloading the PM job files automatically and we've made the code more robust, 
+    # I'm removing the error checking for now
+
+    # #Now, go through all the folders and check them
+    # top_items = os.scandir(data_dir)
+    # if any(top_items):
+    #     for item in top_items:
+    #         if item.is_dir():
+    #             #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
+    #             s=item.name
+    #             if s in all_sites:
+    #                 # Get a list of all files in that directory, scan for files that match our pattern
+    #                 if any(os.scandir(item)):
+    #                     #Check that each type of expected file is there:
+    #                     if len(pm_file_types) != count_files_in_folder(item):
+    #                         results[bad_files].append('Wrong number of files: ' + item.name)
+
+    #                     for t in pm_file_types:
+    #                         found_file = False
+    #                         found_dir_in_subfolder = False
+    #                         sub_items = os.scandir(item)
+    #                         for f in sub_items:
+    #                             empty_dir = False #if the sub_items constructor is empty, we won't get here
+
+    #                             if f.is_file():
+    #                                 f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
+    #                                 if t.lower() == f_type[0:len(t)].lower():
+    #                                     results[t].append(f.name)
+    #                                     if s not in results[site_str]: 
+    #                                         results[site_str].append(s)
+    #                                     found_file = True
+    #                                     break
+    #                             else:
+    #                                 if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
+    #                                     results[bad_files].append('Found subfolder in data folder: ' + s)
+    #                                 found_dir_in_subfolder = True
+    #                         sub_items.close()
                     
-                    #Get a list of all files in that directory, scan for files that match our pattern
-                    if any(os.scandir(item)):
-                        #Check that each type of expected file is there:
-                        if len(pm_file_types) != count_files_in_folder(item):
-                            results[bad_files].append('Wrong number of files: ' + item.name)
+    #                         if not found_file and not empty_dir:
+    #                             results[bad_files].append('Missing file: ' + s + ' ' + t)
 
-                        for t in pm_file_types:
-                            found_file = False
-                            found_dir_in_subfolder = False
-                            sub_items = os.scandir(item)
-                            for f in sub_items:
-                                empty_dir = False #if the sub_items constructor is empty, we won't get here
-
-                                if f.is_file():
-                                    f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
-                                    if t.lower() == f_type[0:len(t)].lower():
-                                        results[t].append(f.name)
-                                        if s not in results[site_str]: 
-                                            results[site_str].append(s)
-                                        found_file = True
-                                        break
-                                else:
-                                    if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
-                                        results[bad_files].append('Found subfolder in data folder: ' + s)
-                                    found_dir_in_subfolder = True
-                            sub_items.close()
-                    
-                            if not found_file and not empty_dir:
-                                results[bad_files].append('Missing file: ' + s + ' ' + t)
-
-                    else:
-                        results[bad_files].append('Empty folder: ' + item.name)
+    #                 else:
+    #                     results[bad_files].append('Empty folder: ' + item.name)
         
-                else:
-                    if item.name.lower() != 'hide' and item.name.lower() != 'old files':
-                        results[bad_files].append('Bad folder name: ' + item.name)
+    #             else:
+    #                 if item.name.lower() != 'hide' and item.name.lower() != 'old files':
+    #                     results[bad_files].append('Bad folder name: ' + item.name)
             
-            else: 
-                # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
-                # our pattern, then mark it as Bad.
-                if item.name.lower() not in files.keys():
-                    results[bad_files].append(item.name)
+    #         else: 
+    #             # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
+    #             # our pattern, then mark it as Bad.
+    #             if item.name.lower() not in files.keys():
+    #                 results[bad_files].append(item.name)
 
-    top_items.close()
+    # top_items.close()
     
     if len(results[site_str]):
         results[site_str].sort()
@@ -605,12 +627,13 @@ def load_data() -> pd.DataFrame:
     return df
 
 
-# Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
-# These are the files from all the folders named by site. 
-# If there is a missing file, we want to have the data for that type of pattern be empty, adding columns with 
-# the right headers but empty data for any missing columns. Then make the graphing code robust enough
-# to deal with columns with zeros.
 def load_pm_data(site:str) -> pd.DataFrame:
+    # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
+    # These are the files from all the folders named by site. 
+    # If there is a missing file, we want to have the data for that type of pattern be empty, adding columns with 
+    # the right headers but empty data for any missing columns. Then make the graphing code robust enough
+    # to deal with columns with zeros.
+
     # For each type of file for this site, try to load the file. 
     # Add a column to indicate which type it is. Then append it to the dataframe we're building. We end up with a 
     # table that has the site, date, and type columns with all the PM data in rows below. So, if there were 1000 PM 
@@ -623,11 +646,11 @@ def load_pm_data(site:str) -> pd.DataFrame:
     site_dir = data_dir / site
     if os.path.isdir(site_dir):
         for t in pm_file_types:
-            fname = site + ' ' + t + '.csv'
+            fname = f"{site} {t}.csv"
             full_file_name = site_dir / fname
 
             df_temp = pd.DataFrame()
-            if is_non_zero_file(full_file_name): #should never be non-zero, but just in case...
+            if is_non_zero_file(full_file_name):
                 #Validate that all columns exist, and abandon ship if we're missing any
                 headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
                 missing_columns = confirm_columns(site_columns, headers, fname)
@@ -643,12 +666,15 @@ def load_pm_data(site:str) -> pd.DataFrame:
                     log_error(f"Columns {missing_columns} are missing from pattern matching file!")
                     return pd.DataFrame()
             else:
-                log_error(f"Missing or empty pattern matching file {full_file_name}")
+                #NOTE: Dec 2024, removing the error logging because there will be a ton of these. Consider adding back
+                #       error checking for only the blackbird songs, although that also probably isn't necessary
+                #       given that these are being downloaded automatically
+                #log_error(f"Missing or empty pattern matching file {full_file_name}")
                 #Add an empty date column so we don't have a mismatch for the concat
                 df_temp[date_str] = []
 
             #Finally, add the table that we loaded to the end of the main one
-            df_temp['type'] = t
+            df_temp["type"] = t
             df = pd.concat([df, df_temp], ignore_index=True)
     
     if "date" in df.columns:
@@ -1028,7 +1054,9 @@ def make_empty_summary_row() -> dict:
     phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
     base_dict = {}
     for phase in phases:
-        base_dict[f"{phase}"] = {}
+        #NOTE Dec 2024: added this if statement to limit the summarizing to just the bird songs
+        if phase in pm_song_types:
+            base_dict[f"{phase}"] = {}
     return base_dict
 
 def make_empty_summary_dict() -> dict:
@@ -1054,11 +1082,13 @@ def  find_first_non_empty_key(d):
             return key
     return None  # Return None if all values are empty
 
-
+#NOTE Dec 2024: this used to use "pm_file_types" and it attempted to auto-analyze all the types of calls
+#       in the same way. However, now that we're adding insects, et al, I changed it to specifically look
+#       only at the bird vocalizations by changing "pm_file_types" to "pm_song_types"
 def find_correct_pulse(target_phase:str, target_date:pd.Timestamp, proposed_pulse:int, current_dates:dict):
     # Check to see if a pulse already has a date for a phase that is later than the current one.
     correct_pulse = proposed_pulse
-    all_phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
+    all_phases = pm_song_types[1:] #Creates a new list except it drops "Male Song"
     target_position = all_phases.index(target_phase)
 
     while True:
@@ -1105,7 +1135,11 @@ def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp,
             earlier_phase_start = target_pulse[earlier_phase][first_str]
             min_delta = 0 
             start_adding = False
-            for item in pm_file_types:
+
+            #NOTE Dec 2024: this used to use "pm_file_types" and it attempted to auto-analyze all the types of calls
+            #       in the same way. However, now that we're adding insects, et al, I changed it to specifically look
+            #       only at the bird vocalizations by changing "pm_file_types" to "pm_song_types"
+            for item in pm_song_types:
                 if item == earlier_phase:
                     start_adding = True 
                 min_delta += valid_pm_date_deltas[item] if start_adding else 0
@@ -1132,8 +1166,10 @@ def clean_pm_dates(dates:dict):
     for date in first_dates:
         if previous:
             if previous[0] == date[0]:
-                previous_pos = pm_file_types[previous[1][:-1]]
-                date_pos = pm_file_types[date[1][:-1]]
+                #NOTE Dec 2024, changed this from using all pm_file_types to pm_song_types so that the 
+                #       insect calls aren't considered and shouldn't affect anything
+                previous_pos = pm_song_types[previous[1][:-1]]
+                date_pos = pm_song_types[date[1][:-1]]
                 assert previous_pos<date_pos, "Sorting needs to be improved"
             previous = date
 
@@ -1200,7 +1236,10 @@ def format_pm_dates(pm_dates:dict):
 
     return formatted_dict
 
-
+#NOTE Dec 2024: this used to analyze all the data, but since we're adding insects now and don't want 
+#       them analyzed, it's changed to only work on bird vocalizations. Changed two things: 
+#       1) Below, added "if idx in pm_song_types" to limit analysis to only songs
+#       2) In make_empty_summary_row(), added the same if statement
 def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     # From pt_pm, get the first date that has a song count >= 4
     threshold = 4
@@ -1208,8 +1247,9 @@ def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
     
     #Get all the date pairs
     dates = {}    
-    for idx, row in pt_pm.iterrows():
-        dates[idx] = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
+    for idx, row in pt_pm.iterrows(): 
+        if idx in pm_song_types:
+            dates[idx] = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
 
     #Sanity check the data
     summary_dict = clean_pm_dates(dates)
@@ -1701,13 +1741,16 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
     tick_spacing = 0
 
+    #NOTE Dec 2024 adding this to accomodate all the insect calls in the PM graph
+    fig_height = fig_h if not title == graph_pm else fig_h*2
+
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = row_count, ncols = 1,
                             sharex = 'col', 
                             gridspec_kw={'height_ratios': np.repeat(1,row_count), 
                                          'left':0, 'right':1, 'bottom':0, 'top':gap_for_title,
                                          'hspace':0},  #hspace is row spacing (gap between rows)
-                            figsize=(fig_w,fig_h))
+                            figsize=(fig_w,fig_height))
 
     # If we have one, add the title for the graph and set appropriate formatting
     if len(title)>0:
@@ -1746,15 +1789,34 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
             #row is going to get some boxes and lines. In this case, there will be -99s in the data, 
             #and if we find those, we should NOT draw the text that says there is no data 
             #THIS IS NOT WORKING?
-            if title == "Edge Analysis" and df.loc[row].lt(0).any():
+            if title == graph_edge and df.loc[row].lt(0).any():
                 pass
             else:
-                axs[i].text(0.5,0.5,'No data for ' + row, 
+                axs[i].text(0.5,0.5,f"No data for {row}", 
                             fontsize='xx-small', fontstyle='italic', color='gray', verticalalignment='center')
+        elif title == graph_pm and row in pm_other_types:
+                axs[i].text(0.5,0.5,f"{row}", 
+                            fontsize='xx-small', fontstyle='italic', color='black', verticalalignment='center')
+
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
-            
+
+        #NOTE Dec 2024: Added extra lines to separate insects
+        if title == graph_pm:
+            if row == pm_insect_sp30 or row == pm_frog_pactf:
+                #Want to add a line above these two rows to separate them
+                # Get the top y-limit
+                top_y = axs[i].get_ylim()[1]
+                xmin = axs[i].get_xlim()[0]
+                xmax = axs[i].get_xlim()[1]
+
+                # Draw a horizontal line at the top of the axis
+                line = axs[i].hlines(y=top_y, xmin=xmin, xmax=xmax, colors='red',  linewidth=0.5)
+                dashes = (0, (18, 2)) # 10 points on, 5 points off
+                line.set_dashes(dashes)  # Apply the custom dash pattern
+
+
         # For edge: Add a rectangle around the regions of consective tags, and a line between 
         # non-consectutive if it's a N tag.
         if draw_horiz_rects and row in df_clean.index:
@@ -2715,6 +2777,8 @@ for site in target_sites:
 
     else:
         error_msgs.append("Site has no manual annotations")
+
+
     #
     # PATTERN MATCHING ANALYSIS
     #
@@ -2733,7 +2797,7 @@ for site in target_sites:
             pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs, container_top)
 
         if len(df_pattern_match):
-            for t in pm_file_types:
+            for t in pm_file_types: 
                 #For each file type, get the filtered range of just that type
                 df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
                 pm_data_empty = pm_data_empty or len(df_for_file_type)
@@ -2824,7 +2888,7 @@ for site in target_sites:
                             cmap = cmap_pm, 
                             title = graph_pm) 
         if len(month_locs)==0:
-            month_locs = get_month_locs_from_graph() #BUG This returned nothing for the PM Graph, what's it used for
+            month_locs = get_month_locs_from_graph() 
 
         summarized_data, raw_pm_dates = summarize_pm(pt_pm)
         if show_PM_dates:
