@@ -2476,7 +2476,8 @@ def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
     df = pd.read_csv(files[site_info_file])
     for f in site_info_fields:
-        site_info[f] = df.loc[df['Name'] == site_name,f].values[0]
+        value = df.loc[df['Name'] == site_name,f].values[0]
+        site_info[f] = "N/A" if pd.isna(value) else value 
     return site_info
 
 def show_station_info(site_name:str):
@@ -2486,7 +2487,7 @@ def show_station_info(site_name:str):
     #We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
     #https://developers.google.com/maps/documentation/urls/get-started
     map = 'https://www.google.com/maps/search/?api=1&query={}%2C{}'.format(site_info['Latitude'], site_info['Longitude'])
-    st.write(f"About this site: [Google Maps Link]({map}), elevation {site_info['Altitude']} ft, {site_info['Recordings_Count']} recordings")
+    st.write(f"About this site: [Open in Google Maps]({map}), elevation {site_info['Altitude']} ft, {site_info['Recordings_Count']} recordings")
 
 # If any tag column has "reviewed" in the title AND the value for a row (a recording) is 1, then 
 #    check that all "val" columns have a number. 
@@ -2867,6 +2868,7 @@ with container_mid:
     show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
 
 with container_bottom:
+    st.write("Contact wendy.schackwitz@gmail.com with any questions")
     if not being_deployed_to_streamlit:
         make_all_graphs = st.checkbox('Make all graphs')
     else:
