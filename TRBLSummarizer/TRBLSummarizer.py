@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import math
 import seaborn as sns
 
 import matplotlib as mpl
@@ -2566,6 +2567,145 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     return output
 
 
+
+
+
+
+# Function to draw hatching manually
+def liang_barsky_clip(x1, y1, x2, y2, rx, ry, rwidth, rheight):
+    """
+    Liang–Barsky line clipping algorithm
+    Clips the line segment (x1,y1)-(x2,y2) against the rectangle defined by
+    rx, ry, rwidth, rheight.
+    Returns (Xc1, Yc1, Xc2, Yc2) for the clipped line or None if fully outside.
+    """
+    dx = x2 - x1
+    dy = y2 - y1
+    t0, t1 = 0.0, 1.0
+    x_min, y_min = rx, ry
+    x_max, y_max = rx + rwidth, ry + rheight
+
+    def clip(p, q):
+        nonlocal t0, t1
+        if p == 0:
+            if q < 0:
+                return False
+            # else no update
+        else:
+            r = q/p
+            if p < 0:
+                if r > t1:
+                    return False
+                elif r > t0:
+                    t0 = r
+            else: # p > 0
+                if r < t0:
+                    return False
+                elif r < t1:
+                    t1 = r
+        return True
+
+    # Left boundary
+    if not clip(-dx, x1 - x_min): return None
+    # Right boundary
+    if not clip(dx, x_max - x1): return None
+    # Bottom boundary
+    if not clip(-dy, y1 - y_min): return None
+    # Top boundary
+    if not clip(dy, y_max - y1): return None
+
+    if t1 < t0:
+        return None
+
+    Xc1, Yc1 = x1 + t0*dx, y1 + t0*dy
+    Xc2, Yc2 = x1 + t1*dx, y1 + t1*dy
+    return (Xc1, Yc1, Xc2, Yc2)
+
+def transform_points(xs, ys, angle, aspect_ratio):
+    theta = math.radians(angle)
+    Xs = xs
+    Ys = ys * aspect_ratio
+    cos_t = math.cos(-theta)
+    sin_t = math.sin(-theta)
+    Xr = Xs*cos_t - Ys*sin_t
+    Yr = Xs*sin_t + Ys*cos_t
+    return Xr, Yr
+
+def inverse_transform_points(Xr, Yr, angle, aspect_ratio):
+    theta = math.radians(angle)
+    cos_t = math.cos(theta)
+    sin_t = math.sin(theta)
+    Xs = Xr*cos_t - Yr*sin_t
+    Ys = Xr*sin_t + Yr*cos_t
+    Xo = Xs
+    Yo = Ys / aspect_ratio
+    return Xo, Yo
+
+def create_local_grid(spacing, width, height):
+    # Create lines with (0,0) at upper-left corner
+    lines = []
+    max_dim = max(width, height) + spacing*10
+    x_min, x_max = -max_dim, max_dim
+    y_min, y_max = -max_dim, max_dim
+
+    # # Vertical lines
+    # xv_start = math.floor(x_min/spacing)*spacing
+    # xv_end = math.ceil(x_max/spacing)*spacing
+    # for xv in np.arange(xv_start, xv_end+spacing, spacing):
+    #     lines.append(((xv, y_min), (xv, y_max)))
+
+    # Horizontal lines
+    yv_start = math.floor(y_min/spacing)*spacing
+    yv_end = math.ceil(y_max/spacing)*spacing
+    for yv in np.arange(yv_start, yv_end+spacing, spacing):
+        lines.append(((x_min, yv), (x_max, yv)))
+
+    return lines
+
+def add_pattern(ax, x, y, width, height, spacing, angle_h=0, angle_v=90, aspect_ratio=1, color="black", linewidth=1):
+    # xlim = ax.get_xlim()
+    # ylim = ax.get_ylim()
+    # aspect_ratio = (ylim[1]-ylim[0])/(xlim[1]-xlim[0])
+
+    # Upper-left corner of cell
+    cell_ul_x, cell_ul_y = x, y+height
+    local_lines = create_local_grid(spacing, width, height)
+
+    def generate_lines_for_angle(angle):
+        transformed_lines = []
+        theta = math.radians(angle)
+        cos_t = math.cos(theta)
+        sin_t = math.sin(theta)
+
+        for (Xl1, Yl1), (Xl2, Yl2) in local_lines:
+            # Translate local coords (UL corner as origin)
+            # Upper-left corner = (0,0)
+            # Rotate around UL corner by angle
+            Xr1 = Xl1*cos_t - Yl1*sin_t
+            Yr1 = Xl1*sin_t + Yl1*cos_t
+            Xr2 = Xl2*cos_t - Yl2*sin_t
+            Yr2 = Xl2*sin_t + Yl2*cos_t
+
+            # Translate back
+            Xf1 = cell_ul_x + Xr1
+            Yf1 = cell_ul_y + Yr1
+            Xf2 = cell_ul_x + Xr2
+            Yf2 = cell_ul_y + Yr2
+
+            clipped = liang_barsky_clip(Xf1, Yf1, Xf2, Yf2, x, y, width, height)
+            if clipped:
+                Xc1, Yc1, Xc2, Yc2 = clipped
+                transformed_lines.append(Line2D([Xc1, Xc2],[Yc1, Yc2], color=color, linewidth=linewidth, zorder=2))
+        return transformed_lines
+
+    lines_h = generate_lines_for_angle(angle_h)
+    lines_v = []#generate_lines_for_angle(angle_v)
+
+    # Add lines to the axis
+    for ln in lines_h + lines_v:
+        ax.add_line(ln)
+
+
 def make_one_row_pm_summary(df: pd.DataFrame):
     #Trial of new graphing approach
 
@@ -2591,6 +2731,8 @@ def make_one_row_pm_summary(df: pd.DataFrame):
 
     #Use the default width and double the height since we're graphing so much data
     fig, ax = plt.subplots(figsize=(fig_w, fig_h/2))
+    aspect_ratio = fig_w / (fig_h/2)
+
 
     for date_idx, date in enumerate(data):
         min_value = 2
@@ -2600,20 +2742,74 @@ def make_one_row_pm_summary(df: pd.DataFrame):
             width_per_phase = 1 / total_phases
             x_start = date_idx
 
+            angle_counter=0
             # Loop through phases
             for phase_idx, phase in enumerate(phases):
                 value = data[date][phase]
-                if value > min_value:
-                    # Draw rectangle
-                    ax.add_patch(Rectangle(
-                        (x_start, 0),       # Bottom-left corner
-                        width_per_phase,    # Width
-                        1,                  # Full height
-                        facecolor=phase_colors[phase],
-                        edgecolor="none",
-                        alpha=1
-                    ))
-                    x_start += width_per_phase  # Increment y_start for the next phase
+                if value > min_value: #If there is something worth graphing
+                    if total_phases == 1 or (total_phases > 1 and angle_counter==0):
+                        # If there's just one phase or there's more than 1 phase, we draw a solid rect
+                        ax.add_patch(Rectangle(
+                            (date_idx, 0),       # Bottom-left corner
+                            1,                   # Full width
+    #                        (x_start, 0),       # Bottom-left corner
+    #                        width_per_phase,    # Width
+                            1,                  # Full height
+                            facecolor=phase_colors[phase],
+                            linewidth=0,
+                            edgecolor="none", #phase_colors[phase],
+                            alpha=1,
+                            zorder=1,
+                        ))
+                        x_start += width_per_phase  # Increment y_start for the next phase
+                        angle_counter+=1
+                    else: #multiple phases so need to overlap them
+    #                     ax.add_patch(Rectangle(
+    #                         (date_idx, 0),       # Bottom-left corner
+    #                         1,                   # Full width
+    # #                        (x_start, 0),       # Bottom-left corner
+    # #                        width_per_phase,    # Width
+    #                         1,                  # Full height
+    #                         facecolor="none", #phase_colors[phase],
+    #                         edgecolor="none", #phase_colors[phase],
+    #                         alpha=1,
+    #                         zorder=1,
+    #                     ))
+
+                        # Draw pattern with horizontal (0°) and vertical (90°) lines
+                        if phase_idx>=1 and date_idx>=0:
+                            angles = [90,0,15,165]
+                            if angles[angle_counter] == 0: #more horizontal lines
+                                spacing = 0.1
+                            else:
+                                spacing = 0.1
+                            #In the case where we have exactly 2 phases, make the horizontals wider
+                            if total_phases == 2:
+                                width = 1.2
+                            else:
+                                width= 0.6
+                            add_pattern(ax, date_idx, 0, 1, 1, 
+                                        angle_h=angles[angle_counter], angle_v=angles[angle_counter], 
+                                        color=phase_colors[phase],
+                                        spacing=spacing, linewidth=width, 
+                                        aspect_ratio = aspect_ratio)
+                            angle_counter+=1
+
+                        # # Add custom hatching for this rectangle
+                        # hatch_lines = add_rotated_hatching(
+                        #     x=x_start,
+                        #     y=0,
+                        #     width=1,
+                        #     height=1,
+                        #     spacing=0.25,  # Control spacing here
+                        #     linewidth=0.5,
+                        #     angle=45*phase_idx,
+                        #     color=phase_colors[phase],
+                        #     aspect_ratio=aspect_ratio
+                        # )
+                        # for line in hatch_lines:
+                        #     ax.add_line(line)
+        #Code to add a divider line after each day
         # ax.add_line(Line2D(
         #             [date_idx, date_idx], # Bottom-left corner
         #             [0, 1],             # Full height
@@ -2630,7 +2826,7 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     ax.set_yticks([])
     ax.set_title(" Phase Frequencies by Date", loc='left', fontsize=8, ha='left')
     #exterior border
-    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=0.75))
+    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=0.75, zorder=99))
     st.write(fig)
 
     return
