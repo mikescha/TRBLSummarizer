@@ -29,18 +29,17 @@ import gc
 #Do we want profiling data?
 profiling = False
 
-#Set to true before we deploy
-being_deployed_to_streamlit = False
-
+#Set to true before I deploy
+being_deployed_to_streamlit = True
 
 # Constants and Globals
 #
 #
-bad_files = 'bad'
-filename_str = 'filename'
-site_str = 'site'
-date_str = 'date'
-hour_str = 'hour'
+BAD_FILES = 'bad'
+FILENAME = 'filename'
+SITE = 'site'
+DATE = 'date'
+HOUR = 'hour'
 tag_wse = 'tag_edge'
 tag_wsm = 'tag_wsm'
 tag_wsh = 'tag_wsh'
@@ -68,27 +67,27 @@ tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_YNC_p2 = 'tag<YNC-p2>'
 #tag_YNC_p3 = 'tag<YNC-p3>'  doesn't exist now, might exist in the future
-malesong = 'malesong'
-altsong2 = 'altsong2'
-altsong1 = 'altsong1'
-courtsong = 'courtsong'
-simplecall2 = 'simplecall2'
+MALE_SONG = 'malesong'
+ALTSONG2 = 'altsong2'
+ALTSONG1 = 'altsong1'
+COURT_SONG = 'courtsong'
+SIMPLE_CALL2 = 'simplecall2'
 
-present = 'present'
+PRESENT = 'present'
 
-start_str = 'start'
-end_str = 'end'
+START = 'start'
+END = 'end'
 
 # Master list of all the columns I need. If columns get added/removed then this needs to update
 # The dictionary values MUST map to what's in the data file. 
 data_col = {
-    filename_str : 'filename', 
-    site_str     : 'site', 
+    FILENAME : 'filename', 
+    SITE     : 'site', 
     'day'        : 'day',
     'month'      : 'month',
     'year'       : 'year',
-    hour_str     : 'hour', 
-    date_str     : 'date',
+    HOUR     : 'hour', 
+    DATE     : 'date',
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
 #    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 3
     tag_p1c      : 'tag<p1c>',
@@ -112,21 +111,21 @@ data_col = {
     tag_wsm      : 'tag<reviewed-WS-m>',
     tag_ws       : 'tag<reviewed-WS>',
     tag_         : 'tag<reviewed>',
-    malesong     : 'val<Agelaius tricolor/Common Song>',
-    altsong1     : 'val<Agelaius tricolor/Alternative Song>',
-    altsong2     : 'val<Agelaius tricolor/Alternative Song 2>',
-    courtsong    : 'val<Agelaius tricolor/Courtship Song>',
-    simplecall2  : 'val<Agelaius tricolor/Simple Call 2>',
+    MALE_SONG     : 'val<Agelaius tricolor/Common Song>',
+    ALTSONG1     : 'val<Agelaius tricolor/Alternative Song>',
+    ALTSONG2     : 'val<Agelaius tricolor/Alternative Song 2>',
+    COURT_SONG    : 'val<Agelaius tricolor/Courtship Song>',
+    SIMPLE_CALL2  : 'val<Agelaius tricolor/Simple Call 2>',
 }
 
 site_columns = {
     'id'        : 'id',
     'recording' : 'recording',
-    site_str    : 'site', 
+    SITE    : 'site', 
     'day'       : 'day',
     'month'     : 'month',
     'year'      : 'year',
-    hour_str    : 'hour', 
+    HOUR    : 'hour', 
     'minute'    : 'minute',
     'species'   : 'species',
     'songtype'  : 'songtype',
@@ -141,9 +140,9 @@ site_columns = {
     'site_id'   : 'site_id'
 }
 
-songs = [malesong, courtsong, altsong2, altsong1]
+songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1]
 song_cols = [data_col[s] for s in songs]
-all_songs = [malesong, courtsong, altsong2, altsong1, simplecall2] 
+all_songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1, SIMPLE_CALL2] 
 all_song_cols = [data_col[s] for s in all_songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
@@ -179,39 +178,39 @@ fig_w = 6.5
 fig_h = 1
 
 #constants for the weather data files
-weather_prcp = 'PRCP'
-weather_tmax = 'TMAX'
-weather_tmin = 'TMIN'
-weather_cols = [weather_prcp, weather_tmax, weather_tmin]
+WEATHER_PRCP = 'PRCP'
+WEATHER_TMAX = 'TMAX'
+WEATHER_TMIN = 'TMIN'
+weather_cols = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN]
 
-graph_summary = "Summary"
-graph_man = 'Manual Analysis'
-graph_miniman = 'Mini Man Analysis'
-graph_edge = 'Edge Analysis'
-graph_pm = 'Pattern Matching Analysis'
-graph_weather = 'Weather'
-graph_names = [graph_summary, graph_man, graph_miniman, graph_pm, graph_edge, graph_weather]
+GRAPH_SUMMARY = "Summary"
+GRAPH_MANUAL = 'Manual Analysis'
+GRAPH_MINIMAN = 'Mini Man Analysis'
+GRAPH_EDGE = 'Edge Analysis'
+GRAPH_PM = 'Pattern Matching Analysis'
+GRAPH_WEATHER = 'Weather'
+graph_names = [GRAPH_SUMMARY, GRAPH_MANUAL, GRAPH_MINIMAN, GRAPH_PM, GRAPH_EDGE, GRAPH_WEATHER]
 legend_name = 'legend.png'
-legend_text = {graph_summary: ["Settlement", "Incubation", "Brooding", "Fledgling"],
-               graph_man: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"],
-               graph_miniman: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
-               graph_edge: ["Male Chorus", "Hatchling Call"],
-               graph_pm: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling", 
+legend_text = {GRAPH_SUMMARY: ["Settlement", "Incubation", "Brooding", "Fledgling"],
+               GRAPH_MANUAL: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"],
+               GRAPH_MINIMAN: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
+               GRAPH_EDGE: ["Male Chorus", "Hatchling Call"],
+               GRAPH_PM: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling", 
                           "Insect 30", "Insect 31", "Insect 32", "Insect 33", "Pacific Tree Frog", "Red-legged Frog", "Bull Frog"]
 }
 
 #default color map
-cmap = {data_col[malesong]:'Greens', 
-        data_col[courtsong]:'Oranges', 
-        data_col[altsong2]:'Purples', 
-        data_col[altsong1]:'Blues', 
+cmap = {data_col[MALE_SONG]:'Greens', 
+        data_col[COURT_SONG]:'Oranges', 
+        data_col[ALTSONG2]:'Purples', 
+        data_col[ALTSONG1]:'Blues', 
         "Fledgling":"Blues"
 }
 
-cmap_names = {data_col[malesong]:"Male Song",
-              data_col[courtsong]:"Male Chorus",
-              data_col[altsong2]:"Female Chatter",
-              data_col[altsong1]:"Hatchling/Nestling/\nFledgling",
+cmap_names = {data_col[MALE_SONG]:"Male Song",
+              data_col[COURT_SONG]:"Male Chorus",
+              data_col[ALTSONG2]:"Female Chatter",
+              data_col[ALTSONG1]:"Hatchling/Nestling/\nFledgling",
 #   temporarily don't need this
 #              "Fledgling":"Fledgling",
 } 
@@ -233,53 +232,55 @@ cmap_pm = {"Male Song":         "Greens",
 
 
 #Files, paths, etc.
-data_foldername = 'Data/'
-figure_foldername = 'Figures/'
-data_dir = Path(__file__).parents[0] / data_foldername
-figure_dir = Path(__file__).parents[0] / figure_foldername
-data_file = 'data 2021-2023.csv'
-site_info_file = 'sites.csv'
-weather_file = 'weather_history.csv'
-data_old_file = 'data_old.csv'
+DATA_FOLDER = 'Data/'
+FIG_FOLDER = 'Figures/'
+data_dir = Path(__file__).parents[0] / DATA_FOLDER
+figure_dir = Path(__file__).parents[0] / FIG_FOLDER
+NEW_DATA_FILE = 'data 2021-2023.csv'
+OLD_DATA_FILE = 'data 2017-2020.csv'
+SITE_INFO_FILE = 'sites.csv'
+WEATHER_FILE = 'weather_history.csv'
+DATA_OLD_FILE = 'data_old.csv'
 error_file = Path(__file__).parents[0] / 'error.txt'
-summary_file = 'summary.csv'
-dates_file = 'analyzed dates.csv'
+SUMMARY_FILE = 'summary.csv'
+DATES_FILE = 'analyzed dates.csv'
 
 files = {
-    data_file : data_dir / data_file,
-    site_info_file : data_dir / site_info_file,
-    weather_file : data_dir / weather_file,
-    data_old_file : data_dir / data_old_file,
-    summary_file : data_dir / summary_file, 
-    dates_file : Path(__file__).parents[0] / dates_file
+    NEW_DATA_FILE : data_dir / NEW_DATA_FILE,
+    OLD_DATA_FILE : data_dir / OLD_DATA_FILE,
+    SITE_INFO_FILE : data_dir / SITE_INFO_FILE,
+    WEATHER_FILE : data_dir / WEATHER_FILE,
+    DATA_OLD_FILE : data_dir / DATA_OLD_FILE,
+    SUMMARY_FILE : data_dir / SUMMARY_FILE, 
+    DATES_FILE : Path(__file__).parents[0] / DATES_FILE
 }
 
 # Mar 2024: This is the new set of summary data that Wendy created
 # Source data is from the Google Sheet
-pulse_count = "pulse_count"
-abandoned = "Abandoned"
+PULSE_COUNT = "pulse_count"
+ABANDONED = "Abandoned"
 pulses = ["P1", "P2", "P3", "P4"]
-summary_first_rec = "First Rec"
-summary_last_rec = "Last Rec"
-summary_edge_dates = [summary_first_rec, summary_last_rec]
-pulse_MC_start = "MC Start"
-pulse_MC_end = "MC End"
-pulse_hatch = "Hatch"
-pulse_first_fldg = "First Fldg Call"
-pulse_last_fldg = "Last Fldg Call"
-pulse_date_types = [pulse_MC_start, pulse_MC_end, pulse_hatch, "Last FS > 2", pulse_first_fldg, pulse_last_fldg, abandoned]
+SUMMARY_FIRST_REC = "First Rec"
+SUMMARY_LAST_REC = "Last Rec"
+summary_edge_dates = [SUMMARY_FIRST_REC, SUMMARY_LAST_REC]
+PULSE_MC_START = "MC Start"
+PULSE_MC_END = "MC End"
+PULSE_HATCH = "Hatch"
+PULSE_FIRST_FLDG = "First Fldg Call"
+PULSE_LAST_FLDG = "Last Fldg Call"
+pulse_date_types = [PULSE_MC_START, PULSE_MC_END, PULSE_HATCH, "Last FS > 2", PULSE_FIRST_FLDG, PULSE_LAST_FLDG, ABANDONED]
 pulse_numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
 summary_date_cols = [p + ' ' + d for p in pulses for d in pulse_date_types]
 summary_numeric_cols = [p + ' ' + n for p in pulses for n in pulse_numeric_types]
 
-phase_mcs = "Settlement"
-phase_inc = "Incubation"
-phase_brd = "Brooding"
-phase_flg = "Fledgling"
-pulse_phases = {phase_mcs : [pulse_MC_start, pulse_MC_end],
-                phase_inc : [pulse_MC_end, pulse_hatch],
-                phase_brd : [pulse_hatch, pulse_first_fldg],
-                phase_flg : [pulse_first_fldg, pulse_last_fldg]}
+PHASE_MALE_CHORUS = "Settlement"
+PHASE_INC = "Incubation"
+PHASE_BROOD = "Brooding"
+PHASE_FLDG = "Fledgling"
+pulse_phases = {PHASE_MALE_CHORUS : [PULSE_MC_START, PULSE_MC_END],
+                PHASE_INC : [PULSE_MC_END, PULSE_HATCH],
+                PHASE_BROOD : [PULSE_HATCH, PULSE_FIRST_FLDG],
+                PHASE_FLDG : [PULSE_FIRST_FLDG, PULSE_LAST_FLDG]}
 
 
 #
@@ -297,13 +298,13 @@ pm_song_types = ["Male Song",
 #NOTE Dec 2024: The file names are matching what the PM Downloader does, which is missing the "sp" from the name
 #       so to prevent having to re-download everything we'll leave it this way and change it in the graph
 #       rendering code or elsewhere as necessary. If this changes, need to update the cmap and the legend text
-pm_insect_sp30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
-pm_frog_pactf = "Pacific Tree Frog"
-pm_other_types = [pm_insect_sp30,
+PM_INSECT_SP30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
+PM_FROG_PACTF = "Pacific Tree Frog"
+pm_other_types = [PM_INSECT_SP30,
                  "Insect 31",	
                  "Insect 32",	
                  "Insect 33",	
-                 pm_frog_pactf,	
+                 PM_FROG_PACTF,	
                  "Red-legged Frog",
                  "Bull Frog"]
 
@@ -312,10 +313,10 @@ pm_file_types = pm_song_types + pm_other_types
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
-first_str = "First"
-last_str = "Last"
-before_first_str = "Before First"
-after_last_str = "After Last"
+FIRST = "First"
+LAST = "Last"
+BEFORE_FIRST = "Before First"
+AFTER_LAST = "After Last"
 
 valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
                         pm_song_types[2]:5, #Female to Hatchling must be at least 5 days
@@ -327,8 +328,8 @@ valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
 missing_data_flag = -100
 preserve_edges_flag = -99
 
-dpi = 300
-scale = int(dpi/300)
+DPI = 300
+scale = int(DPI/300)
 
 error_list = ''
 
@@ -405,7 +406,7 @@ def count_files_in_folder(fpath):
     return i
 
 def make_date(row):
-    s = '{}-{}-{}'.format(row['year'], format(row['month'],'02'), format(row['day'],'02'))
+    s = f"{row['year']}-{row['month']:02}-{row['day']:02}"
     return np.datetime64(s)
 
 #
@@ -418,11 +419,11 @@ def get_target_sites() -> dict:
     results = {}
     for t in pm_file_types:
         results[t] = []
-    results[bad_files] = []
-    results[site_str] = []
+    results[BAD_FILES] = []
+    results[SITE] = []
 
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_site_data = pd.read_csv(files[site_info_file], usecols = ['Name', 'Recordings_Count'])
+    all_site_data = pd.read_csv(files[SITE_INFO_FILE], usecols = ['Name', 'Recordings_Count'])
 
     #Clean it up. Only keep names that start with a 4-digit number. 
     all_sites = []
@@ -434,7 +435,7 @@ def get_target_sites() -> dict:
     #We will deal with it later in the code. So, just go ahead and add everything, and then flag
     #the ones that do have errors
     for s in all_sites:
-        results[site_str].append(s)
+        results[SITE].append(s)
 
     #NOTE: Dec 2024: We're in transition where we're adding files for insects to some but not all sites.
     # So, because we're downloading the PM job files automatically and we've made the code more robust, 
@@ -493,13 +494,10 @@ def get_target_sites() -> dict:
 
     # top_items.close()
     
-    if len(results[site_str]):
-        results[site_str].sort()
+    if len(results[SITE]):
+        results[SITE].sort()
     else:
         show_error('No site files found')
-
-#    if len(results[bad_files]):
-#        show_error('File errors were found')
 
     return results
 
@@ -507,12 +505,11 @@ def get_target_sites() -> dict:
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     errors_found = []
     if len(target_cols) != len(file_cols):
-        show_error('File {} has an unexpected number of columns, {} instead of {}'.
-                   format(file, len(file_cols), len(target_cols)))
+        show_error(f"File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
     for col in target_cols:        
         if  target_cols[col] not in file_cols:
             errors_found.append(target_cols[col])
-            show_error('Column {} missing from file {}'.format(target_cols[col], file))
+            show_error(f"Column {target_cols[col]} missing from file {file}")
     
     return errors_found
 
@@ -599,7 +596,7 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     if len(tag_errors):
         error_found = True
         show_error("Found recordings that have both P1F and P1N tags, see log")
-        for f in tag_errors[filename_str]: 
+        for f in tag_errors[FILENAME]: 
             log_error(f"{f}\tRecording has both P1F and P1N tags")
 
     return error_found 
@@ -607,28 +604,33 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.cache_resource
 def load_data() -> pd.DataFrame:
-    data_csv = files[data_file]
+    files_to_load = [OLD_DATA_FILE, NEW_DATA_FILE]
+    combined_df = pd.DataFrame()
+    for file_name in files_to_load:
+        data_csv = files[file_name]
 
-    #Validate the data file format
-    headers = pd.read_csv(files[data_file], nrows=0).columns.tolist()
-    missing_columns = confirm_columns(data_col, headers, data_file)  
+        #Validate the data file format
+        headers = pd.read_csv(files[file_name], nrows=0).columns.tolist()
+        missing_columns = confirm_columns(data_col, headers, file_name)  
 
-    #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-    usecols = [data_col[filename_str], data_col[site_str], data_col[date_str]]
-    for song in all_songs:
-        usecols.append(data_col[song])
-    for tag in all_tags:
-        usecols.append(data_col[tag])
+        #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
+        usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
+        for song in all_songs:
+            usecols.append(data_col[song])
+        for tag in all_tags:
+            usecols.append(data_col[tag])
 
-    #remove any columns that are missing from the data file, so we don't ask for them as that will cause
-    #an exception. Hopefully the rest of the code is robust enough to deal...
-    usecols = [item for item in usecols if item not in missing_columns]
+        #remove any columns that are missing from the data file, so we don't ask for them as that will cause
+        #an exception. Hopefully the rest of the code is robust enough to deal...
+        usecols = [item for item in usecols if item not in missing_columns]
 
-    df = pd.read_csv(data_csv, 
-                     usecols = usecols,
-                     parse_dates = [data_col[date_str]],
-                     index_col = [data_col[date_str]])
-    return df
+        df = pd.read_csv(data_csv, 
+                        usecols = usecols,
+                        parse_dates = [data_col[DATE]],
+                        index_col = [data_col[DATE]])
+        combined_df = pd.concat([combined_df, df]) #NOTE This assumes the files don't have overlapping dates
+
+    return combined_df
 
 
 def load_pm_data(site:str) -> pd.DataFrame:
@@ -643,7 +645,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
     # table that has the site, date, and type columns with all the PM data in rows below. So, if there were 1000 PM 
     # events for each type, our table would have 5000 rows. 
     df = pd.DataFrame()
-    usecols =[site_columns[site_str], site_columns['year'], site_columns['month'], 
+    usecols =[site_columns[SITE], site_columns['year'], site_columns['month'], 
             site_columns['day'], site_columns[validated]]
 
     # Add the site name so we look into the appropriate folder
@@ -662,9 +664,9 @@ def load_pm_data(site:str) -> pd.DataFrame:
                     df_temp = pd.read_csv(full_file_name, usecols=usecols)
                     #make a new column that has the date in it, take into account that the table could be empty
                     if len(df_temp):
-                        df_temp[date_str] = df_temp.apply(lambda row: make_date(row), axis=1)
+                        df_temp[DATE] = df_temp.apply(lambda row: make_date(row), axis=1)
                     else:
-                        df_temp[date_str] = []
+                        df_temp[DATE] = []
                 else:
                     #columns are missing so can't do anything!
                     log_error(f"Columns {missing_columns} are missing from pattern matching file!")
@@ -675,7 +677,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
                 #       given that these are being downloaded automatically
                 #log_error(f"Missing or empty pattern matching file {full_file_name}")
                 #Add an empty date column so we don't have a mismatch for the concat
-                df_temp[date_str] = []
+                df_temp[DATE] = []
 
             #Finally, add the table that we loaded to the end of the main one
             df_temp["type"] = t
@@ -695,7 +697,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
     #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
-    data_csv = Path(__file__).parents[0] / files[summary_file]
+    data_csv = Path(__file__).parents[0] / files[SUMMARY_FILE]
 
     #Load up the file
     df = pd.read_csv(data_csv)
@@ -731,8 +733,8 @@ def is_valid_date(timestamp):
 
 def is_valid_date_pair(phase_data:dict) -> bool:
     result = False
-    start = phase_data[start_str]
-    end = phase_data[end_str]
+    start = phase_data[START]
+    end = phase_data[END]
     if is_valid_date(start) and is_valid_date(end):
         result = True
     return result
@@ -758,25 +760,25 @@ def get_val_from_df(df:pd.DataFrame, col):
 def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     nd_string = "ND"
     # This function takes a row from the summary spreadsheet. The goal is to process it as follows:
-    first_rec = get_val_from_df(summary_row, summary_first_rec)
-    last_rec = get_val_from_df(summary_row, summary_last_rec)
+    first_rec = get_val_from_df(summary_row, SUMMARY_FIRST_REC)
+    last_rec = get_val_from_df(summary_row, SUMMARY_LAST_REC)
 
     #TODO Is this the best way to handle the zero recording case?
     if pd.isna(first_rec):
         return {}
 
     summary_dict = {
-        summary_first_rec   : convert_to_datetime(first_rec),
-        summary_last_rec    : convert_to_datetime(last_rec),
+        SUMMARY_FIRST_REC   : convert_to_datetime(first_rec),
+        SUMMARY_LAST_REC    : convert_to_datetime(last_rec),
     }
 
     for pulse in pulses:
         pulse_result = {}
 
         #Make our list of abandoned dates for later graphing purposes
-        abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse} {abandoned}"))
+        abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse} {ABANDONED}"))
         if is_valid_date(abandoned_date):
-            pulse_result[abandoned] = abandoned_date 
+            pulse_result[ABANDONED] = abandoned_date 
 
         for phase in pulse_phases:
             start, end = pulse_phases[phase]
@@ -792,9 +794,9 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 else:
                     result1 = pd.NaT
             elif value1 == "before start":
-                result1 = summary_dict[summary_first_rec]
+                result1 = summary_dict[SUMMARY_FIRST_REC]
             elif value1 == "after end":
-                result1 = summary_dict[summary_last_rec]
+                result1 = summary_dict[SUMMARY_LAST_REC]
             elif value1 == nd_string or value1 == "" or pd.isna(value1):
                 #this is OK, we aren't going to draw anything in this case
                 pass
@@ -807,7 +809,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
             result2 = pd.NaT
             if is_valid_date_string(value2):
                 #It's a good date, so format it
-                if phase == phase_flg:
+                if phase == PHASE_FLDG:
                     #For fledgling phase, don't subtract one from the end date
                     delta = pd.Timedelta(days=0)
                 else:
@@ -823,7 +825,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 if not value1 == nd_string:
                     log_error("Found case where end date is 'before start' but start date is not 'ND'")
             elif value2 == "after end":
-                result2 = summary_dict[summary_last_rec]
+                result2 = summary_dict[SUMMARY_LAST_REC]
             elif value2 == nd_string:
                 if not value1 == nd_string:
                     log_error(f"Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
@@ -841,7 +843,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
 
     #Calculate count of valid pulses. If there were zero, then set the count to 1 else we won't get a graph
     p_count = max(1, count_valid_pulses(summary_dict))
-    summary_dict[pulse_count] = p_count
+    summary_dict[PULSE_COUNT] = p_count
 
     #Save our abandoned dates, if any
 #    summary_dict[abandoned] = abandoned_dates
@@ -861,10 +863,10 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
     df_clean = pd.DataFrame()
     for site in site_list:
-        if site_str not in df.columns:
+        if SITE not in df.columns:
             break
 
-        df_site = df[df[site_str] == site]
+        df_site = df[df[SITE] == site]
 
         #used to ensure anything outside this year gets dropped
         target_year = site[0:4]
@@ -935,7 +937,7 @@ def filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclud
 # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
 # Also, transpose to get the right shape for the graph
 def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
-    date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+    date_range = pd.date_range(date_range_dict[START], date_range_dict[END]) 
     temp = pt.reindex(date_range).fillna(0)
     temp = temp.transpose()
     return temp
@@ -953,7 +955,7 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
                 temp = filter_df_by_tags(df, [tag])
                 # If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up 
                 # the number of times that the test 'x>=1' is true
-                temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[date_str]], 
+                temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[DATE]], 
                                     aggfunc = lambda x: (x>=1).sum())
                 if len(temp_pt):
                     temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
@@ -962,7 +964,7 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
             aggregate_df.rename(columns={'temp':list(label_dict.keys())[0]}, inplace=True) 
         else:
             #If we were passed a list of labels instead of a dict, then use the same logic to count songs
-            aggregate_df = pd.pivot_table(df, values = labels, index = [data_col[date_str]], 
+            aggregate_df = pd.pivot_table(df, values = labels, index = [data_col[DATE]], 
                                     aggfunc = lambda x: (x>=1).sum()) 
 
         if preserve_edges:
@@ -979,7 +981,7 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
 def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:dict) -> pd.DataFrame:
     #If the value in 'validated' column is 'Present', count it.
     present = site_df[site_df[site_columns[validated]]=="present"]
-    aggregate = present.pivot_table(index=date_str, values=site_columns[validated], aggfunc='count')
+    aggregate = present.pivot_table(index=DATE, values=site_columns[validated], aggfunc='count')
     #aggregate = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
     #                          aggfunc = lambda x: (x==present).sum())
     aggregate = aggregate.rename(columns={validated:type_name})
@@ -1011,9 +1013,9 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
             if song_count_sufficient(row.iloc[col], threshold):
                 column_date = row.index[col]
                 dates[pulse] = {
-                    first_str : column_date,
+                    FIRST : column_date,
                     #If we're at the very beginning, then we don't actually know when it started, so note this
-                    before_first_str : col == 0
+                    BEFORE_FIRST : col == 0
                 }
                 last_column = col
                 looking_for_first = False
@@ -1028,8 +1030,8 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
                     # Found enough consecutive dates below threshold to consider that the pulse ended
                     column_date = row.index[last_column]
                     dates[pulse].update({
-                        last_str : column_date,
-                        after_last_str : False
+                        LAST : column_date,
+                        AFTER_LAST : False
                     })
                     consecutive_dates_below_threshold = 0
                     looking_for_first = True # Now that we found the end, we're looking for the first date in the next pulse
@@ -1048,8 +1050,8 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> list:
         #We want to capture the last date in the row. Because of "pulse_gap", col could be beyond the end
         #of the table, so we'll use the value we know is good
         dates[len(dates)].update({
-            last_str : row.index[len(row)-1],
-            after_last_str : True
+            LAST : row.index[len(row)-1],
+            AFTER_LAST : True
         })
 
     return dates
@@ -1108,7 +1110,7 @@ def find_correct_pulse(target_phase:str, target_date:pd.Timestamp, proposed_puls
 
                 #BUT, if it's a Hatchling and the one that's after it is a Nestling, that's OK if the dates are close
                 if target_phase == "Hatchling" and current_latest_phase == "Nestling":
-                    if abs(current_dates[correct_pulse]["Nestling"][first_str] - target_date) <= pd.Timedelta(days=6):
+                    if abs(current_dates[correct_pulse]["Nestling"][FIRST] - target_date) <= pd.Timedelta(days=6):
                         break
 
                 correct_pulse += 1                
@@ -1138,7 +1140,7 @@ def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp,
             assert earlier_phase != "Fledgling", "Should never get a matching phase at this point"
 
             #Check that the start date is no closer that it should be
-            earlier_phase_start = target_pulse[earlier_phase][first_str]
+            earlier_phase_start = target_pulse[earlier_phase][FIRST]
             min_delta = 0 
             start_adding = False
 
@@ -1164,7 +1166,7 @@ def clean_pm_dates(dates:dict):
     for phases, pulses in dates.items():
         for pulse, date in pulses.items():
             if "First" in date:
-                first_dates.append((date[first_str], f"{phases}{pulse}"))
+                first_dates.append((date[FIRST], f"{phases}{pulse}"))
     
     #TODO I'm not sure if this sorting is sufficient. Multiple sort passes may be necessary to get the pulses 
     #   in the right order
@@ -1210,19 +1212,19 @@ def format_pm_dates(pm_dates:dict):
         for phase in pm_dates[pulse]:
             formatted_dict[pulse_str][phase] = {}
             if len(pm_dates[pulse][phase]): #Keys could be empty
-                first_date = format_timestamp(pm_dates[pulse][phase][first_str])
-                last_date = format_timestamp(pm_dates[pulse][phase][last_str])
+                first_date = format_timestamp(pm_dates[pulse][phase][FIRST])
+                last_date = format_timestamp(pm_dates[pulse][phase][LAST])
                 message = ""
 
                 message += "First: "
-                if pm_dates[pulse][phase][before_first_str]:
+                if pm_dates[pulse][phase][BEFORE_FIRST]:
                     message += f"On or before {first_date}"
                 else:
                     message += f"{first_date}"
 
                 message += "<br>"
                 message += "Last: "
-                if pm_dates[pulse][phase][after_last_str]:
+                if pm_dates[pulse][phase][AFTER_LAST]:
                     message += f"On or after {last_date}"
                 else:
                     message += f"{last_date}"
@@ -1283,11 +1285,11 @@ def get_site_to_analyze(site_list:list, my_sidebar) -> str:
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
     if df.index.name == "date":
-        date_range_dict = {start_str : df.index.min().strftime("%m-%d-%Y"), 
-                             end_str : df.index.max().strftime("%m-%d-%Y")}
+        date_range_dict = {START : df.index.min().strftime("%m-%d-%Y"), 
+                             END : df.index.max().strftime("%m-%d-%Y")}
     else:
-        date_range_dict = {start_str : df["date"].min().strftime("%m-%d-%Y"), 
-                             end_str : df["date"].max().strftime("%m-%d-%Y")}
+        date_range_dict = {START : df["date"].min().strftime("%m-%d-%Y"), 
+                             END : df["date"].max().strftime("%m-%d-%Y")}
 
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
@@ -1296,12 +1298,12 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
         end_month = my_sidebar.selectbox("End month", months2.keys(), index=0)
 
         #Update the date range if needed
-        site_year = int(date_range_dict[start_str][-4:])
+        site_year = int(date_range_dict[START][-4:])
         if start_month != 'First':
-            date_range_dict[start_str] = f'{months1[start_month]}-01-{site_year}'
+            date_range_dict[START] = f'{months1[start_month]}-01-{site_year}'
         if end_month != 'Last':
             last_day = calendar.monthrange(site_year, int(months2[end_month]))[1]
-            date_range_dict[end_str] = f'{months2[end_month]}-{last_day}-{site_year}'
+            date_range_dict[END] = f'{months2[end_month]}-{last_day}-{site_year}'
 
     return date_range_dict
 
@@ -1321,7 +1323,7 @@ def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
     line_color = 'gray'
     line_width = '0.75'
-    custom_params = {'figure.dpi':dpi, 
+    custom_params = {'figure.dpi':DPI, 
 #                     'font.family':'Arial',                      
                      'font.family':'sans serif', 
                      'font.size':'12',
@@ -1507,7 +1509,7 @@ def plot_title(title:str):
 # Custom graphing code to make the summary     
 #
 def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool) -> plt.figure:
-    pc = pulse_data[pulse_count]
+    pc = pulse_data[PULSE_COUNT]
     #Rows_for_labels allows 1 row for the labels, and 1 row for the legend
     rows_for_labels = 2
     rows_for_labels = 1 #TEMPORARILY GETTING RID OF DATE
@@ -1537,20 +1539,20 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
 
     # Color options here: https://matplotlib.org/stable/gallery/color/named_colors.html
     phase_color = {
-        phase_mcs : "seagreen",
-        phase_inc : "mediumpurple",
-        phase_brd : "steelblue",
-        phase_flg : "black",
+        PHASE_MALE_CHORUS : "seagreen",
+        PHASE_INC : "mediumpurple",
+        PHASE_BROOD : "steelblue",
+        PHASE_FLDG : "black",
         "Abandoned" : "red"
     }
     background_color = "white"
     
-    nesting_start_date = pulse_data[summary_first_rec]
-    nesting_end_date = pulse_data[summary_last_rec]
+    nesting_start_date = pulse_data[SUMMARY_FIRST_REC]
+    nesting_end_date = pulse_data[SUMMARY_LAST_REC]
 
-    days_per_month = month_days_between_dates(date_range[start_str], date_range[end_str])
-    start_date = pd.Timestamp(date_range[start_str])
-    end_date = pd.Timestamp(date_range[end_str])
+    days_per_month = month_days_between_dates(date_range[START], date_range[END])
+    start_date = pd.Timestamp(date_range[START])
+    end_date = pd.Timestamp(date_range[END])
     for ax in axs:
         ax.set_xlim(start_date, end_date + timedelta(days=1))
     
@@ -1574,8 +1576,8 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
             for phase in pulse_phases:
                 if is_valid_date_pair(pulse_data[p][phase]):
                     #Given that the x axis starts at start_date, we need to calculate everything as an offset from there
-                    phase_start = pulse_data[p][phase][start_str]
-                    phase_end = pulse_data[p][phase][end_str]
+                    phase_start = pulse_data[p][phase][START]
+                    phase_end = pulse_data[p][phase][END]
                     width = phase_end - phase_start + timedelta(days=1)
                     color = phase_color[phase]
                     #Note width is a Timedelta, so use .days to get the int value, but phase_start is a Timestamp, so use .day instead 
@@ -1591,14 +1593,14 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
                     #      legend_elements[phase] = color
 
             #Apply the marker for abandonded colony on top of the data after we've drawn the row
-            if abandoned in pulse_data[p]:
-                abandoned_dict[p] = pulse_data[p][abandoned]
-                start_point = (pulse_data[p][abandoned],0)
+            if ABANDONED in pulse_data[p]:
+                abandoned_dict[p] = pulse_data[p][ABANDONED]
+                start_point = (pulse_data[p][ABANDONED],0)
                 width = timedelta(days=1)
                 height = 1
                 rect = Rectangle(start_point, width, height, 
                             color=phase_color["Abandoned"], alpha=1, zorder=5,
-                            label=abandoned)
+                            label=ABANDONED)
                 axs[row_count].add_patch(rect)
                 graphed_something = True
 
@@ -1704,8 +1706,8 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
                         empty_pulse = 0
                         report += f"-----Pulse {p}-----<br>"
 
-                    phase_start = pulse_data[p][phase][start_str].strftime("%m-%d")
-                    phase_end = pulse_data[p][phase][end_str].strftime("%m-%d")
+                    phase_start = pulse_data[p][phase][START].strftime("%m-%d")
+                    phase_end = pulse_data[p][phase][END].strftime("%m-%d")
                     report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
                     found_valid_dates+=1
 
@@ -1735,7 +1737,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     graph_drawn = []
     
     #distance between top of plot space and chart
-    if title == graph_pm:
+    if title == GRAPH_PM:
         gap_for_title = 0.9
     else:
         gap_for_title = 0.8 if title else 1
@@ -1744,7 +1746,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     tick_spacing = 0
 
     #NOTE Dec 2024 adding this to accomodate all the insect calls in the PM graph
-    fig_height = fig_h if not title == graph_pm else fig_h*2
+    fig_height = fig_h if not title == GRAPH_PM else fig_h*2
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = row_count, ncols = 1,
@@ -1791,12 +1793,12 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
             #row is going to get some boxes and lines. In this case, there will be -99s in the data, 
             #and if we find those, we should NOT draw the text that says there is no data 
             #THIS IS NOT WORKING?
-            if title == graph_edge and df.loc[row].lt(0).any():
+            if title == GRAPH_EDGE and df.loc[row].lt(0).any():
                 pass
             else:
                 axs[i].text(0.5,0.5,f"No data for {row}", 
                             fontsize='xx-small', fontstyle='italic', color='gray', verticalalignment='center')
-        elif title == graph_pm and row in pm_other_types:
+        elif title == GRAPH_PM and row in pm_other_types:
                 axs[i].text(0.5,0.5,f"{row}", 
                             fontsize='xx-small', fontstyle='italic', color='black', verticalalignment='center')
 
@@ -1805,8 +1807,8 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         graph_drawn.append(i)
 
         #NOTE Dec 2024: Added extra lines to separate insects
-        if title == graph_pm:
-            if row == pm_insect_sp30 or row == pm_frog_pactf:
+        if title == GRAPH_PM:
+            if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
                 #Want to add a line above these two rows to separate them
                 # Get the top y-limit
                 top_y = axs[i].get_ylim()[1]
@@ -1824,7 +1826,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
         if draw_horiz_rects and row in df_clean.index:
             df_col_nonzero = df.loc[row].to_frame()  #pull out the row we want, it turns into a column as above
             df_col_nonzero = df_col_nonzero.reset_index()   #index by ints for easy graphing
-            df_col_nonzero = df_col_nonzero.query('`{}` != 0'.format(row))  #get only the nonzero values. 
+            df_col_nonzero = df_col_nonzero.query(f"`{row}` != 0")  #get only the nonzero values. 
 
             if len(df_col_nonzero):
                 c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.85)
@@ -1915,11 +1917,11 @@ def add_pulse_overlays(graph, summarized_data:pd.DataFrame, date_range:dict):
         if phase_type in summarized_data:
             for pulse in summarized_data[phase_type]:
                 pulse_dates = summarized_data[phase_type][pulse]
-                assert first_str in pulse_dates
-                assert last_str in pulse_dates
+                assert FIRST in pulse_dates
+                assert LAST in pulse_dates
 
-                overlay_start = (pulse_dates[first_str] - graph_start_date).days
-                overlay_end = (pulse_dates[last_str] - graph_start_date).days + 1 
+                overlay_start = (pulse_dates[FIRST] - graph_start_date).days
+                overlay_end = (pulse_dates[LAST] - graph_start_date).days + 1 
                 target_ax = graph.axes[idx]
                 # graph.axes[idx].axvspan(
                 #     xmin=overlay_start,
@@ -1992,11 +1994,11 @@ def save_figure(site:str, graph_type:str, delete_only=False):
 
         #Figure out where the labels are. There's probably a way to do this in one call ...
         #maybe check the last axis?
-        if graph_type == graph_summary:
+        if graph_type == GRAPH_SUMMARY:
             #for the summary graph, we dont want to do anything i don't think
             pass
         else:
-            if graph_type == graph_weather:
+            if graph_type == GRAPH_WEATHER:
                 ax = plt.gcf().get_axes()[0] #in the weather graph, the labels are in the first axis
                 legend = ax.get_legend()
                 bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
@@ -2148,12 +2150,12 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
      
     if len(site_fig_dict): 
         # exclude weather for now, we need to add it after the legend
-        images = [Image.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != graph_weather] 
+        images = [Image.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != GRAPH_WEATHER] 
         composite = concat_images(*images)
         composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
         #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
-        if graph_weather in site_fig_dict.keys() and include_weather:
-            composite = concat_images(*[composite, Image.open(site_fig_dict[graph_weather])])
+        if GRAPH_WEATHER in site_fig_dict.keys() and include_weather:
+            composite = concat_images(*[composite, Image.open(site_fig_dict[GRAPH_WEATHER])])
         final = apply_decorations_to_composite(composite, month_locs)
         final.save(composite_path)
     return
@@ -2174,7 +2176,7 @@ def output_graph(site:str, graph_type:str, save_files:bool, make_all_graphs:bool
     else:
         #No data, so show a message instead. 
         save_figure(site, graph_type, delete_only=True)
-        site_name_text = '<p style="font-family:sans-serif; font-size: 16px;"><b>{}</b></p>'.format(graph_type) #used to also have color:Black; 
+        site_name_text = f'<p style="font-family:sans-serif; font-size: 16px;"><b>{graph_type}</b></p>' #used to also have color:Black; 
         st.write(site_name_text, unsafe_allow_html=True)
 
         # https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
@@ -2201,15 +2203,15 @@ def output_text(text:str, make_all_graphs:bool):
 def load_weather_data_from_file() -> pd.DataFrame:
     #Validate the data file format
     try:
-        headers = pd.read_csv(files[weather_file], nrows=0).columns.tolist()
+        headers = pd.read_csv(files[WEATHER_FILE], nrows=0).columns.tolist()
         weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
                         'lat':'lat', 'lng':'lng', 'alt':'alt'}
         
         #This will show an error if something is wrong with the data 
-        missing_columns = confirm_columns(weather_cols, headers, weather_file)
+        missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
         
         if not missing_columns:
-            df = pd.read_csv(files[weather_file], 
+            df = pd.read_csv(files[WEATHER_FILE], 
                             parse_dates = [weather_cols['date']],
                             index_col = [weather_cols['site']])
         else: #there was an error where we didn't get the right columns so don't try to do anything with the data
@@ -2229,14 +2231,14 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     if site_name in df.index:
         site_weather = df.loc[[site_name]]
         #select only rows that are in our date range
-        mask = (site_weather['date'] >= date_range_dict[start_str]) & (site_weather['date'] <= date_range_dict[end_str])
+        mask = (site_weather['date'] >= date_range_dict[START]) & (site_weather['date'] <= date_range_dict[END])
         site_weather = site_weather.loc[mask]
 
         if not site_weather.empty:
             # For each type of weather, break out that type into a separate table and 
             # drop it into a dict. Then, reindex the table to match our date range and 
             # fill in empty values
-            date_range = pd.date_range(date_range_dict[start_str], date_range_dict[end_str]) 
+            date_range = pd.date_range(date_range_dict[START], date_range_dict[END]) 
             for w in weather_cols:
                 site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
                 #reindex the table to match our date range and fill in empty values
@@ -2352,15 +2354,15 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
 
-        plot_title(graph_weather) #site_name + ' ' +  to include site
+        plot_title(GRAPH_WEATHER) #site_name + ' ' +  to include site
 
         # Plot the data in the proper format on the correct axis.
         wg_colors = {'high':'red', 'low':'pink', 'prcp':'blue'}
         for wt in weather_cols:
             w = weather_by_type[wt]
-            if wt == weather_prcp:
+            if wt == WEATHER_PRCP:
                 ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
-            elif wt == weather_tmax:
+            elif wt == WEATHER_TMAX:
                 ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='.', markersize=2)
             else: #TMIN
                 ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='.', markersize=2)
@@ -2375,7 +2377,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
         # Get the list of ticks and set them --only needed if we ever want individual dates on the axis
 #        axis_dates = list(weather_by_type[weather_tmax].index.values.astype(str))
         ax1.axes.set_xticks([])
-        draw_axis_labels(get_days_per_month(weather_by_type[weather_tmax].index.values), [ax1], weather_graph=True)
+        draw_axis_labels(get_days_per_month(weather_by_type[WEATHER_TMAX].index.values), [ax1], weather_graph=True)
         
         #Turn on the graph borders, these are off by default for other charts
         ax1.spines[:].set_linewidth(0.5)
@@ -2383,12 +2385,12 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
 
         # Add a legend for the figure
         # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
-        tmax_label = f"High temp ({min_above_zero(weather_by_type[weather_tmax]['value']):.0f}-"\
-                     f"{weather_by_type[weather_tmax]['value'].max():.0f}\u00B0F)"
-        tmin_label = f"Low temp ({min_above_zero(weather_by_type[weather_tmin]['value']):.0f}-"\
-                     f"{weather_by_type[weather_tmin]['value'].max():.0f}\u00B0F)"
+        tmax_label = f"High temp ({min_above_zero(weather_by_type[WEATHER_TMAX]['value']):.0f}-"\
+                     f"{weather_by_type[WEATHER_TMAX]['value'].max():.0f}\u00B0F)"
+        tmin_label = f"Low temp ({min_above_zero(weather_by_type[WEATHER_TMIN]['value']):.0f}-"\
+                     f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
         prcp_label = f"Precipitation (0-"\
-                     f"{weather_by_type[weather_prcp]['value'].max():.2f}\042)"
+                     f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
         legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=4, label=tmax_label),
                            Line2D([0], [0], color=wg_colors['low'], lw=4, label=tmin_label),
                            Line2D([0], [0], color=wg_colors['prcp'], lw=4, label=prcp_label)]
@@ -2474,7 +2476,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
 
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
-    df = pd.read_csv(files[site_info_file])
+    df = pd.read_csv(files[SITE_INFO_FILE])
     for f in site_info_fields:
         value = df.loc[df['Name'] == site_name,f].values[0]
         site_info[f] = "N/A" if pd.isna(value) else value 
@@ -2486,7 +2488,7 @@ def show_station_info(site_name:str):
 
     #We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
     #https://developers.google.com/maps/documentation/urls/get-started
-    map = 'https://www.google.com/maps/search/?api=1&query={}%2C{}'.format(site_info['Latitude'], site_info['Longitude'])
+    map = f"https://www.google.com/maps/search/?api=1&query={site_info['Latitude']}%2C{site_info['Longitude']}"
     st.write(f"About this site: [Open in Google Maps]({map}), elevation {site_info['Altitude']} ft, {site_info['Recordings_Count']} recordings")
 
 # If any tag column has "reviewed" in the title AND the value for a row (a recording) is 1, then 
@@ -2503,15 +2505,15 @@ def check_tags(df: pd.DataFrame):
     #P1C, P2C throws an error if it's missing courtsong song
     non_zero_rows = filter_df_by_tags(df, edge_c_cols)
     bad_rows = pd.concat([bad_rows,
-                            filter_df_by_tags(non_zero_rows, [data_col[courtsong]], '=={}'.format(missing_data_flag))])
+                            filter_df_by_tags(non_zero_rows, [data_col[COURT_SONG]], f"=={missing_data_flag}")])
 
     #P1N, P2N throws an error if it's missing alternative song
     non_zero_rows = filter_df_by_tags(df, edge_n_cols)
     bad_rows = pd.concat([bad_rows, 
-                            filter_df_by_tags(non_zero_rows, [data_col[altsong1]], '=={}'.format(missing_data_flag))])       
+                            filter_df_by_tags(non_zero_rows, [data_col[ALTSONG1]], f"=={missing_data_flag}")])       
 
     if len(bad_rows):
-        for r in bad_rows[filename_str]:
+        for r in bad_rows[FILENAME]:
             log_error(f"{r} missing song tag")
 
     if not(bad_rows.empty) or len(error_list):
@@ -2607,13 +2609,17 @@ def liang_barsky_clip(x1, y1, x2, y2, rx, ry, rwidth, rheight):
         return True
 
     # Left boundary
-    if not clip(-dx, x1 - x_min): return None
+    if not clip(-dx, x1 - x_min):
+        return None
     # Right boundary
-    if not clip(dx, x_max - x1): return None
+    if not clip(dx, x_max - x1):
+        return None
     # Bottom boundary
-    if not clip(-dy, y1 - y_min): return None
+    if not clip(-dy, y1 - y_min):
+        return None
     # Top boundary
-    if not clip(dy, y_max - y1): return None
+    if not clip(dy, y_max - y1): 
+        return None
 
     if t1 < t0:
         return None
@@ -2843,20 +2849,6 @@ def make_one_row_pm_summary(df: pd.DataFrame):
 
 init_logging()
 
-#Load all the data for most of the graphs
-df_original = load_data()
-
-#Get the list of sites that we're going to do reports for, and then remove all the other data
-site_list = get_target_sites()
-df = clean_data(df_original, site_list[site_str])
-
-# Nuke the original data, hopefully this frees up memory
-del df_original
-gc.collect()
-
-# Load all the summary data, note that this doesn't exist for 2024 and beyond right now (Nov 2024)
-summary_df = load_summary_data()
-
 # Set up the sidebar with three zones so it looks like we want
 container_top = st.sidebar.container()
 container_mid = st.sidebar.container(border=True)
@@ -2876,17 +2868,33 @@ with container_bottom:
 
 container_top.title('TRBL Graphs')
 
+
+#Load all the data for most of the graphs
+df_original = load_data()
+
+#Get the list of sites that we're going to do reports for, and then remove all the other data
+site_list = get_target_sites()
+df = clean_data(df_original, site_list[SITE])
+
+# Nuke the original data, hopefully this frees up memory
+del df_original
+gc.collect()
+
+# Load all the summary data, note that this doesn't exist for 2024 and beyond right now (Nov 2024)
+summary_df = load_summary_data()
+
 save_files = False
 save_composite = False
 
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
-    target_sites = site_list[site_str]
-    target_sites = [string for string in target_sites if string.startswith("2024 ")]
+    target_sites = site_list[SITE]
+    #Can use this to limit sites to just a particular year
+    #target_sites = [string for string in target_sites if string.startswith("2024 ")]
 
     # This is the file where we write all the dates we extracted from the data
-    if os.path.exists(files[dates_file]):
-        os.remove(files[dates_file])
+    if os.path.exists(files[DATES_FILE]):
+        os.remove(files[DATES_FILE])
     
     # For now, I'm not saving all the files, only the composite because it's taking up too much space. 
     # When she needs all the files, we'll bring this back
@@ -2895,7 +2903,7 @@ if make_all_graphs:
     save_composite = True
 
 else:
-    target_sites = [get_site_to_analyze(site_list[site_str], container_top)]
+    target_sites = [get_site_to_analyze(site_list[SITE], container_top)]
     if not being_deployed_to_streamlit:
         save_files = False
         save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
@@ -2915,7 +2923,7 @@ for site in target_sites:
     error_msgs = []
     site_counter += 1
     # Select the site matching the one of interest
-    df_site = df[df[data_col[site_str]] == site]
+    df_site = df[df[data_col[SITE]] == site]
     date_range_dict = {}
     pt_manual = pd.DataFrame()
     pt_mini_manual = pd.DataFrame()
@@ -3008,7 +3016,7 @@ for site in target_sites:
             tag_dict = {}
 
             if tag in edge_c_cols: #P1C, P2C, P3C
-                tag_dict[tag] = data_col[courtsong]
+                tag_dict[tag] = data_col[COURT_SONG]
 
             else: #P1N, P2N, P3N
                 # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
@@ -3017,14 +3025,14 @@ for site in target_sites:
                     tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
                 else:
                     #Count altsong1 
-                    tag_dict[tag] = data_col[altsong1]
+                    tag_dict[tag] = data_col[ALTSONG1]
 
                 # For p?na, count altsong1 
                 if len(pn_tag_map[tag][abandon_tag]):
-                    tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[altsong1]
+                    tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[ALTSONG1]
 
                 # P1F, P2F, P3F: count simplecall2
-                tag_dict[pn_tag_map[tag][pf_tag]] = data_col[simplecall2]
+                tag_dict[pn_tag_map[tag][pf_tag]] = data_col[SIMPLE_CALL2]
     
             # At this point, the dictionary "tag_dict" has a mapping of all the tags and the columns
             # that need to be counted for them. It will either be: 
@@ -3119,25 +3127,27 @@ for site in target_sites:
     #Summary graph -- new 3/2024
     #TODO Make a version of this that creates ALL the summary graphs, and only the summary graphs, then 
     #puts them together into one big picture
-    if len(site_summary_dict):
-        target_date_range_dict = {start_str:site_summary_dict[summary_first_rec].strftime('%m-%d-%Y'),
-                                end_str:site_summary_dict[summary_last_rec].strftime('%m-%d-%Y')}
+    if len(site_summary_dict) and not pd.isna(site_summary_dict[SUMMARY_FIRST_REC]) and not pd.isna(site_summary_dict[SUMMARY_LAST_REC]):
+        target_date_range_dict = {START:site_summary_dict[SUMMARY_FIRST_REC].strftime('%m-%d-%Y'),
+                                  END:  site_summary_dict[SUMMARY_LAST_REC].strftime('%m-%d-%Y')}
         graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
-        output_graph(site, graph_summary, save_files, make_all_graphs, len(site_summary_dict))
+        output_graph(site, GRAPH_SUMMARY, save_files, make_all_graphs, len(site_summary_dict))
+    else:
+        log_error(f"{site} didn't have any PM data")
 
     # Manual analyisis graph
     if not pt_manual.empty:
         graph = create_graph(df = pt_manual, 
                             row_names = song_cols, 
                             cmap = cmap, 
-                            title = graph_man) # add this if we want to include the site name (site + ' ' if save_files else '')
+                            title = GRAPH_MANUAL) # add this if we want to include the site name (site + ' ' if save_files else '')
         # Need to be able to build an image that looks like the graph labels so that it can be drawn
         # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
         # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
         # to accidentally delete our list
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
-        output_graph(site, graph_man, save_files, make_all_graphs, len(df_manual))
+        output_graph(site, GRAPH_MANUAL, save_files, make_all_graphs, len(df_manual))
 
     # MiniManual Analysis
     if not pt_mini_manual.empty:
@@ -3149,14 +3159,14 @@ for site in target_sites:
                             title = 'Mini Manual Analysis')
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
-        output_graph(site, graph_miniman, save_files, make_all_graphs, len(df_mini_manual))
+        output_graph(site, GRAPH_MINIMAN, save_files, make_all_graphs, len(df_mini_manual))
 
     # Pattern Matching Analysis
     if not pt_pm.empty:
         graph = create_graph(df = pt_pm, 
                             row_names = pm_file_types, 
                             cmap = cmap_pm, 
-                            title = graph_pm) 
+                            title = GRAPH_PM) 
         
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
@@ -3166,13 +3176,16 @@ for site in target_sites:
             add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
 
         with st.expander("Show pulse dates from Pattern Matching"):
-            pretty_print_table(summarized_data, body_alignment="left")
             if make_all_graphs:
-                append_to_csv(summarized_data, site, files[dates_file])
+                append_to_csv(summarized_data, site, files[DATES_FILE])
+            else:
+                pretty_print_table(summarized_data, body_alignment="left")
 
-        output_graph(site, graph_pm, save_files, make_all_graphs, pm_data_empty)
 
-        make_one_row_pm_summary(df = pt_pm)
+        output_graph(site, GRAPH_PM, save_files, make_all_graphs, pm_data_empty)
+
+        if not make_all_graphs:
+            make_one_row_pm_summary(df = pt_pm)
 
     # Edge Analysis
     if not pt_edge.empty:
@@ -3182,10 +3195,10 @@ for site in target_sites:
                             cmap = cmap_edge, 
                             raw_data = df_site,
                             draw_horiz_rects = True,
-                            title = graph_edge)
+                            title = GRAPH_EDGE)
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
-        output_graph(site, graph_edge, save_files, make_all_graphs, have_edge_data)
+        output_graph(site, GRAPH_EDGE, save_files, make_all_graphs, have_edge_data)
     
     #Draw the single legend for the rest of the charts and save to a file if needed
     draw_legend(cmap, make_all_graphs, save_composite)
@@ -3201,7 +3214,7 @@ for site in target_sites:
             weather_by_type = get_weather_data(site, date_to_use)
             if weather_by_type:
                 graph = create_weather_graph(weather_by_type, site)
-                output_graph(site, graph_weather, save_files, make_all_graphs)
+                output_graph(site, GRAPH_WEATHER, save_files, make_all_graphs)
     
     if not being_deployed_to_streamlit or make_all_graphs or save_composite:
         combine_images(site, month_locs, show_weather_checkbox)
@@ -3211,18 +3224,18 @@ if not make_all_graphs and len(df_site):
     # Show the table with all the raw data
     with st.expander("See raw data"):
         #Used for making the overview pivot table
-        friendly_names = {data_col[malesong] : 'M-Male', 
-                          data_col[courtsong]: 'M-Chorus',
-                          data_col[altsong2] : 'M-Female', 
-                          data_col[altsong1] : 'M-Nestling'
+        friendly_names = {data_col[MALE_SONG] : 'M-Male', 
+                          data_col[COURT_SONG]: 'M-Chorus',
+                          data_col[ALTSONG2] : 'M-Female', 
+                          data_col[ALTSONG1] : 'M-Nestling'
         }
         overview = []
         overview.append(make_final_pt(pt_manual, song_cols, friendly_names))
         
-        friendly_names = {data_col[malesong] : 'MM-Male', 
-                          data_col[courtsong]: 'MM-Chorus',
-                          data_col[altsong2] : 'MM-Female', 
-                          data_col[altsong1] : 'MM-Nestling'
+        friendly_names = {data_col[MALE_SONG] : 'MM-Male', 
+                          data_col[COURT_SONG]: 'MM-Chorus',
+                          data_col[ALTSONG2] : 'MM-Female', 
+                          data_col[ALTSONG1] : 'MM-Nestling'
         }
         overview.append(make_final_pt(pt_mini_manual, song_cols, friendly_names))
 
@@ -3244,7 +3257,7 @@ if not make_all_graphs and len(df_site):
             for t in weather_cols:
                 weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
                 weather_data.rename(columns={'value':t}, inplace=True)
-                if t != weather_prcp:
+                if t != WEATHER_PRCP:
                     weather_data[t] = weather_data[t].astype(int)
             overview.append(weather_data)
 
@@ -3276,9 +3289,9 @@ if not make_all_graphs and len(df_site):
     if container_mid.checkbox('Show errors', value=True): 
         check_tags(df_site)
 
-    if len(site_list[bad_files]) > 0:
+    if len(site_list[BAD_FILES]) > 0:
         with st.expander("See possibly bad filenames"):  
-            st.write(site_list[bad_files])
+            st.write(site_list[BAD_FILES])
 
     if st.button('Clear cache'):
         get_target_sites().clear()
