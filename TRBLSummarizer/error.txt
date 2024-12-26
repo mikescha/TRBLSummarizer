@@ -1,1 +1,4 @@
-Logging started 29-Nov-24 15:24:56
+Logging started 13-Dec-24 11:10:58
+13-Dec-24 11:11:04: Data for site 2022 Private Site 1 - not real lat lon has the wrong year in it, older than its year
+13-Dec-24 11:11:04: Data for site 2022 Private Site 3 - not real lat lon has the wrong year in it, older than its year
+13-Dec-24 11:11:04: Data for site 2022 WC-WR1 has the wrong year in it, older than its year

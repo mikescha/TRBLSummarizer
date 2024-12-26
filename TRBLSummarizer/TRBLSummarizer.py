@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before we deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 
 # Constants and Globals
