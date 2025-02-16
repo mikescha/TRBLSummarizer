@@ -6,7 +6,7 @@ Site Name,First Rec,Last Rec,P1 MC Start,P1 MC End,P1 Hatch,P1 Inc Length,P1 Las
 2018 Red Wing Ranch,05/04/2018,06/04/2018,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2018 Rush Ranch,02/09/2018,06/26/2018,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2018 SJWA-rose-1,04/02/2018,04/10/2018,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
-2018 SJWA-rose-2,04/10/2018,04/27/2018,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2018 SJWA-rose-2,04/10/2018,04/27/2018,before start,04/20/2018,ND,ND,04/21/2018,ND,ND,ND,ND,04/21/2018,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2019 Colusa NWR 27-1,05/27/2019,08/12/2019,before start,05/30/2019,ND,ND,ND,ND,06/27/2019,ND,07/21/2019,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2019 Colusa NWR 27-1 LG,01/01/1999,01/01/1999,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2019 Colusa NWR 27-1 telemetry station AM,01/01/1999,01/01/1999,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
@@ -103,7 +103,7 @@ Site Name,First Rec,Last Rec,P1 MC Start,P1 MC End,P1 Hatch,P1 Inc Length,P1 Las
 2022 Sedgwick,03/20/2022,07/12/2022,ND,ND,04/14/2022,ND,04/18/2022,4,04/29/2022,16,05/05/2023,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2022 SJWA,05/10/2022,06/27/2022,ND,ND,05/29/2022,ND,06/02/2022,4,06/14/2022,17,06/23/2022,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2022 WA Harder Spring,03/18/2022,07/13/2022,05/01/2022,05/09/2022,05/18/2022,10,06/12/2022,25,05/30/2022,13,06/10/2022,ND,05/18/2022,05/27/2022,06/07/2022,12,06/12/2022,5,06/16/2022,10,07/03/2022,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
-2022 WA1,05/27/2022,08/01/2022,ND,ND,ND,ND,ND,ND,ND,ND,05/30/2022,ND,ND,ND,05/28/2022,ND,ND,ND,06/13/2022,17,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2022 WA1,05/27/2022,08/01/2022,ND,ND,ND,ND,ND,ND,ND,ND,05/30/2022,ND,ND,ND,05/28/2022,ND,ND,ND,06/09/2022,13,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2022 WC-WR1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 2022 Wind Wolves Preserve Pleitito Creek,03/11/2022,05/26/2022,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2022 Wind Wolves Preserve Santiago Wetlands,02/23/2022,08/17/2022,ND,ND,04/20/2022,ND,ND,ND,05/04/2022,15,06/02/2022,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
@@ -159,37 +159,37 @@ Site Name,First Rec,Last Rec,P1 MC Start,P1 MC End,P1 Hatch,P1 Inc Length,P1 Las
 2023 West of Davis,05/06/2023,06/26/2023,ND,ND,ND,ND,ND,ND,before start,ND,05/10/2023,ND,before start,05/09/2023,05/22/2023,ND,05/25/2023,3,06/02/2023,12,06/05/2023,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2023 Wind Wolves Preserve site 1,04/07/2023,07/25/2023,ND,ND,05/05/2023,ND,05/06/2023,1,05/17/2023,13,05/31/2023,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 2023 Wind Wolves Preserve Site 2,04/07/2023,07/25/2023,before start,04/17/2023,05/01/2023,15,05/03/2023,2,05/08/2023,8,06/07/2023,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
-2024 Baja Rancho Cinega Redonda 1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Baja Rancho Cinega Redonda 2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Baja Lago Mesa Redonda,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Colusa NWR T27.1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Colusa NWR T27.2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Delevan T43,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Dublin Ranch Preserve - Lin Livermore Conservation Area,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Kern 1 - check lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Los Vaqueros Reservoir,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Markham Ravine 1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Markham Ravine 2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Markham Ravine 3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Merced NWR - Cottonwood Trail,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Moore Lake - confirm lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Newberry Springs,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Ohlone - Santa Lucia Preserve,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 OR Eureka Lane,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Panoche Creek Preserve - Dollar Marsh East - fix lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Panoche Creek Preserve - Dollar Marsh South - fix lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Panoche Creek Preserve - Dollar Marsh West - fix lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Rancho Jamul - Main Pond 1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Rancho Jamul - Main Pond 2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Rancho Jamul - North Pond,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 SJWA Thistle NW of Bridge Street Pond,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Sedgwick,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 WA Harder Spring,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 WA McCain Pond,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Wind Wolves Preserve - Los Lobos fix lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Wind Wolves Preserve - Pleitito,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Wind Wolves Preserve - Santiago,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-2024 Wind Wolves Preserve - Tevis fix lat lon,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2024 Baja Rancho Cinega Redonda 1,04/23/2024,08/19/2024,before start,before start,before start,ND,04/23/2024,ND,05/06/2024,ND,05/29/2024,ND,04/24/2024,05/12/2024,05/25/2024,14,ND,ND,06/06/2024,13,06/13/2024,ND,06/04/2024,06/07/2024,06/18/2024,12,ND,ND,06/26/2024,9,07/16/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Baja Rancho Cinega Redonda 2,04/23/2024,08/01/2024,before start,before start,04/29/2024,ND,05/03/2024,ND,05/10/2024,12,05/27/2024,ND,05/16/2024,05/22/2024,06/04/2024,14,06/09/2024,5,06/12/2024,9,06/21/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Baja Lago Mesa Redonda,05/02/2024,08/04/2024,before start,before start,before start,ND,05/12/2024,ND,05/03/2024,ND,ND,ND,before start,05/17/2024,05/24/2024,8,05/30/2024,6,ND,ND,ND,ND,05/30/2024,06/05/2024,06/21/2024,17,ND,ND,ND,ND,07/07/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Colusa NWR T27.1,04/24/2024,09/03/2024,05/25/2024,05/31/2024,06/11/2024,12,06/11/2024,0,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Colusa NWR T27.2,04/24/32024,08/04/2024,06/18/2024,06/23/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Delevan T43,ND,ND,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2024 Dublin Ranch Preserve - Lin Livermore Conservation Area,05/21/2024,08/15/2024,ND,ND,05/31/2024,ND,05/28/2024,-3,06/09/2024,10,06/21/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Kern 1 - check lat lon,03/25/2024,08/03/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+2024 Los Vaqueros Reservoir,03/15/2024,06/24/2024,03/15/2024,04/23/2024,ND,ND,04/26/2024,ND,ND,ND,ND,04/26/2024,05/17/2024,05/26/2024,06/09/2024,15,06/15/2024,6,06/18/2024,10,after last,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Markham Ravine 1,05/07/2024,05/24/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Markham Ravine 2,05/07/2024,05/24/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Markham Ravine 3,05/07/2024,05/24/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Merced NWR - Cottonwood Trail,04/25/2024,07/12/2024,before start,05/02/2024,ND,ND,05/11/2024,ND,,,,,,,,,,,,,,,05/20/2024,05/27/2024,ND,ND,05/26/2024,,,,,,,,,,,,,,,
+2024 Moore Lake - confirm lat lon,04/10/2024,07/01/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Newberry Springs,05/27/2024,06/02/2024,before start,before start,before start,ND,before start,ND,before start,ND,after end,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Ohlone - Santa Lucia Preserve,07/01/2024,04/10/2024,before start,05/06/2024,05/02/2024,-3,05/21/2024,19,05/18/2024,17,06/30/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 OR Eureka Lane,05/04/2024,07/14/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Panoche Creek Preserve - Dollar Marsh East - fix lat lon,04/15/2024,08/01/2024,before start,04/23/2024,04/29/2024,7,05/11/2024,12,05/12/2024,14,05/30/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Panoche Creek Preserve - Dollar Marsh South - fix lat lon,04/16/2024,08/01/2024,before start,04/20/2024,05/01/2024,12,05/09/2024,8,05/18/2024,18,06/02/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Panoche Creek Preserve - Dollar Marsh West - fix lat lon,04/15/2024,08/01/2024,before start,04/20/2024,05/05/2024,16,05/12/2024,7,05/13/2024,9,05/26/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Rancho Jamul - Main Pond 1,03/26/2024,08/13/2024,05/01/2024,06/21/2024,05/26/2024,ND,06/28/2024,33,06/09/2024,15,07/30/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Rancho Jamul - Main Pond 2,03/26/2024,07/06/2024,05/01/2024,06/21/2024,05/26/2024,ND,ND,ND,06/09/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Rancho Jamul - North Pond,03/27/2024,06/22/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 SJWA Thistle NW of Bridge Street Pond,06/05/2024,06/22/2024,before start,before start,before start,ND,06/06/2024,ND,06/13/2024,ND,06/19/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Sedgwick,04/04/2024,08/04/2024,before start,05/02/2024,04/20/2024,-11,06/08/2024,49,05/06/2024,17,06/06/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 WA Harder Spring,03/25/2024,08/03/2024,ND,ND,07/18/2024,ND,07/18/2024,0,07/27/2024,10,after last,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 WA McCain Pond,03/29/2024,08/09/2024,ND,ND,05/10/2024,ND,05/12/2024,2,05/24/2024,15,06/01/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Wind Wolves Preserve - Los Lobos fix lat lon,04/30/2024,09/11/2024,before start,05/12/2024,before start,ND,05/26/2024,ND,06/04/2024,ND,06/13/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Wind Wolves Preserve - Pleitito,04/26/2024,08/11/2024,before start,before start,before start,ND,04/30/2024,ND,05/02/2024,ND,05/16/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Wind Wolves Preserve - Santiago,04/30/2024,08/31/2024,before start,before start,before start,ND,ND,ND,05/04/2024,ND,06/30/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
+2024 Wind Wolves Preserve - Tevis fix lat lon,04/30/2024,09/24/2024,before start,before start,04/30/2024,ND,05/04/2024,4,05/17/2024,18,06/07/2024,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,ND
 Bad - 2022 Panoche Creek Loc 4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Bad - 2022 Panoche Creek loc 4 try2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 Bad - 2022 Panoche Creek Preserve Loc3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

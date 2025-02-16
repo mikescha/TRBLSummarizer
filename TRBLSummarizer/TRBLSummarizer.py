@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 # Constants and Globals
 #
@@ -2864,7 +2864,7 @@ with container_bottom:
     if not being_deployed_to_streamlit:
         make_all_graphs = st.checkbox('Make all graphs')
     else:
-        make_all_graphs = False
+        make_all_graphs = True
 
 container_top.title('TRBL Graphs')
 
