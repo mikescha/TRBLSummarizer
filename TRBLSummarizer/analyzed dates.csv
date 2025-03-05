@@ -1,4 +1,4 @@
-Site,Pulse 1 Male Chorus,Pulse 1 Female,Pulse 1 Hatchling,Pulse 1 Nestling,Pulse 1 Fledgling,Pulse 2 Male Chorus,Pulse 2 Female,Pulse 2 Hatchling,Pulse 2 Nestling,Pulse 2 Fledgling,Pulse 3 Male Chorus,Pulse 3 Female,Pulse 3 Hatchling,Pulse 3 Nestling,Pulse 3 Fledgling,Pulse 4 Male Chorus,Pulse 4 Female,Pulse 4 Hatchling,Pulse 4 Nestling,Pulse 4 Fledgling
+Site,Pulse 1Male Chorus,Pulse 1Female,Pulse 1Hatchling,Pulse 1Nestling,Pulse 1Fledgling,Pulse 2Male Chorus,Pulse 2Female,Pulse 2Hatchling,Pulse 2Nestling,Pulse 2Fledgling,Pulse 3Male Chorus,Pulse 3Female,Pulse 3Hatchling,Pulse 3Nestling,Pulse 3Fledgling,Pulse 4Male Chorus,Pulse 4Female,Pulse 4Hatchling,Pulse 4Nestling,Pulse 4Fledgling
 2017 Rush Ranch,"First: 03/03
 Last: 03/03","First: 05/15
 Last: 05/19","First: 06/02
@@ -36,7 +36,9 @@ Last: 05/27",No data,No data,No data,No data
 Last: 04/20","First: 04/15
 Last: 04/21",No data,No data,No data
 2019 Colusa NWR 27-1,"First: On or before 05/27
-Last: 05/29",No data,No data,No data,No data
+Last: 05/29",No data,No data,No data,"First: 06/27
+Last: 07/21","First: 06/14
+Last: 06/19",No data,No data,No data,No data
 2019 Colusa NWR 27-2,No data,"First: 05/23
 Last: 05/24","First: 05/30
 Last: 05/30",No data,No data
@@ -417,7 +419,7 @@ Last: 06/01",No data,No data,"First: 05/31
 Last: 06/02",No data,"First: 06/19
 Last: 06/19",No data
 2022 Sedgwick,"First: On or before 03/20
-Last: 04/03","First: 03/26
+Last: 04/04","First: 03/26
 Last: 03/26","First: 04/16
 Last: 04/20","First: 04/16
 Last: 05/04","First: 04/29
@@ -425,7 +427,7 @@ Last: 05/05",No data,"First: 04/11
 Last: 04/18",No data,"First: 05/22
 Last: 06/04","First: 06/02
 Last: 06/03","First: 05/01
-Last: 05/05",No data,No data,No data,No data
+Last: 05/08",No data,No data,No data,No data
 2022 WA Harder Spring,"First: 04/23
 Last: 04/24","First: 05/08
 Last: 05/17","First: 05/24
@@ -454,7 +456,6 @@ Last: 06/05","First: 05/27
 Last: 06/01",No data,No data,No data,"First: 06/21
 Last: 06/24","First: 06/19
 Last: 06/22",No data,No data,No data,No data
-2023 Bridge St Pond
 2023 Colusa NWR T27.1,"First: 06/26
 Last: 07/04","First: 07/02
 Last: 07/21",No data,No data,"First: 07/11
@@ -518,7 +519,6 @@ Last: 05/05","First: 05/12
 Last: 05/19",No data,No data,"First: 05/21
 Last: On or after 05/22","First: 05/21
 Last: On or after 05/22",No data
-2023 Kern - Canebreak Ecological Reserve 4
 2023 Kern - HQ2,"First: 05/20
 Last: 05/24","First: 05/25
 Last: 06/12",No data,No data,"First: 06/05
