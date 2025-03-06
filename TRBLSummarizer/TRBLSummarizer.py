@@ -274,7 +274,7 @@ PULSE_LAST_FLDG = "fledgedisp"
 pulse_date_types = [PULSE_MC_START, PULSE_MC_END, PULSE_HATCH, PULSE_FIRST_FLDG, PULSE_LAST_FLDG, ABANDONED]
 #Mar 2025, these weren't needed to dropping them
 #pulse_numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
-pulse_numeric_types = ["Site ID", "Altitude", "Count of Recordings"]
+pulse_numeric_types = ["Site ID", "Altitude", "Number of Recordings"]
 summary_date_cols = [p + ' ' + d for p in PULSES for d in pulse_date_types]
 #summary_numeric_cols = [p + ' ' + n for p in PULSES for n in pulse_numeric_types]
 summary_numeric_cols = pulse_numeric_types
