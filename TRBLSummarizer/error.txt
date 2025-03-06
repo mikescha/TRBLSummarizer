@@ -1,4 +1,4 @@
-Logging started 05-Mar-25 13:27:22
-05-Mar-25 13:27:23: Found case where end date is 'before start' but start date is not 'ND'
-05-Mar-25 13:27:23: Found case where end date is 'before start' but start date is not 'ND'
-05-Mar-25 13:27:23: 2024 Baja Rancho Cinega Redonda 1 didn't have any PM data
+Logging started 06-Mar-25 19:11:46
+06-Mar-25 19:12:07: Found case where end date is 'before start' but start date is not 'ND'
+06-Mar-25 19:12:07: Found case where end date is 'before start' but start date is not 'ND'
+06-Mar-25 19:12:07: 2024 Baja Rancho Cinega Redonda 1 didn't have any PM data
