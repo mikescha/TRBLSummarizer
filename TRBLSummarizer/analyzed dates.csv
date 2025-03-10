@@ -16,19 +16,19 @@ Last: 04/24",No data,No data,No data,No data
 2018 Markham Ravine Main,No data,No data,No data,No data,"First: 07/13
 Last: 07/13"
 2018 Markham Ravine westside,No data,No data,No data,"First: On or before 06/26
-Last: 06/26",No data,No data,No data,No data,"First: 07/12
+Last: 06/26","First: 07/06
+Last: 07/06",No data,No data,No data,"First: 07/12
 Last: On or after 07/13",No data
 2018 Red Wing Ranch,No data,"First: On or before 05/04
 Last: 05/09",No data,No data,No data
-2018 Rush Ranch,"First: 02/28
-Last: 03/02","First: 05/08
+2018 Rush Ranch,"First: 03/14
+Last: 03/19","First: 05/08
 Last: 05/08","First: 06/01
 Last: 06/01","First: 06/01
 Last: 06/03","First: 06/11
-Last: 06/18","First: 03/19
-Last: 03/19",No data,No data,"First: 06/22
-Last: 06/22",No data,"First: 04/04
-Last: 04/09",No data,No data,No data,No data,"First: 05/04
+Last: 06/18","First: 04/04
+Last: 04/09",No data,No data,"First: 06/22
+Last: 06/22",No data,"First: 05/04
 Last: 05/07",No data,No data,No data,No data,"First: 05/25
 Last: 05/27",No data,No data,No data,No data
 2018 SJWA-rose-1
@@ -60,23 +60,25 @@ Last: 05/29",No data,"First: 05/30
 Last: 06/09",No data,"First: 06/11
 Last: 06/11","First: 06/23
 Last: 06/23"
-2019 Iron Point,No data,"First: 04/25
-Last: 04/29",No data,No data,"First: 05/14
-Last: 06/02","First: 04/29
-Last: 05/14",No data,No data,"First: 06/02
-Last: 06/09","First: 06/18
-Last: 06/20",No data,"First: 06/03
-Last: 06/04","First: 06/10
-Last: 06/10",No data,No data
+2019 Iron Point,No data,"First: On or before 04/24
+Last: 04/29",No data,"First: 05/03
+Last: 05/05","First: 05/14
+Last: 07/06","First: 04/27
+Last: 05/14","First: 06/01
+Last: 06/05","First: 06/06
+Last: 06/06","First: 06/01
+Last: 06/12",No data,"First: 05/30
+Last: 05/30",No data,No data,No data,No data
 2019 Leisure Town,"First: On or before 03/17
-Last: 03/19",No data,No data,No data,No data,"First: 04/04
-Last: 04/13",No data,No data,No data,No data,"First: 05/19
+Last: 03/19","First: 04/11
+Last: 04/11",No data,No data,No data,"First: 04/04
+Last: 04/13","First: 05/20
+Last: 05/24",No data,No data,No data,"First: 05/19
 Last: 05/29",No data,No data,No data,No data
 2019 Markham Ravine,"First: On or before 05/10
 Last: 05/13","First: 05/13
-Last: 05/29","First: 06/05
-Last: 06/05","First: 05/31
-Last: 05/31","First: 06/17
+Last: 05/29",No data,"First: 05/31
+Last: 06/11","First: 06/16
 Last: 06/18","First: 06/01
 Last: 06/04",No data,No data,No data,No data
 2019 Markham Ravine 2,No data,No data,No data,No data,"First: 06/01
@@ -92,7 +94,8 @@ Last: 05/07",No data,No data,No data,No data
 2020 Conaway Ranch,"First: On or before 05/18
 Last: 06/02","First: 05/24
 Last: 05/27",No data,No data,"First: 06/18
-Last: 06/20"
+Last: 06/20",No data,No data,No data,"First: 06/19
+Last: 06/26",No data
 2020 Creed Road,"First: 03/29
 Last: 03/29",No data,No data,No data,No data,"First: 04/15
 Last: 04/23",No data,No data,No data,No data
@@ -837,12 +840,14 @@ Last: 05/13",No data,"First: 05/14
 Last: 05/14",No data,"First: 05/26
 Last: 05/26","First: 06/02
 Last: 06/13"
-2024 Wind Wolves Preserve - Pleitito,No data,No data,No data,"First: On or before 04/27
-Last: 04/29","First: 05/02
-Last: 05/04",No data,No data,No data,No data,"First: 05/20
-Last: 05/20",No data,No data,No data,"First: 06/02
-Last: 06/04","First: 06/08
-Last: 06/08"
+2024 Wind Wolves Preserve - Pleitito,No data,"First: On or before 04/26
+Last: 04/28",No data,"First: On or before 04/26
+Last: 05/15","First: 04/30
+Last: 05/27",No data,"First: 05/22
+Last: 06/02","First: 05/27
+Last: 06/02","First: 05/31
+Last: 06/07","First: 06/12
+Last: 06/16"
 2024 Wind Wolves Preserve - Santiago,"First: On or before 04/30
 Last: 05/16",No data,No data,"First: On or before 04/30
 Last: 05/11","First: 05/04

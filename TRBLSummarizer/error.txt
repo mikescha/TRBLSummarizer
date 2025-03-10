@@ -1,4 +1,2 @@
-Logging started 06-Mar-25 19:11:46
-06-Mar-25 19:12:07: Found case where end date is 'before start' but start date is not 'ND'
-06-Mar-25 19:12:07: Found case where end date is 'before start' but start date is not 'ND'
-06-Mar-25 19:12:07: 2024 Baja Rancho Cinega Redonda 1 didn't have any PM data
+Logging started 10-Mar-25 08:46:49
+10-Mar-25 08:46:51: 2022 Wind Wolves Preserve Pleitito Creek didn't have any PM data
