@@ -691,7 +691,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     last_rec = get_val_from_df(summary_row, SUMMARY_LAST_REC)
 
     #TODO Is this the best way to handle the zero recording case?
-    if pd.isna(first_rec):
+    if pd.isna(first_rec): #TODO: Log an error in this case
+        log_error("process_site: date of first recording was empty")
         return {}
 
     summary_dict = {
@@ -722,7 +723,13 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 else:
                     result1 = pd.NaT
             elif value1 == "before start":
-                result1 = summary_dict[SUMMARY_FIRST_REC]
+                #If the start date is "before start" then we don't know when it was exactly. I used to use the
+                #date of the first recording as "before start" but that's not correct, so we took this line 
+                #out:
+                #   result1 = summary_dict[SUMMARY_FIRST_REC]
+                #
+                #Not sure if there's anything to do here...
+                pass
             elif value1 == "after end":
                 result1 = summary_dict[SUMMARY_LAST_REC]
             elif value1 == nd_string or value1 == "" or pd.isna(value1):
@@ -753,7 +760,9 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 if not value1 == nd_string:
                     log_error(f"{error_prefix}: In {target2} end date is 'before start' but start date is not 'ND'")
             elif value2 == "after end":
-                result2 = summary_dict[SUMMARY_LAST_REC]
+                #See commentary above about "before start". It used to use the date of the last recording:
+                #    result2 = summary_dict[SUMMARY_LAST_REC]
+                pass
             elif value2 == nd_string:
                 if not value1 == nd_string:
                     log_error(f"{error_prefix}: Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
