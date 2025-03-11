@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 # Constants and Globals
 #
@@ -210,7 +210,7 @@ cmap = {data_col[MALE_SONG]:'Greens',
 cmap_names = {data_col[MALE_SONG]:"Male Song",
               data_col[COURT_SONG]:"Male Chorus",
               data_col[ALTSONG2]:"Female Chatter",
-              data_col[ALTSONG1]:"Hatchling/Nestling/\nFledgling",
+              data_col[ALTSONG1]:"Hatchling/Nestling/Fledgling",
 #   temporarily don't need this
 #              "Fledgling":"Fledgling",
 } 
@@ -1363,34 +1363,60 @@ def set_global_theme():
 
 
 def output_cmap():
-    #Save the legend, unless it's already there
+    #Save the legend
     figure_path = figure_dir / legend_name
-    if not os.path.exists(figure_path):
-        plt.savefig(figure_path, dpi='figure', bbox_inches='tight')    
+    if os.path.exists(figure_path):
+        os.remove(figure_path)
+    plt.savefig(figure_path, dpi='figure', bbox_inches='tight', pad_inches=0)    
 
 
 def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
-    gradient = np.linspace(0, 1, 256)
+    gradient = np.linspace(0, 1, 32)
     gradient = np.vstack((gradient, gradient))
 
-    #Create the figure, 25% of the height of the other graphs
-    fig = plt.figure(figsize=(fig_w, fig_h*0.25), layout='constrained')
-    #Add one grid square for each colormap
-    gs = fig.add_gridspec(nrows=1, ncols=len(cmap_names), wspace=0)
-    axs = gs.subplots()
+    n = len(cmap_names)
+    # Create one axis per legend item
+    fig, axs = plt.subplots(nrows=1, ncols=n, figsize=(fig_w*0.6, fig_h*0.1))
 
-    for ax, call_type in zip(axs, cmap_names):
-        #Draw the gradient
-        ax.imshow(gradient, aspect='auto', cmap=mpl.colormaps[cmap[call_type]])
-        #Add a border
-        ax.add_patch(Rectangle((0,0), 1, 1, ec='black', fill=False, transform=ax.transAxes))
-        #Add the name
-        ax.text(1.03, 0.5, cmap_names[call_type], verticalalignment='center', horizontalalignment='left',
-                fontsize=6, transform=ax.transAxes)
+    for ax, (key, label) in zip(axs, cmap_names.items()):
+        # Set the axis coordinate system to [0,1] in both directions
+        # Draw the color block: we reserve x from 0 to 0.35 for the block.
+        ax.imshow(gradient, extent=[0, 0.35, 0.1, 0.9], aspect="auto", cmap=mpl.colormaps[cmap[key]], transform=ax.transAxes)
+        # Draw a border around the color block
+        #ax.add_patch(Rectangle((0, 0), 0.35, 1, transform=ax.transAxes,
+        #                       edgecolor="black", linewidth=0.5, fill=False))
         
-    # Turn off all axes, so we don't draw any ticks, spines, labels, etc.
-    for ax in axs:
+        # Add the label text immediately to the right of the color block.
+        # Here, x=0.37 places the text just to the right of the block.
+        ax.text(0.37, 0.5, label, transform=ax.transAxes, 
+                va="center", ha="left", 
+                fontsize=5)
+        
+        # Remove the axis visuals
         ax.set_axis_off()
+ 
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0, hspace=0)
+
+        # color_ax = axs[i * 2]   # Color box axis
+        # text_ax = axs[i * 2 + 1]  # Text label axis
+        
+        # #Draw the gradient
+        # color_ax.imshow(gradient, aspect="auto", cmap=mpl.colormaps[cmap[key]])
+
+        # #Add a border
+        # color_ax.add_patch(Rectangle((0, 0), 1, 1, ec="black", fill=False, transform=color_ax.transAxes))
+
+        # #Add the name
+        # # ax.text(1.03, 0.5, cmap_names[call_type], 
+        # #         verticalalignment='center', horizontalalignment='left',
+        # #         fontsize=4, 
+        # #         transform=ax.transAxes)
+        # text_ax.text(-0.5, 0.5, label, 
+        #              va="center", ha="left", 
+        #              fontsize=5)
+
+        # text_ax.set_axis_off()
+        # color_ax.set_axis_off()
 
     if not make_all_graphs:
         st.pyplot(fig)
@@ -2180,7 +2206,7 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
         # exclude weather for now, we need to add it after the legend
         images = [Image.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != GRAPH_WEATHER] 
         composite = concat_images(*images)
-        if False: #I don't want the legend for now, I'm sure this is going to haunt me later by doing it this way NO LEGEND
+        if True: #TODO decide if there is any logic needed about when to save the legend
             composite = concat_images(*[composite, Image.open(legend)], is_legend=True)
         #Add the weather graph only if it exists, to prevent an error if we haven't obtained it yet
         if GRAPH_WEATHER in site_fig_dict.keys() and include_weather:
@@ -2420,13 +2446,13 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                      f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
         prcp_label = f"Precipitation (0-"\
                      f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
-        legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=4, label=tmax_label),
-                           Line2D([0], [0], color=wg_colors['low'], lw=4, label=tmin_label),
-                           Line2D([0], [0], color=wg_colors['prcp'], lw=4, label=prcp_label)]
+        legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=3, label=tmax_label),
+                           Line2D([0], [0], color=wg_colors['low'], lw=3, label=tmin_label),
+                           Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label)]
         
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
-                   fontsize='x-small')
+                   fontsize=5, frameon=False)
 
     else:
         fig = plt.figure()
@@ -2777,7 +2803,7 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(fig_w, fig_h/2))
     aspect_ratio = fig_w / (fig_h/2)
 
-
+    #We're not using this so commenting it out now
     for date_idx, date in enumerate(data):
         min_value = 2
         total_phases = sum(data[date] > min_value)
@@ -3109,6 +3135,7 @@ for site in target_sites:
         if date_range_dict:
             pm_date_range_dict = date_range_dict  
         else:
+            #TODO GET THE DATES FROM THE SHEET INSTEAD??? May be irrelevant after we get the new XL files
             pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs, container_top)
 
         if len(df_pattern_match):
@@ -3237,8 +3264,9 @@ for site in target_sites:
 
         output_graph(site, GRAPH_PM, save_files, make_all_graphs, pm_data_empty)
 
-        if not make_all_graphs:
-            make_one_row_pm_summary(df = pt_pm)
+        # We're not using this now so commenting it out
+        # if not make_all_graphs:
+        #     make_one_row_pm_summary(df = pt_pm)
 
     # Edge Analysis
     if not pt_edge.empty and False:
