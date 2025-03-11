@@ -1,3 +1,0 @@
-Logging started 11-Mar-25 14:12:22
-11-Mar-25 14:12:32: 2021 Kern 6 didn't have any PM data
-11-Mar-25 14:12:39: K6am-2021-05-16_08-00.WAV missing song tag

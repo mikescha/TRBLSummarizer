@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = False
+being_deployed_to_streamlit = True
 
 # Constants and Globals
 #
@@ -42,7 +42,6 @@ DATE = 'date'
 HOUR = 'hour'
 tag_wse = 'tag_edge'
 tag_wsm = 'tag_wsm'
-tag_wsh = 'tag_wsh'
 tag_mhe = 'tag_mhe'
 tag_mhm = 'tag_mhm'
 tag_mhh = 'tag_mhh'
@@ -89,34 +88,31 @@ data_col = {
     HOUR     : 'hour', 
     DATE     : 'date',
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
-#    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 3
+    tag_p1a      : 'tag<p1a>',
     tag_p1c      : 'tag<p1c>',
     tag_p1f      : 'tag<p1f>',
     tag_p1n      : 'tag<p1n>',
-    tag_p1a      : 'tag<p1a>',
     tag_p2c      : 'tag<p2c>',
     tag_p2f      : 'tag<p2f>',
     tag_p2n      : 'tag<p2n>',
-#    tag_p2a      : 'tag<p2a>',
-#    tag_p3c      : 'tag<p3c>',
-#    tag_p3f      : 'tag<p3f>',
-#    tag_p3n      : 'tag<p3n>',
     tag_mhe2     : 'tag<reviewed-MH-e2>', 
     tag_mhe      : 'tag<reviewed-MH-e>',
     tag_mhh      : 'tag<reviewed-MH-h>',
     tag_mhm      : 'tag<reviewed-MH-m>',
     tag_mh       : 'tag<reviewed-MH>',
-    tag_wse      : 'tag<reviewed-WS-e>', #WENDY this is in DF but not being used
-    tag_wsh      : 'tag<reviewed-WS-h>',
+    tag_wse      : 'tag<reviewed-WS-e>',
     tag_wsm      : 'tag<reviewed-WS-m>',
     tag_ws       : 'tag<reviewed-WS>',
     tag_         : 'tag<reviewed>',
-    MALE_SONG     : 'val<Agelaius tricolor/Common Song>',
-    ALTSONG1     : 'val<Agelaius tricolor/Alternative Song>',
     ALTSONG2     : 'val<Agelaius tricolor/Alternative Song 2>',
+    ALTSONG1     : 'val<Agelaius tricolor/Alternative Song>',
+    MALE_SONG     : 'val<Agelaius tricolor/Common Song>',
     COURT_SONG    : 'val<Agelaius tricolor/Courtship Song>',
     SIMPLE_CALL2  : 'val<Agelaius tricolor/Simple Call 2>',
+    "val<sp11/Simple Call>":"val<sp11/Simple Call>",
+    "val<sp22/Simple Call>":"val<sp22/Simple Call>"
 }
+
 
 site_columns = {
     'id'        : 'id',
@@ -146,17 +142,14 @@ all_songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1, SIMPLE_CALL2]
 all_song_cols = [data_col[s] for s in all_songs]
 
 manual_tags = [tag_mh, tag_ws, tag_]
-mini_manual_tags = [tag_mhh, tag_wsh, tag_mhm, tag_wsm]
-#if we get 3rd pulse back, add tag_p3c and tag_p3n to the two lines below
+mini_manual_tags = [tag_mhh, tag_mhm, tag_wsm]
+
 edge_c_tags = [tag_p1c, tag_p2c] #male chorus
 edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-#if we get 3rd pulse back, change line below to this:
-#edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_YNC_p3, tag_p1f, tag_p2f, tag_p3f, tag_p2na] 
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f] #, tag_p2a]
+edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f]
 edge_tag_map = {
     tag_p1n : [data_col[tag_p1f], data_col[tag_p1a]],
     tag_p2n : [data_col[tag_p2f]]#, data_col[tag_p2a]],
-#    tag_p3n : [data_col[tag_p3f]],
 }
 
 all_tags = manual_tags + mini_manual_tags + edge_tags
@@ -236,8 +229,6 @@ DATA_FOLDER = 'Data/'
 FIG_FOLDER = 'Figures/'
 data_dir = Path(__file__).parents[0] / DATA_FOLDER
 figure_dir = Path(__file__).parents[0] / FIG_FOLDER
-NEW_DATA_FILE = 'data 2021-2023.csv'
-OLD_DATA_FILE = 'data 2017-2020.csv'
 SITE_INFO_FILE = 'TRBL Analysis tracking - All.csv'
 SHEET_HEADER_SIZE = 2 #number of rows to skip over
 WEATHER_FILE = 'weather_history.csv'
@@ -246,9 +237,8 @@ error_file = Path(__file__).parents[0] / 'error.txt'
 SUMMARY_FILE = 'TRBL Analysis tracking - All.csv'
 DATES_FILE = 'analyzed dates.csv'
 
+#This is everything except the data files, because those are auto-generated
 files = {
-    NEW_DATA_FILE : data_dir / NEW_DATA_FILE,
-    OLD_DATA_FILE : data_dir / OLD_DATA_FILE,
     SITE_INFO_FILE : data_dir / SITE_INFO_FILE,
     WEATHER_FILE : data_dir / WEATHER_FILE,
     DATA_OLD_FILE : data_dir / DATA_OLD_FILE,
@@ -422,101 +412,31 @@ def make_date(row):
 #
 @st.cache_resource
 def get_target_sites() -> dict:
-    results = {}
-    for t in pm_file_types:
-        results[t] = []
-    results[BAD_FILES] = []
-    results[SITE] = []
-
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_site_data = pd.read_csv(files[SITE_INFO_FILE], usecols = ['Name', 'Number of Recordings'], skiprows=SHEET_HEADER_SIZE)
+    all_sites = pd.read_csv(files[SITE_INFO_FILE], usecols = ["Name", "Skip Site"], skiprows=SHEET_HEADER_SIZE)
 
-    #Clean it up. Only keep names that start with a 4-digit number. 
-    all_sites = []
-    for s in all_site_data['Name'].tolist():
-        if pd.notna(s):
-            if s[0:4].isdigit():
-                all_sites.append(s)
-    
-    #2/7/24: New approach -- we don't care whether the PM folders have the wrong number of files, 
-    #We will deal with it later in the code. So, just go ahead and add everything, and then flag
-    #the ones that do have errors
-    for s in all_sites:
-        results[SITE].append(s)
-
-    #NOTE: Dec 2024: We're in transition where we're adding files for insects to some but not all sites.
-    # So, because we're downloading the PM job files automatically and we've made the code more robust, 
-    # I'm removing the error checking for now
-
-    # #Now, go through all the folders and check them
-    # top_items = os.scandir(data_dir)
-    # if any(top_items):
-    #     for item in top_items:
-    #         if item.is_dir():
-    #             #Check that the directory name is in our site list. If yes, continue. If not, then add it to the bad list
-    #             s=item.name
-    #             if s in all_sites:
-    #                 # Get a list of all files in that directory, scan for files that match our pattern
-    #                 if any(os.scandir(item)):
-    #                     #Check that each type of expected file is there:
-    #                     if len(pm_file_types) != count_files_in_folder(item):
-    #                         results[bad_files].append('Wrong number of files: ' + item.name)
-
-    #                     for t in pm_file_types:
-    #                         found_file = False
-    #                         found_dir_in_subfolder = False
-    #                         sub_items = os.scandir(item)
-    #                         for f in sub_items:
-    #                             empty_dir = False #if the sub_items constructor is empty, we won't get here
-
-    #                             if f.is_file():
-    #                                 f_type = f.name[len(s)+1:len(f.name)] # Cut off the site name
-    #                                 if t.lower() == f_type[0:len(t)].lower():
-    #                                     results[t].append(f.name)
-    #                                     if s not in results[site_str]: 
-    #                                         results[site_str].append(s)
-    #                                     found_file = True
-    #                                     break
-    #                             else:
-    #                                 if not found_dir_in_subfolder and f.name.lower() != 'old files': # if this is the first time here, then log it
-    #                                     results[bad_files].append('Found subfolder in data folder: ' + s)
-    #                                 found_dir_in_subfolder = True
-    #                         sub_items.close()
-                    
-    #                         if not found_file and not empty_dir:
-    #                             results[bad_files].append('Missing file: ' + s + ' ' + t)
-
-    #                 else:
-    #                     results[bad_files].append('Empty folder: ' + item.name)
-        
-    #             else:
-    #                 if item.name.lower() != 'hide' and item.name.lower() != 'old files':
-    #                     results[bad_files].append('Bad folder name: ' + item.name)
-            
-    #         else: 
-    #             # If it's not a directory, it's a file. If the file we found isn't one of the exceptions to 
-    #             # our pattern, then mark it as Bad.
-    #             if item.name.lower() not in files.keys():
-    #                 results[bad_files].append(item.name)
-
-    # top_items.close()
-    
-    if len(results[SITE]):
-        results[SITE].sort()
+    #Clean it up. Only keep names that start with a 4-digit number and are not to be skipped. 
+    filtered_sites = all_sites.loc[
+        (all_sites["Skip Site"] != "Y") & (all_sites["Name"].str.startswith("20")),
+        "Name"
+    ].tolist()
+         
+    if len(filtered_sites):
+        filtered_sites.sort()
     else:
         show_error('No site files found')
 
-    return results
+    return filtered_sites
 
 #Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     errors_found = []
     if len(target_cols) != len(file_cols):
-        show_error(f"File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
+        show_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
     for col in target_cols:        
         if  target_cols[col] not in file_cols:
             errors_found.append(target_cols[col])
-            show_error(f"Column {target_cols[col]} missing from file {file}")
+            show_error(f"confirm_columns: Column {target_cols[col]} missing from file {file}")
     
     return errors_found
 
@@ -588,7 +508,7 @@ def fix_bad_values(df:pd.DataFrame):
     """
     for col in df.columns:
         if col.startswith("tag") and -100 in df[col].values:
-            log_error(f'Column {col} contains "---"')
+            log_error(f'fix_bad_values: Column {col} contains "---"')
             df[col] = df[col].replace(-100, 0)
 
 def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
@@ -602,22 +522,20 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
 
     if len(tag_errors):
         error_found = True
-        show_error("Found recordings that have both P1F and P1N tags, see log")
+        show_error("check_edge_cols_for_errors: Found recordings that have both P1F and P1N tags, see log")
         for f in tag_errors[FILENAME]: 
-            log_error(f"{f}\tRecording has both P1F and P1N tags")
+            log_error(f"check_edge_cols_for_errors: {f}\tRecording has both P1F and P1N tags")
 
     return error_found 
 
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.cache_resource
 def load_data() -> pd.DataFrame:
-    files_to_load = [OLD_DATA_FILE, NEW_DATA_FILE]
+    files_to_load = [data_dir / f"data {year}.csv" for year in range(2017, 2025)]
     combined_df = pd.DataFrame()
     for file_name in files_to_load:
-        data_csv = files[file_name]
-
         #Validate the data file format
-        headers = pd.read_csv(files[file_name], nrows=0).columns.tolist()
+        headers = pd.read_csv(file_name, nrows=0).columns.tolist()
         missing_columns = confirm_columns(data_col, headers, file_name)  
 
         #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
@@ -631,7 +549,7 @@ def load_data() -> pd.DataFrame:
         #an exception. Hopefully the rest of the code is robust enough to deal...
         usecols = [item for item in usecols if item not in missing_columns]
 
-        df = pd.read_csv(data_csv, 
+        df = pd.read_csv(file_name, 
                         usecols = usecols,
                         parse_dates = [data_col[DATE]],
                         index_col = [data_col[DATE]])
@@ -676,7 +594,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
                         df_temp[DATE] = []
                 else:
                     #columns are missing so can't do anything!
-                    log_error(f"Columns {missing_columns} are missing from pattern matching file!")
+                    log_error(f"load_pm_data: Columns {missing_columns} are missing from pattern matching file!")
                     return pd.DataFrame()
             else:
                 #NOTE: Dec 2024, removing the error logging because there will be a ton of these. Consider adding back
@@ -783,6 +701,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
 
     for pulse in PULSES:
         pulse_result = {}
+        error_prefix = f'process_site: {str(summary_row.iloc[0]["Name"])} at {pulse}'
 
         #Make our list of abandoned dates for later graphing purposes
         abandoned_date = convert_to_datetime(get_val_from_df(summary_row, f"{pulse}{ABANDONED}"))
@@ -799,7 +718,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 result1 = convert_to_datetime(value1)             
             elif pd.notna(value1) and value1.endswith(ABANDONED):
                 if not is_valid_date(abandoned_date):
-                    log_error("A column says Abandoned, but there is not a valid abandoned date")
+                    log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
                     result1 = pd.NaT
             elif value1 == "before start":
@@ -811,7 +730,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 pass
             else:
                 #if not one of the above, then it's an error
-                log_error("Found invalid data in site summary data")
+                log_error(f"{error_prefix}: Found invalid data in {target1}")
 
             target2 = f"{pulse}{end}"
             value2 = get_val_from_df(summary_row, target2)
@@ -826,24 +745,24 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 result2 = convert_to_datetime(value2) - delta
             elif pd.notna(value2) and value2.endswith("abandoned"):
                 if not is_valid_date(abandoned_date):
-                    log_error("A column says Abandoned, but there is not a valid abandoned date")
+                    log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
                     result2 = abandoned_date - pd.Timedelta(days=1)
             elif value2 == "before start":
                 #In this scenario, the start should be ND, throw an error if not
                 if not value1 == nd_string:
-                    log_error("Found case where end date is 'before start' but start date is not 'ND'")
+                    log_error(f"{error_prefix}: In {target2} end date is 'before start' but start date is not 'ND'")
             elif value2 == "after end":
                 result2 = summary_dict[SUMMARY_LAST_REC]
             elif value2 == nd_string:
                 if not value1 == nd_string:
-                    log_error(f"Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
+                    log_error(f"{error_prefix}: Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}") 
             elif pd.isna(value2):
                 # Blank cell, should be OK if value1 is also blank
                 if pd.notna(value1):
-                    log_error("Found invalid data in site summary data")
+                    log_error(f"{error_prefix}: Found {value2} in {target2}")
             else: #ND, empty, or any other values are not valid here
-                log_error("Found invalid data in site summary data")
+                log_error(f"process_site_summary_data: Found {value2} in {target2}, which is invalid data")
             
             pulse_result[phase] = {"start":result1, "end":result2}
 
@@ -883,9 +802,16 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         # Sort newest to oldest (backwards) and filter to this year
         df_site = df_site.sort_index(ascending=False)
         original_size = df_site.shape[0]
-        df_site = df_site.query(f"date <= '{target_year}-12-31'")
-        if df_site.shape[0] != original_size:
-            log_error(f"Data for site {site} has the wrong year in it, newer than its year")
+        df_site_filtered = df_site.query(f"date <= '{target_year}-12-31'")
+        if df_site_filtered.shape[0] != original_size:
+            log_error(f"clean_data: Data for site {site} has the wrong year in it, newer than its year")
+            filtered_out = df_site.merge(df_site_filtered, how="left", indicator=True)
+            filtered_out = filtered_out[filtered_out["_merge"] == "left_only"].drop(columns=["_merge"])
+            if FILENAME in filtered_out.columns:
+                log_error(filtered_out[FILENAME])
+            else:
+                log_error(filtered_out.sort_values("type"))
+
 
         # Now, find first two consecutive items and drop everything after.
         dates = df_site.index.unique()
@@ -898,10 +824,15 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         #Sort oldest to newest, and filter to this year
         df_site = df_site.sort_index(ascending=True)
         original_size = df_site.shape[0]
-        df_site = df_site.query(f"date >= '{target_year}-01-01'")
-        if df_site.shape[0] != original_size:
-            log_error(f"Data for site {site} has the wrong year in it, older than its year")
-
+        df_site_filtered = df_site.query(f"date >= '{target_year}-01-01'")
+        if df_site_filtered.shape[0] != original_size:
+            log_error(f"clean_data: Data for site {site} has the wrong year in it, older than its year")
+            filtered_out = df_site.merge(df_site_filtered, how="left", indicator=True)
+            filtered_out = filtered_out[filtered_out["_merge"] == "left_only"].drop(columns=["_merge"])
+            if FILENAME in filtered_out.columns:
+                log_error(filtered_out[FILENAME])
+            else:
+                log_error(filtered_out.sort_values("type"))
         # Find first two consecutive items and drop everything before
         dates = df_site.index.unique()
         for x,y in pairwise(dates):
@@ -1852,6 +1783,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
         if title == GRAPH_PM:
             #NOTE Add dates of first hatching if they exist
+            #TODO If the hatch date is "Before Start" then don't put a marker
             if row == "Hatchling":
                 for pulse in hatch_dates:
                     hatch_date = hatch_dates[pulse]
@@ -1866,7 +1798,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                                     marker='>', color='black', markersize=marker_size, mew=0.5,
                                     transform=axs[i].get_xaxis_transform())
                     else:
-                        log_error(f"Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
+                        log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
                         
             #NOTE Dec 2024: Added extra lines to separate insects
             if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
@@ -2584,7 +2516,7 @@ def check_tags(df: pd.DataFrame):
 
     if len(bad_rows):
         for r in bad_rows[FILENAME]:
-            log_error(f"{r} missing song tag")
+            log_error(f"check_tags: {r} missing song tag")
 
     if not(bad_rows.empty) or len(error_list):
         with st.expander('See errors'):
@@ -2944,13 +2876,13 @@ df_original = load_data()
 
 #Get the list of sites that we're going to do reports for, and then remove all the other data
 site_list = get_target_sites()
-df = clean_data(df_original, site_list[SITE])
+df = clean_data(df_original, site_list)
 
 # Nuke the original data, hopefully this frees up memory
 del df_original
 gc.collect()
 
-# Load all the summary data, note that this doesn't exist for 2024 and beyond right now (Nov 2024)
+# Load all the summary data
 summary_df = load_summary_data()
 
 save_files = False
@@ -2958,7 +2890,7 @@ save_composite = False
 
 # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
 if make_all_graphs:
-    target_sites = site_list[SITE]
+    target_sites = site_list
     #Can use this to limit sites to just a particular year
     #target_sites = [string for string in target_sites if string.startswith("2024 ")]
 
@@ -2973,7 +2905,7 @@ if make_all_graphs:
     save_composite = True
 
 else:
-    target_sites = [get_site_to_analyze(site_list[SITE], container_top)]
+    target_sites = [get_site_to_analyze(site_list, container_top)]
     if not being_deployed_to_streamlit:
         save_files = True
         save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
@@ -3157,7 +3089,7 @@ for site in target_sites:
     
 
     else: #TODO Should just graph what we get unless the data is completely missing
-        error_msgs.append("All pattern matching data not available, missing some or all files")
+        error_msgs.append(f"{site}: All pattern matching data not available, missing some or all files")
 
 
     # 
@@ -3212,7 +3144,8 @@ for site in target_sites:
         graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
         output_graph(site, GRAPH_SUMMARY, save_files, make_all_graphs, len(site_summary_dict))
     else:
-        log_error(f"{site} didn't have any PM data")
+        pass
+        #was:   log_error(f"{site} didn't have any site summary data")
 
     # Manual analyisis graph
     if not pt_manual.empty:
@@ -3376,10 +3309,6 @@ if not make_all_graphs and len(df_site):
     # Scan the list of tags and flag any where there is "---" for the value.
     if container_mid.checkbox('Show errors', value=True): 
         check_tags(df_site)
-
-    if len(site_list[BAD_FILES]) > 0:
-        with st.expander("See possibly bad filenames"):  
-            st.write(site_list[BAD_FILES])
 
     if st.button('Clear cache'):
         get_target_sites().clear()
