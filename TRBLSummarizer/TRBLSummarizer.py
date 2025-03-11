@@ -2935,6 +2935,7 @@ for site in target_sites:
     error_msgs = []
     site_counter += 1
     # Select the site matching the one of interest
+    st.write(site)
     df_site = df[df[data_col[SITE]] == site]
     date_range_dict = {}
     pt_manual = pd.DataFrame()
