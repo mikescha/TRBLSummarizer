@@ -1792,10 +1792,10 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
         if title == GRAPH_PM:
             #NOTE Add dates of first hatching if they exist
-            #TODO If the hatch date is "Before Start" then don't put a marker
             if row == "Hatchling":
                 for pulse in hatch_dates:
                     hatch_date = hatch_dates[pulse]
+                    st.write(f"Hatch date was {hatch_date}")
                     if hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
                         hatch_index = df_to_graph.columns.get_loc(hatch_date)
 
@@ -1806,6 +1806,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                         axs[i].plot(hatch_index+0.7, 0.5, 
                                     marker='>', color='black', markersize=marker_size, mew=0.5,
                                     transform=axs[i].get_xaxis_transform())
+                        st.write(f"Marker should be at index {hatch_index}")
                     else:
                         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
                         
