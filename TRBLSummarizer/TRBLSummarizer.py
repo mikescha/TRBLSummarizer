@@ -994,6 +994,13 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
     #aggregate = pd.pivot_table(site_df, values=[site_columns[validated]], index = [data_col[date_str]], 
     #                          aggfunc = lambda x: (x==present).sum())
     aggregate = aggregate.rename(columns={validated:type_name})
+    
+    # If the pivot table is empty, ensure all dates exist with value 0
+    if aggregate.empty:
+        all_dates = site_df.index.unique()  # Get all dates from original df
+        aggregate = pd.DataFrame(0, index=all_dates, columns=[type_name])  # Fill with zeros
+        aggregate.index.name = DATE  # Set the index name properly
+    
     return normalize_pt(aggregate, date_range_dict)
 
 
@@ -3148,7 +3155,7 @@ for site in target_sites:
                 #Concat as above
                 pt_pm = pd.concat([pt_pm, pt_for_file_type])
     
-            #TODO PUT summarize_pm here
+
     else: #TODO Should just graph what we get unless the data is completely missing
         error_msgs.append("All pattern matching data not available, missing some or all files")
 
@@ -3234,7 +3241,7 @@ for site in target_sites:
         output_graph(site, GRAPH_MINIMAN, save_files, make_all_graphs, len(df_mini_manual))
 
     # Pattern Matching Analysis
-    if not pt_pm.empty:
+    if True: #not pt_pm.empty:
         hatch_dates = {}
         for p in PULSES:
             if p in site_summary_dict:
