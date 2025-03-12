@@ -2206,19 +2206,16 @@ def load_weather_data_from_file() -> pd.DataFrame:
     #Validate the data file format
     try:
         headers = pd.read_csv(files[WEATHER_FILE], nrows=0).columns.tolist()
-        weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site', 
-                        'lat':'lat', 'lng':'lng', 'alt':'alt'}
-        
-        #This will show an error if something is wrong with the data 
-        missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
-        
-        if not missing_columns:
-            df = pd.read_csv(files[WEATHER_FILE], 
-                            parse_dates = [weather_cols['date']],
-                            index_col = [weather_cols['site']])
-        else: #there was an error where we didn't get the right columns so don't try to do anything with the data
-            df = pd.DataFrame()
+        weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site'}
 
+        #Removed error checking, assuming it's right        
+        #This will show an error if something is wrong with the data 
+        #missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
+        
+        df = pd.read_csv(files[WEATHER_FILE], 
+                        parse_dates = [weather_cols['date']],
+                        index_col = [weather_cols['site']])
+    
     except: #something went wrong trhing to get the data, so just return an empty frame
         df = pd.DataFrame()
 
