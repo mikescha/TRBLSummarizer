@@ -1,0 +1,4 @@
+Logging started 12-Mar-25 10:55:54
+12-Mar-25 10:56:16: check_tags: WWP.SWam-2022-04-26_10-00.WAV missing song tag
+12-Mar-25 10:56:16: check_tags: WWP.SWam-2022-04-26_14-00.WAV missing song tag
+12-Mar-25 10:56:16: check_tags: WWP.SWam-2022-04-26_16-00.WAV missing song tag
