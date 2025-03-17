@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 # Constants and Globals
 #
@@ -171,9 +171,9 @@ fig_w = 6.5
 fig_h = 1
 
 #constants for the weather data files
-WEATHER_PRCP = 'PRCP'
-WEATHER_TMAX = 'TMAX'
-WEATHER_TMIN = 'TMIN'
+WEATHER_PRCP = 'prcp'
+WEATHER_TMAX = 'tmax'
+WEATHER_TMIN = 'tmin'
 weather_cols = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN]
 
 GRAPH_SUMMARY = "Summary"
@@ -226,8 +226,10 @@ cmap_pm = {"Male Song":         "Greens",
 
 #Files, paths, etc.
 DATA_FOLDER = 'Data/'
+PMJ_DATA_FOLDER = 'PMJ Data/'
 FIG_FOLDER = 'Figures/'
 data_dir = Path(__file__).parents[0] / DATA_FOLDER
+pmj_data_dir = Path(__file__).parents[0] / PMJ_DATA_FOLDER
 figure_dir = Path(__file__).parents[0] / FIG_FOLDER
 SITE_INFO_FILE = 'TRBL Analysis tracking - All.csv'
 SHEET_HEADER_SIZE = 2 #number of rows to skip over
@@ -574,7 +576,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
             site_columns['day'], site_columns[validated]]
 
     # Add the site name so we look into the appropriate folder
-    site_dir = data_dir / site
+    site_dir = pmj_data_dir / site
     if os.path.isdir(site_dir):
         for t in pm_file_types:
             fname = f"{site} {t}.csv"
@@ -2201,25 +2203,44 @@ def output_text(text:str, make_all_graphs:bool):
 #
 
 #Load weather data from file
-@st.cache_resource
+#@st.cache_resource
 def load_weather_data_from_file() -> pd.DataFrame:
-    #Validate the data file format
-    try:
-        headers = pd.read_csv(files[WEATHER_FILE], nrows=0).columns.tolist()
-        weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site'}
+    # #Validate the data file format
+    # try:
+    #     headers = pd.read_csv(files[WEATHER_FILE], nrows=0).columns.tolist()
+    #     weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site'}
 
-        #Removed error checking, assuming it's right        
-        #This will show an error if something is wrong with the data 
-        #missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
+    #     #Removed error checking, assuming it's right        
+    #     #This will show an error if something is wrong with the data 
+    #     #missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
         
-        df = pd.read_csv(files[WEATHER_FILE], 
-                        parse_dates = [weather_cols['date']],
-                        index_col = [weather_cols['site']])
+    #     df = pd.read_csv(files[WEATHER_FILE], 
+    #                     parse_dates = [weather_cols['date']],
+    #                     index_col = [weather_cols['site']])
     
-    except: #something went wrong trhing to get the data, so just return an empty frame
-        df = pd.DataFrame()
+    # except: #something went wrong trhing to get the data, so just return an empty frame
+    #     df = pd.DataFrame()
 
-    return df
+    df = pd.read_csv(files[WEATHER_FILE])
+
+    # Select relevant columns
+    columns_to_keep = ['site', 'date', 'tmax', 'tmin', 'prcp']
+    df = df.iloc[:, :5]  # Keeping only the first five columns
+    df.columns = columns_to_keep  # Renaming columns explicitly
+
+    # Convert 'date' column to datetime format
+    df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
+    # Convert strings to numeric
+    for col in ['tmax', 'tmin', 'prcp']:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Transform the data to long format
+    df_melted = df.melt(id_vars=['site', 'date'], 
+                        value_vars=['tmax', 'tmin', 'prcp'],
+                        var_name='datatype', value_name='value')
+    df_melted.set_index('site', inplace=True)
+
+    return df_melted
 
 #Filter weather data down to just what we need for a site
 def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
@@ -2912,8 +2933,8 @@ if make_all_graphs:
 else:
     target_sites = [get_site_to_analyze(site_list, container_top)]
     if not being_deployed_to_streamlit:
-        save_files = True
         save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+        save_files = save_composite
     
     #debug: to get a specific site, put the name of the site below and uncomment
     #target_sites = ["2023 Hale Road"]
