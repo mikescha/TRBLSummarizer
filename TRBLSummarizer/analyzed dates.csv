@@ -1,15 +1,16 @@
 Site,Pulse 1Male Chorus,Pulse 1Female,Pulse 1Hatchling,Pulse 1Nestling,Pulse 1Fledgling,Pulse 2Male Chorus,Pulse 2Female,Pulse 2Hatchling,Pulse 2Nestling,Pulse 2Fledgling,Pulse 3Male Chorus,Pulse 3Female,Pulse 3Hatchling,Pulse 3Nestling,Pulse 3Fledgling,Pulse 4Male Chorus,Pulse 4Female,Pulse 4Hatchling,Pulse 4Nestling,Pulse 4Fledgling
 2017 Rush Ranch,"First: 03/03
-Last: 03/03","First: 05/15
-Last: 05/19","First: 06/02
+Last: 03/03","First: 04/21
+Last: 04/21","First: 06/02
 Last: 06/02","First: 06/01
 Last: 06/16","First: 06/12
 Last: 06/22","First: 03/19
-Last: 04/06","First: 06/16
-Last: 07/01","First: 07/04
+Last: 04/06","First: 05/15
+Last: 05/19","First: 07/04
 Last: 07/04","First: 07/04
 Last: 07/06",No data,"First: 05/08
-Last: 05/15",No data,No data,No data,No data,"First: 06/02
+Last: 05/15","First: 06/16
+Last: 07/01",No data,No data,No data,"First: 06/02
 Last: 06/15",No data,No data,No data,No data
 2018 Iron Point,"First: On or before 04/22
 Last: 04/24",No data,No data,No data,No data
@@ -69,7 +70,6 @@ Last: 06/05","First: 06/06
 Last: 06/06","First: 06/01
 Last: 06/12",No data,"First: 05/30
 Last: 05/30",No data,No data,No data,No data
-2019 Laguna Seca LG
 2019 Leisure Town,"First: On or before 03/17
 Last: 03/19","First: 04/11
 Last: 04/11",No data,No data,No data,"First: 04/04
@@ -101,8 +101,8 @@ Last: 06/26",No data
 Last: 03/29",No data,No data,No data,No data,"First: 04/15
 Last: 04/23",No data,No data,No data,No data
 2020 Fort Ord,"First: On or before 04/08
-Last: 04/23","First: 04/26
-Last: 04/26","First: 04/30
+Last: 04/23","First: 04/16
+Last: 04/16","First: 04/30
 Last: 05/03","First: 04/29
 Last: 05/11","First: 05/09
 Last: 05/14","First: 05/10
@@ -151,8 +151,8 @@ Last: 06/22","First: 06/23
 Last: 07/01"
 2021 Conaway West,"First: On or before 05/12
 Last: 05/21","First: 06/02
-Last: 06/02",No data,No data,"First: 06/24
-Last: 06/24"
+Last: 06/02",No data,No data,"First: 06/13
+Last: 06/13"
 2021 Creed Road,"First: 03/14
 Last: 03/14",No data,No data,No data,No data,"First: 04/01
 Last: 04/12",No data,No data,No data,No data
@@ -219,7 +219,8 @@ Last: 05/07","First: 05/03
 Last: 05/05","First: 05/04
 Last: 05/12","First: 05/18
 Last: 05/22"
-2021 Plumas Arboga,No data,"First: On or before 05/14
+2021 Plumas Arboga,"First: On or before 05/14
+Last: 05/15","First: On or before 05/14
 Last: 06/01","First: 05/31
 Last: On or after 06/04","First: 05/31
 Last: On or after 06/04",No data
@@ -289,7 +290,7 @@ Last: 05/11","First: On or before 05/09
 Last: 05/23","First: 05/25
 Last: 05/27","First: 05/25
 Last: 05/28","First: 06/07
-Last: 06/07"
+Last: 06/16"
 2022 Conaway New Easement Pond West
 2022 Conaway North,No data,No data,No data,No data,"First: 05/27
 Last: 05/27","First: On or before 05/04
@@ -359,7 +360,8 @@ Last: 05/09",No data,No data,"First: 06/08
 Last: 06/08","First: 06/12
 Last: 06/17"
 2022 Paicines Ranch - Teal Pond,"First: On or before 04/10
-Last: 04/15",No data,No data,"First: 05/02
+Last: 04/15","First: 04/14
+Last: 04/21",No data,"First: 05/02
 Last: 05/03","First: 05/08
 Last: 05/26"
 2022 Paicines Ranch - Teal Pond B,"First: On or before 04/11
@@ -379,7 +381,8 @@ Last: 04/24","First: 04/22
 Last: 04/26","First: 04/24
 Last: 05/09","First: 05/01
 Last: 05/05"
-2022 Plumas Arboga East,No data,No data,"First: On or before 05/04
+2022 Plumas Arboga East,"First: On or before 05/04
+Last: 05/31",No data,"First: On or before 05/04
 Last: 05/07","First: On or before 05/04
 Last: 05/06","First: 05/12
 Last: 05/30",No data,"First: 05/12
@@ -434,9 +437,10 @@ Last: 04/20","First: 04/16
 Last: 05/04","First: 04/29
 Last: 05/05",No data,"First: 04/11
 Last: 04/18",No data,"First: 05/22
-Last: 06/04","First: 06/02
-Last: 06/03","First: 05/01
-Last: 05/08",No data,No data,No data,No data
+Last: 06/04","First: 06/03
+Last: 06/04","First: 05/01
+Last: 05/08","First: 05/15
+Last: 05/15",No data,No data,No data
 2022 WA Harder Spring,"First: 04/23
 Last: 04/24","First: 05/08
 Last: 05/17","First: 05/24
@@ -452,11 +456,12 @@ Last: 05/30",No data,"First: 05/29
 Last: 05/31",No data,"First: 05/29
 Last: 05/31",No data
 2022 Wind Wolves Preserve Pleitito Creek
-2022 Wind Wolves Preserve Santiago Wetlands,No data,No data,No data,No data,"First: 05/04
-Last: 05/13",No data,"First: 04/13
+2022 Wind Wolves Preserve Santiago Wetlands,No data,No data,No data,No data,"First: 05/02
+Last: 06/02","First: 03/03
+Last: 03/03","First: 04/13
 Last: 04/13",No data,"First: 05/02
-Last: 05/05","First: 05/29
-Last: 06/01",No data,No data,No data,"First: 05/21
+Last: 05/05",No data,"First: 04/19
+Last: 04/25",No data,No data,"First: 05/21
 Last: 05/31",No data
 2023 Baja Rancho Cinega,"First: On or before 04/14
 Last: 05/11",No data,No data,No data,"First: 05/01
@@ -619,8 +624,8 @@ Last: 05/13"
 2023 Panoche Creek Preserve - Corrals SE,No data,"First: 04/30
 Last: 05/09","First: 05/02
 Last: 05/09","First: 05/02
-Last: 05/13","First: 05/10
-Last: 05/12"
+Last: 05/13","First: 05/07
+Last: 05/11"
 2023 Peterson Ranch Pond - East
 2023 Peterson Ranch Pond - West
 2023 Plumas Arboga 2,"First: On or before 05/26
@@ -667,11 +672,12 @@ Last: 05/29","First: 05/30
 Last: 06/15",No data,"First: 06/21
 Last: 06/21",No data
 2023 Sedgwick,"First: On or before 03/26
-Last: 04/19","First: 04/11
-Last: 04/27","First: 04/22
+Last: 04/19","First: 04/06
+Last: 04/07","First: 04/22
 Last: 04/27","First: 04/21
 Last: 05/12","First: 04/29
-Last: 04/29",No data,No data,No data,No data,"First: 05/17
+Last: 04/29",No data,"First: 04/23
+Last: 04/27",No data,No data,"First: 05/17
 Last: 05/17"
 2023 South Virginia Road 3
 2023 Virginia at Ostrom
@@ -710,7 +716,8 @@ Last: 05/10","First: On or before 04/07
 Last: 04/20","First: 04/17
 Last: 04/27",No data,"First: 05/08
 Last: 05/09","First: 05/26
-Last: 06/07"
+Last: 06/07",No data,No data,No data,"First: 06/07
+Last: 06/07",No data
 2023 Wind Wolves Preserve site 1,No data,No data,No data,No data,"First: 05/17
 Last: 05/19"
 2024 Baja Lago Mesa Redonda,No data,No data,No data,No data,"First: 05/03
@@ -786,20 +793,20 @@ Last: 05/10","First: 05/06
 Last: 05/20","First: 05/18
 Last: 05/22",No data,No data,No data,No data,"First: 06/29
 Last: On or after 07/01"
-2024 Panoche Creek Preserve - Dollar Marsh East - fix lat lon,"First: On or before 04/15
+2024 Panoche Creek Preserve - Dollar Marsh East,"First: On or before 04/15
 Last: 04/23","First: 04/17
 Last: 05/10","First: 05/02
 Last: 05/09","First: 05/04
 Last: 05/19","First: 05/12
 Last: 05/30",No data,No data,No data,"First: 06/10
 Last: 06/11",No data
-2024 Panoche Creek Preserve - Dollar Marsh South - fix lat lon,"First: On or before 04/16
+2024 Panoche Creek Preserve - Dollar Marsh South,"First: On or before 04/16
 Last: 04/20","First: 04/19
 Last: 05/09","First: 05/04
 Last: 05/13","First: 05/05
 Last: 05/19","First: 05/18
 Last: 05/20"
-2024 Panoche Creek Preserve - Dollar Marsh West - fix lat lon,"First: 04/16
+2024 Panoche Creek Preserve - Dollar Marsh West,"First: 04/16
 Last: 04/20","First: 04/17
 Last: 04/17","First: 05/05
 Last: 05/12","First: 05/06
