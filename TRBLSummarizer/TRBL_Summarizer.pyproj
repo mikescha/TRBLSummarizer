@@ -5,12 +5,12 @@
     <ProjectGuid>a594b07b-df7d-4230-95bb-73b261a15679</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>TRBLSummarizer.py</StartupFile>
+    <StartupFile>trbl_summarizer.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>TRBLSummarizer</Name>
+    <Name>TRBL Summarizer</Name>
     <RootNamespace>TRBL Summarizer</RootNamespace>
     <SuppressEnvironmentCreationPrompt>True</SuppressEnvironmentCreationPrompt>
   </PropertyGroup>
@@ -23,7 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TRBLSummarizer.py" />
+    <Compile Include="trbl_summarizer.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\" />
