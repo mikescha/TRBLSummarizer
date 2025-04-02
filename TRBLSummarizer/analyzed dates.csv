@@ -299,7 +299,7 @@ Last: 05/27","First: 05/21
 Last: 05/26","First: 05/24
 Last: 06/05","First: 06/12
 Last: 06/16"
-2022 Conaway North A,"First: 05/04
+2022 Conaway North A,"First: On or before 05/04
 Last: 05/11","First: 05/10
 Last: 05/24","First: 05/22
 Last: 05/22","First: 05/25
@@ -313,11 +313,12 @@ Last: 05/05","First: 04/28
 Last: 05/19","First: 03/15
 Last: 03/15",No data,No data,No data,No data,"First: 03/31
 Last: 04/05",No data,No data,No data,No data
-2022 Foley Ranch A,"First: 04/26
+2022 Foley Ranch A,"First: On or before 04/24
 Last: 04/26",No data,No data,No data,"First: 06/02
 Last: 06/02","First: 05/14
-Last: 05/15",No data,No data,No data,No data
-2022 Foley Ranch B,No data,No data,No data,No data,"First: 06/02
+Last: 05/16",No data,No data,No data,No data
+2022 Foley Ranch B,"First: 04/26
+Last: 04/26",No data,No data,No data,"First: 06/02
 Last: 06/02"
 2022 Hay Landfill,"First: 02/17
 Last: 04/02","First: 03/25
@@ -531,7 +532,7 @@ Last: 06/20",No data
 Last: 05/12","First: 05/10
 Last: 05/10",No data,No data
 2023 Kentucky Lateral,No data,"First: On or before 04/15
-Last: 05/02","First: 04/27
+Last: 05/05","First: 04/27
 Last: 05/04","First: 04/29
 Last: 05/05","First: 05/12
 Last: 05/19",No data,No data,"First: 05/21
@@ -764,7 +765,7 @@ Last: 05/21",No data,"First: 06/05
 Last: 06/05","First: 06/17
 Last: 06/23"
 2024 Kern 1 - check lat lon
-2024 Los Vaqueros Reservoir,"First: 03/15
+2024 Los Vaqueros Reservoir,"First: On or before 03/15
 Last: 04/23","First: 04/21
 Last: 04/26","First: 06/11
 Last: 06/11","First: 06/13

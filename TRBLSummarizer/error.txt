@@ -1,6 +1,0 @@
-Logging started 18-Mar-25 22:44:39
-18-Mar-25 22:44:40: process_site: 2024 Baja Lago Mesa Redonda at p1: In p1mcend end date is 'before start' but start date is not 'ND'
-18-Mar-25 22:44:40: process_site: 2024 Baja Lago Mesa Redonda at p1: In p1hatch end date is 'before start' but start date is not 'ND'
-18-Mar-25 22:44:40: process_site: 2024 Baja Lago Mesa Redonda at p1: Second date is ND, but first date is not: p1fledgestart:5/3/2024, p1fledgedisp:ND
-18-Mar-25 22:44:40: process_site: 2024 Baja Lago Mesa Redonda at p2: Second date is ND, but first date is not: p2hatch:5/24/2024, p2fledgestart:ND
-18-Mar-25 22:44:40: process_site: 2024 Baja Lago Mesa Redonda at p3: Second date is ND, but first date is not: p3hatch:6/21/2024, p3fledgestart:ND

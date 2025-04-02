@@ -713,13 +713,23 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
 
         for phase in pulse_phases:
             start, end = pulse_phases[phase]
+
             target1 = f"{pulse}{start}"
             value1 = get_val_from_df(summary_row, target1) #TODO Test case where it's actually ND in the table instead of blank
             result1 = pd.NaT
+
+            target2 = f"{pulse}{end}"
+            value2 = get_val_from_df(summary_row, target2)
+            result2 = pd.NaT
+
             if is_valid_date_string(value1):
                 #It's a good date, so format it
-                result1 = convert_to_datetime(value1)             
-            elif pd.notna(value1) and value1.endswith(ABANDONED):
+                result1 = convert_to_datetime(value1)
+
+                if (value2 not in ["after end", nd_string]) and not is_valid_date(value2):
+                    log_error(f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not 'after end', ND, or a date")
+
+            elif pd.notna(value1) and value1.startswith(ABANDONED):
                 if not is_valid_date(abandoned_date):
                     log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
@@ -734,17 +744,18 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 pass
             elif value1 == "after end":
                 result1 = summary_dict[SUMMARY_LAST_REC]
+                if value2 != "after end":
+                    log_error(f"{error_prefix}: {target1} is 'after end' but {target2} is not")
             elif value1 == nd_string or value1 == "" or pd.isna(value1):
                 #this is OK, we aren't going to draw anything in this case
                 pass
             else:
                 #if not one of the above, then it's an error
-                log_error(f"{error_prefix}: Found invalid data in {target1}")
+                log_error(f"{error_prefix}: Found invalid data in {target1}: {value1}")
 
-            target2 = f"{pulse}{end}"
-            value2 = get_val_from_df(summary_row, target2)
-            result2 = pd.NaT
             if is_valid_date_string(value2):
+                if (value1 not in ["before start", nd_string]) and not is_valid_date_string(value1):
+                    log_error(f"{error_prefix}: {target2} is a valid date, but {target1} is not ND, date, or before start")
                 #It's a good date, so format it
                 if phase == PHASE_FLDG:
                     #For fledgling phase, don't subtract one from the end date
@@ -752,7 +763,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 else:
                     delta = pd.Timedelta(days=1)
                 result2 = convert_to_datetime(value2) - delta
-            elif pd.notna(value2) and value2.endswith("abandoned"):
+            elif pd.notna(value2) and value2.startswith(ABANDONED):
                 if not is_valid_date(abandoned_date):
                     log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
@@ -773,7 +784,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 if pd.notna(value1):
                     log_error(f"{error_prefix}: Found {value2} in {target2}")
             else: #ND, empty, or any other values are not valid here
-                log_error(f"process_site_summary_data: Found {value2} in {target2}, which is invalid data")
+                log_error(f"{error_prefix}: Found {value2} in {target2}, which is invalid data")
             
             pulse_result[phase] = {"start":result1, "end":result2}
 
@@ -1236,18 +1247,49 @@ def get_site_to_analyze(site_list:list, my_sidebar) -> str:
     filtered_sites = sorted([s for s in site_list if target_year in s])
     return my_sidebar.selectbox('Site to summarize', filtered_sites)
 
+
+
+# Helper function to parse various date formats
+def parse_date(date_str):
+    for fmt in ('%m/%d/%Y', '%m-%d-%Y'):
+        try:
+            return dt.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Unknown date format: {date_str}")
+
 # Set the default date range to the first and last dates for which we have data. In the case that we're
 # automatically generating all the sites, then stop there. Otherwise, show the UI for the date selection
 # and if the user wants a specific range then update our range to reflect that.
 # Assume that the data cleaning code has removed any extraneous dates, such as if data 
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
+    '''
+    TODONOW Get all the default dates from the All sheet, column O & P
+    '''
+    date_range_dict_from_sheet = get_site_info(df["site"].iloc[0], ["First Recording", "Last Recording"])
+    date_range_dict_from_sheet[START] = date_range_dict_from_sheet.pop("First Recording")
+    date_range_dict_from_sheet[END] = date_range_dict_from_sheet.pop("Last Recording")
+    
     if df.index.name == "date":
         date_range_dict = {START : df.index.min().strftime("%m-%d-%Y"), 
                              END : df.index.max().strftime("%m-%d-%Y")}
     else:
         date_range_dict = {START : df["date"].min().strftime("%m-%d-%Y"), 
                              END : df["date"].max().strftime("%m-%d-%Y")}
+
+    #Normalize the dates and then confirm that they are the same
+    normalized_from_sheet = {k: parse_date(v) for k, v in date_range_dict_from_sheet.items()}
+    normalized_from_data = {k: parse_date(v) for k, v in date_range_dict.items()}
+
+    if normalized_from_sheet != normalized_from_data:
+        #log an error? 
+        log_error(f"Date for {df["site"].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}")
+        pass
+
+    #For now, use the sheet data
+    #TODO -- when do I need to change this?
+    date_range_dict = date_range_dict_from_sheet
 
     if not graphing_all_sites:
         months1 = {'First': '-1', 'February':'02', 'March':'03', 'April':'04', 'May':'05', 'June':'06', 'July':'07', 'August':'08', 'September':'09'}
@@ -2572,7 +2614,7 @@ def make_final_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> p
     return pt
 
 
-# Retrieve the start and end dates for the analysis from the sidebar and format them appropriately
+#Calculate the first and last dates for each song type
 def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     pt_site = pt_site.transpose()
     output = {}
@@ -3100,7 +3142,6 @@ for site in target_sites:
         if date_range_dict:
             pm_date_range_dict = date_range_dict  
         else:
-            #TODO GET THE DATES FROM THE SHEET INSTEAD??? May be irrelevant after we get the new XL files
             pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs, container_top)
 
         if len(df_pattern_match):
@@ -3305,7 +3346,7 @@ if not make_all_graphs and len(df_site):
                 weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
                 weather_data.rename(columns={'value':t}, inplace=True)
                 if t != WEATHER_PRCP:
-                    weather_data[t] = weather_data[t].astype(int)
+                    weather_data[t] = weather_data[t].fillna(0).astype(int)
             overview.append(weather_data)
 
         # The variable overview is a list of each dataframe. Now, take all the data and concat it into 
