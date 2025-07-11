@@ -17,9 +17,8 @@ Last: 04/24",No data,No data,No data,No data
 2018 Markham Ravine Main,No data,No data,No data,No data,"First: 07/13
 Last: 07/13"
 2018 Markham Ravine westside,No data,No data,No data,"First: On or before 06/26
-Last: 06/26","First: 07/06
-Last: 07/06",No data,No data,No data,"First: 07/12
-Last: On or after 07/13",No data
+Last: 06/28","First: 07/06
+Last: 07/06"
 2018 Red Wing Ranch,No data,"First: On or before 05/04
 Last: 05/09",No data,No data,No data
 2018 Rush Ranch,"First: 03/14
@@ -46,10 +45,10 @@ Last: 05/30",No data,No data
 2019 Creed Road,"First: 03/23
 Last: 04/28","First: 04/18
 Last: 04/25",No data,"First: 05/17
-Last: 05/20","First: 05/23
-Last: 05/30","First: 05/14
-Last: 05/21","First: 05/19
-Last: 05/25",No data,No data,No data
+Last: 05/21","First: 05/23
+Last: 05/30",No data,"First: 05/11
+Last: 05/11",No data,No data,No data,"First: 05/14
+Last: 05/21",No data,No data,No data,No data
 2019 Hay Landfill,"First: On or before 04/08
 Last: 04/17","First: 04/16
 Last: 04/28","First: 05/03
@@ -65,16 +64,16 @@ Last: 06/23"
 Last: 04/29",No data,"First: 05/03
 Last: 05/05","First: 05/14
 Last: 07/06","First: 04/27
-Last: 05/14","First: 06/01
-Last: 06/05","First: 06/06
-Last: 06/06","First: 06/01
-Last: 06/12",No data,"First: 05/30
+Last: 05/14",No data,No data,"First: 05/22
+Last: 05/24",No data,No data,"First: 05/29
+Last: 05/29","First: 06/06
+Last: 06/06","First: 06/09
+Last: 06/24",No data,"First: 05/30
 Last: 05/30",No data,No data,No data,No data
 2019 Leisure Town,"First: On or before 03/17
-Last: 03/19","First: 04/11
-Last: 04/11",No data,No data,No data,"First: 04/04
-Last: 04/13","First: 05/20
-Last: 05/24",No data,No data,No data,"First: 05/19
+Last: 03/19",No data,No data,"First: 06/12
+Last: 06/12",No data,"First: 04/04
+Last: 04/13",No data,No data,No data,No data,"First: 05/19
 Last: 05/29",No data,No data,No data,No data
 2019 Markham Ravine,"First: On or before 05/10
 Last: 05/13","First: 05/13
@@ -186,16 +185,16 @@ Last: 05/01",No data,No data,No data,No data
 2021 Kern 4,"First: 04/22
 Last: 04/24","First: 05/04
 Last: 05/06",No data,"First: 05/27
-Last: 05/27",No data,"First: 05/23
+Last: 05/27","First: 06/05
+Last: 06/05","First: 05/23
 Last: 05/23",No data,No data,No data,No data
-2021 Kern 5,No data,"First: 04/28
+2021 Kern 5,"First: On or before 04/27
+Last: 05/22","First: 04/28
 Last: 05/23","First: 04/30
-Last: 05/05","First: 05/03
-Last: 05/17","First: 05/18
-Last: 06/01","First: 05/17
-Last: 05/20",No data,"First: 05/21
-Last: 05/21","First: 06/02
-Last: 06/11",No data
+Last: 05/05","First: 04/29
+Last: 06/11","First: 05/18
+Last: 06/01",No data,No data,"First: 05/21
+Last: 05/21",No data,No data
 2021 Kern 6
 2021 Kern 7,No data,"First: 05/21
 Last: 05/24",No data,No data,No data
@@ -340,17 +339,18 @@ Last: 05/11",No data,No data,No data,No data
 2022 Los Vaqueros Reservoir,"First: On or before 04/15
 Last: 04/23","First: On or before 04/15
 Last: 04/25","First: 04/19
-Last: 04/26","First: 04/17
-Last: 04/17","First: 05/01
-Last: 05/21",No data,No data,No data,"First: 05/03
-Last: 05/07",No data
+Last: 04/26","First: On or before 04/15
+Last: 04/17","First: 04/28
+Last: 04/28",No data,No data,No data,"First: 05/03
+Last: 05/07","First: 05/14
+Last: 05/25"
 2022 Marsh Creek Reservoir
 2022 Newberry Springs - Lake Wainani,"First: On or before 05/12
 Last: On or after 05/20",No data,No data,No data,No data
 2022 OR1
-2022 OR2,No data,No data,No data,No data,"First: 06/02
-Last: On or after 06/03",No data,"First: 05/27
-Last: 05/27",No data,No data,No data
+2022 OR2,No data,"First: 05/07
+Last: 05/08",No data,No data,"First: 05/30
+Last: On or after 06/03"
 2022 Ohlone - Santa Lucia Preserve,"First: 04/05
 Last: 04/21","First: 04/23
 Last: 04/23","First: 05/04
@@ -420,15 +420,17 @@ Last: 04/10","First: 03/30
 Last: 04/03",No data,"First: 04/19
 Last: 04/21","First: 04/27
 Last: 05/28",No data,"First: 04/19
-Last: 04/21",No data,No data,"First: 06/13
-Last: 06/21",No data,"First: 06/02
-Last: 06/02","First: 06/20
-Last: 06/20","First: 06/20
-Last: 06/21",No data
+Last: 04/21",No data,"First: 05/26
+Last: 05/27","First: 06/13
+Last: 06/21","First: 04/28
+Last: 05/30","First: 06/02
+Last: 06/02",No data,"First: 06/12
+Last: 06/28",No data
 2022 SJWA,"First: On or before 05/10
 Last: 05/24","First: On or before 05/10
 Last: 05/14",No data,"First: 05/30
-Last: 06/01",No data,No data,"First: 05/31
+Last: 06/01","First: 06/11
+Last: 06/11",No data,"First: 05/31
 Last: 06/02",No data,"First: 06/19
 Last: 06/19",No data
 2022 Sedgwick,"First: On or before 03/20
@@ -442,20 +444,19 @@ Last: 06/04","First: 06/03
 Last: 06/04","First: 05/01
 Last: 05/08","First: 05/15
 Last: 05/15",No data,No data,No data
-2022 WA Harder Spring,"First: 04/23
+2022 WA Harder Spring,"First: 04/22
 Last: 04/24","First: 05/08
 Last: 05/17","First: 05/24
 Last: 05/26","First: 05/24
 Last: 06/03","First: 05/30
-Last: 06/11","First: 05/19
-Last: 05/20","First: 06/02
+Last: 06/11","First: 05/10
+Last: 05/14","First: 06/02
 Last: 06/09",No data,"First: 06/19
 Last: 06/21","First: 07/01
 Last: 07/03"
-2022 WA1,No data,No data,No data,No data,"First: 05/30
-Last: 05/30",No data,"First: 05/29
+2022 WA1,No data,No data,No data,No data,"First: 05/28
 Last: 05/31",No data,"First: 05/29
-Last: 05/31",No data
+Last: 05/31",No data,No data,No data
 2022 Wind Wolves Preserve Pleitito Creek
 2022 Wind Wolves Preserve Santiago Wetlands,No data,No data,No data,No data,"First: 05/02
 Last: 06/02","First: 03/03
@@ -603,8 +604,8 @@ Last: 05/26","First: 06/07
 Last: 06/07",No data,"First: 05/22
 Last: 05/24",No data,No data,No data
 2023 OR Eureka Rd,No data,"First: 05/06
-Last: 05/17",No data,"First: 05/26
-Last: 05/29","First: 05/30
+Last: 05/17",No data,"First: 05/24
+Last: 06/03","First: 05/30
 Last: 06/10",No data,No data,No data,No data,"First: 06/29
 Last: 07/01"
 2023 OR Prineville North,"First: On or before 04/29
@@ -653,16 +654,20 @@ Last: 05/24","First: 05/26
 Last: 05/26","First: 05/17
 Last: 05/18",No data,No data,No data,No data
 2023 Rancho Jamul Site 1 fix lat lon,"First: 03/29
-Last: 04/19","First: 04/23
-Last: 04/23",No data,"First: 04/27
+Last: 04/19","First: 04/04
+Last: 04/12",No data,"First: 04/27
 Last: 04/27","First: 05/11
-Last: 05/12",No data,No data,No data,No data,"First: 05/28
-Last: 05/28","First: 05/26
-Last: 06/04","First: 06/10
-Last: 06/10",No data,"First: 06/29
+Last: 05/12",No data,"First: 05/02
+Last: 05/02",No data,No data,"First: 05/28
+Last: 05/28","First: 05/05
+Last: 05/06","First: 05/18
+Last: 05/19",No data,"First: 06/29
 Last: 06/29","First: 07/04
-Last: 07/08"
-2023 San Luis Bear Creek,"First: On or before 06/16
+Last: 07/08","First: 05/26
+Last: 06/04","First: 06/05
+Last: 06/07",No data,No data,No data
+2023 San Luis Bear Creek,No data,No data,No data,No data,"First: 06/19
+Last: 06/19","First: On or before 06/16
 Last: 06/20","First: 06/19
 Last: 07/06","First: 07/05
 Last: 07/07","First: 07/07
@@ -671,7 +676,8 @@ Last: 07/17"
 2023 San Luis NWR - West Bank Creek,"First: On or before 05/26
 Last: 05/29","First: 05/30
 Last: 06/15",No data,"First: 06/21
-Last: 06/21",No data
+Last: 06/21","First: 06/29
+Last: 06/29"
 2023 Sedgwick,"First: On or before 03/26
 Last: 04/19","First: 04/06
 Last: 04/07","First: 04/22
@@ -683,8 +689,8 @@ Last: 05/17"
 2023 South Virginia Road 3
 2023 Virginia at Ostrom
 2023 WA Harder Spring,No data,No data,No data,No data,"First: 06/17
-Last: 06/17",No data,No data,No data,"First: 06/17
-Last: 06/17",No data
+Last: 06/18",No data,No data,No data,No data,"First: 07/27
+Last: 07/28"
 2023 WA McCain Wetlands,No data,"First: 04/25
 Last: 05/13",No data,"First: 05/16
 Last: 05/20","First: 05/24
@@ -777,10 +783,10 @@ Last: 06/15",No data,No data,No data
 2024 Markham Ravine 1
 2024 Markham Ravine 2
 2024 Markham Ravine 3
-2024 Merced NWR - Cottonwood Trail,No data,No data,No data,No data,"First: 05/18
-Last: 06/06","First: On or before 04/25
-Last: 05/02","First: 05/10
-Last: 05/11",No data,No data,No data,"First: 05/20
+2024 Merced NWR - Cottonwood Trail,"First: On or before 04/25
+Last: 05/02","First: 05/07
+Last: 05/11",No data,No data,"First: 05/18
+Last: 06/06","First: 05/20
 Last: 05/27",No data,No data,No data,No data
 2024 Moore Lake - confirm lat lon
 2024 Newberry Springs,No data,No data,No data,No data,"First: On or before 05/27
@@ -816,28 +822,26 @@ Last: 05/26",No data,"First: 05/03
 Last: 05/12",No data,No data,No data
 2024 Rancho Jamul - Main Pond 1,"First: On or before 03/26
 Last: 04/10","First: 04/09
-Last: 04/13",No data,No data,"First: 05/19
-Last: 05/22",No data,"First: 04/29
-Last: 05/06",No data,"First: 05/26
-Last: 05/26","First: 06/09
-Last: 07/09","First: 05/01
+Last: 05/06",No data,No data,"First: 05/19
+Last: 05/22","First: 05/01
 Last: 05/13","First: 05/23
-Last: 05/28",No data,"First: 06/18
-Last: 06/18","First: 07/29
-Last: 07/30","First: 05/29
+Last: 05/28",No data,No data,"First: 06/09
+Last: 07/09","First: 05/29
 Last: 06/21","First: 06/18
-Last: 06/18",No data,"First: 07/04
+Last: 06/18",No data,"First: 06/18
+Last: 06/18","First: 07/29
+Last: 07/30",No data,No data,No data,"First: 07/04
 Last: 07/24",No data
 2024 Rancho Jamul - Main Pond 2,"First: On or before 03/26
-Last: 04/10","First: 04/09
-Last: 04/11",No data,No data,"First: 05/19
-Last: 05/19","First: 04/27
-Last: 04/27","First: 05/17
-Last: 05/17",No data,No data,"First: 06/09
-Last: 06/10","First: 05/13
-Last: 05/13",No data,No data,"First: 06/19
-Last: On or after 07/06","First: 06/26
-Last: On or after 07/06","First: 05/29
+Last: 04/10","First: 04/01
+Last: 04/01",No data,No data,"First: 05/19
+Last: 05/23",No data,"First: 04/17
+Last: 04/19",No data,No data,"First: 06/09
+Last: On or after 07/06","First: 04/27
+Last: 04/27","First: 05/05
+Last: 05/29",No data,"First: 06/19
+Last: On or after 07/06",No data,"First: 05/13
+Last: 05/13",No data,No data,No data,No data,"First: 05/29
 Last: 06/22",No data,No data,No data,No data
 2024 Rancho Jamul - North Pond
 2024 SJWA Thistle NW of Bridge Street Pond,No data,No data,"First: 06/06

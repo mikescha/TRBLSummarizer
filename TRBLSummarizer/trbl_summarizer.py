@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = True
+being_deployed_to_streamlit = False
 
 # Constants and Globals
 #
@@ -743,7 +743,6 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 #Not sure if there's anything to do here...
                 pass
             elif value1 == "after end":
-                result1 = summary_dict[SUMMARY_LAST_REC]
                 if value2 != "after end":
                     log_error(f"{error_prefix}: {target1} is 'after end' but {target2} is not")
             elif value1 == nd_string or value1 == "" or pd.isna(value1):

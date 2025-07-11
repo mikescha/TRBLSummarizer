@@ -1,0 +1,5 @@
+Logging started 11-Jul-25 08:49:01
+11-Jul-25 08:49:02: process_site: 2022 OR2 at p1: Found after last in p1fledgedisp, which is invalid data
+11-Jul-25 08:49:03: check_tags: OR2am-2022-06-03_08-00.WAV missing song tag
+11-Jul-25 08:49:03: check_tags: OR2am-2022-05-25_07-00.WAV missing song tag
+11-Jul-25 08:49:03: check_tags: OR2am-2022-05-27_13-00.WAV missing song tag
