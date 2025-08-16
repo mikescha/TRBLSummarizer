@@ -682,7 +682,7 @@ def count_valid_pulses(pulse_data:dict) -> int:
 
     return count
 
-def get_val_from_df(df:pd.DataFrame, col):
+def get_val_from_df(df:pd.DataFrame, col) -> str:
     result = df.iloc[0,df.columns.get_loc(col)]
     return result
 
@@ -734,6 +734,12 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                     log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
                     result1 = pd.NaT
+            #Check: if the phase = brooding and it is "Before Start, HBC Present" then we want to draw a left-pointing
+            #arrow on the graph. So, if we find this, save it with a signal we can pass along to the graph maker
+            elif value1 == "before start, hbc present":
+                result1 = convert_to_datetime("6/1/1967")
+            elif value1 == "before start, hbc absent":
+                pass
             elif value1 == "before start":
                 #If the start date is "before start" then we don't know when it was exactly. I used to use the
                 #date of the first recording as "before start" but that's not correct, so we took this line 
@@ -1832,19 +1838,22 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
+        marker_size = 7 #for the overlay arrows, Determine marker size proportional to cell dimensions
 
         if title == GRAPH_PM:
             #NOTE Add dates of first hatching if they exist
             if row == "Hatchling":
                 for pulse in hatch_dates:
                     hatch_date = hatch_dates[pulse]
-                    if hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
+                    if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
+                        hatch_index = 0  #Always drawing this on the first cell
+                        axs[i].plot(hatch_index+0.5, 0.5, 
+                                    marker='<', color='black', markersize=marker_size, mew=0.5,
+                                    transform=axs[i].get_xaxis_transform())
+
+                    elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
                         hatch_index = df_to_graph.columns.get_loc(hatch_date)
-
-                        # Determine marker size proportional to cell dimensions
-                        marker_size = 7  # Adjust multiplier if needed
-
-                        # Plot the "X" centered in the cell
+                        # Plot the "arrow" centered in the cell
                         axs[i].plot(hatch_index+0.7, 0.5, 
                                     marker='>', color='black', markersize=marker_size, mew=0.5,
                                     transform=axs[i].get_xaxis_transform())
@@ -2974,7 +2983,7 @@ if make_all_graphs:
 else:
     target_sites = [get_site_to_analyze(site_list, container_top)]
     if not being_deployed_to_streamlit:
-        save_composite = container_top.checkbox('Save as picture', value=True) #user decides to save the graphs as pics or not
+        save_composite = container_top.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
         save_files = save_composite
     
     #debug: to get a specific site, put the name of the site below and uncomment
