@@ -1,6 +1,3 @@
-Logging started 16-Aug-25 17:04:40
-16-Aug-25 17:04:41: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: In p1mcend end date is 'before start' but start date is not 'ND'
-16-Aug-25 17:04:41: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: Found before start, hbc present in p1hatch, which is invalid data
-16-Aug-25 17:04:41: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
-16-Aug-25 17:04:41: check_tags: PCP.NWam-2023-04-30_13-00.WAV missing song tag
-16-Aug-25 17:04:41: check_tags: PCP.NWam-2023-05-01_14-00.WAV missing song tag
+Logging started 18-Aug-25 18:06:56
+18-Aug-25 18:06:58: process_site: 2019 Iron Point at p1: In p1mcend end date is 'before start' but start date is not 'ND'
+18-Aug-25 18:06:58: process_site: 2019 Iron Point at p2: Second date is ND, but first date is not: p2hatch:6/2/2019, p2fledgestart:ND
