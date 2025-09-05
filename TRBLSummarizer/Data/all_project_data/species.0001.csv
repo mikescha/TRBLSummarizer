@@ -1,0 +1,41 @@
+species_id,scientific_name,family,taxon,songtype_id,songtype
+9897,Agelaius tricolor,Icteridae,Birds,5,Simple Call 2
+9897,Agelaius tricolor,Icteridae,Birds,4,Simple Call
+1428,Rallus limicola,Rallidae,Birds,4,Simple Call
+1399,Laterallus jamaicensis,Rallidae,Birds,4,Simple Call
+862,Botaurus lentiginosus,Ardeidae,Birds,4,Simple Call
+9897,Agelaius tricolor,Icteridae,Birds,9,Nocturnal Song
+9897,Agelaius tricolor,Icteridae,Birds,8,Mechanical Song
+9897,Agelaius tricolor,Icteridae,Birds,2,Courtship Song
+8138,Cistothorus palustris,Troglodytidae,Birds,2,Courtship Song
+9992,Ammodramus savannarum,Emberizidae,Birds,1,Common Song
+9919,Xanthocephalus xanthocephalus,Icteridae,Birds,1,Common Song
+9900,Agelasticus xanthophthalmus,Icteridae,Birds,1,Common Song
+9897,Agelaius tricolor,Icteridae,Birds,1,Common Song
+9895,Agelaius phoeniceus,Icteridae,Birds,1,Common Song
+8138,Cistothorus palustris,Troglodytidae,Birds,1,Common Song
+6312,Vireo bellii,Vireonidae,Birds,1,Common Song
+1399,Laterallus jamaicensis,Rallidae,Birds,1,Common Song
+862,Botaurus lentiginosus,Ardeidae,Birds,1,Common Song
+9897,Agelaius tricolor,Icteridae,Birds,7,Alternative Song 2
+9897,Agelaius tricolor,Icteridae,Birds,6,Alternative Song
+15880,Rana aurora,Ranidae,Amphibians,4,Simple Call
+13725,Lithobates catesbeianus,Ranidae,Amphibians,2,Courtship Song
+16300,Spea hammondii,Scaphiopodidae,Amphibians,1,Common Song
+15880,Rana aurora,Ranidae,Amphibians,1,Common Song
+15666,Pseudacris regilla,Hylidae,Amphibians,1,Common Song
+13725,Lithobates catesbeianus,Ranidae,Amphibians,1,Common Song
+42783,Canis latrans,Canidae,Mammals,1,Common Song
+48561,sp41,Unknown,Other,4,Simple Call
+48560,sp40,Unknown,Other,4,Simple Call
+48555,sp35,Unknown,Other,4,Simple Call
+48554,sp34,Unknown,Other,4,Simple Call
+48553,sp33,Unknown,Other,4,Simple Call
+48552,sp32,Unknown,Other,4,Simple Call
+48551,sp31,Unknown,Other,4,Simple Call
+48550,sp30,Unknown,Other,4,Simple Call
+48542,sp22,Unknown,Other,4,Simple Call
+48531,sp11,Unknown,Other,4,Simple Call
+48540,sp20,Unknown,Other,8,Mechanical Song
+16770,sp2,Unknown,Other,1,Common Song
+16769,sp1,Unknown,Other,1,Common Song

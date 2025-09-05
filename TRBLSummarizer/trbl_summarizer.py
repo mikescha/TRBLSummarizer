@@ -431,10 +431,11 @@ def get_target_sites() -> dict:
     return filtered_sites
 
 #Used by the two functions that follow to do file format validation
-def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
+def confirm_columns(target_cols:dict, file_cols:list, file:Path) -> list:
     errors_found = []
     if len(target_cols) != len(file_cols):
-        show_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
+        log_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
+#        show_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
     for col in target_cols:        
         if  target_cols[col] not in file_cols:
             errors_found.append(target_cols[col])
@@ -442,65 +443,6 @@ def confirm_columns(target_cols:dict, file_cols:list, file:str) -> bool:
     
     return errors_found
 
-# Confirm that a date has either a p1f tag or a p1n tag, but not both
-#error cases
-# p1c good with p1c, p1n, p1na,
-#   error with p1f, any p2
-#   error with p1c with any p3
-
-# p1n with p1c, p2c are OK. All other combos are wrong:
-#   p1n with p1f, p1na
-#   p1n with p2n, p2na or p2f
-#   p1n with any p3
-
-# p1f allowed with p2c, p2n, p2na. All other combos are wrong:
-#   p1f error with p1c, p1n, p1na
-#   p1f error with p2f 
-#   p1f error with any p3 tag
-
-# p1na allowed with p1c, p2c
-#   p1n, p1f
-#   p2n, p2na, p2f
-#   any p3
-
-# p2c allowed with p1n, p1f, p1na, p2n, p2na, 
-#   error with p1c
-#   error with p2f
-#   error with p3c, p3n, p3na, p3f
-
-# p2n allowed with p1f, p2c, p3c, 
-#   error with p1c, p1n, p1na
-#   error with p2na, p2f
-#   error with p3n, p3na, p3f
-
-# p2na allowed with p2c, p1f, p3c
-#   p1c, p1n, p1na not allowed
-#   p2n, p2f
-#   p3n, p3na, p3f
-
-# p2f allowed with p3c, p3n, p3na
-#   p1c, p1n, p1na, p1f
-#   p2c, p2n, p2na
-#   p3f
-
-# p3c allowed with p2n, p2na, p2f, p3n, p3na, p3f
-#   error with and p1
-#   error with p2c
-
-# p3n allowed with p2f, p3c, 
-#   error with and p1
-#   error with p2c, p2n, p2na 
-#   error with p3na, p3f
-
-# p3na allowed with p2f, p3c
-#   p1 not allowed
-#   p2c, p2n, p2na, 
-#   p3n, p3na, p3f
-
-# p3f allowed with p3f
-#   p1 not allowed
-#   p2 not allowed
-#   p3 except p3f
 
 def fix_bad_values(df:pd.DataFrame):
     """
@@ -512,6 +454,7 @@ def fix_bad_values(df:pd.DataFrame):
         if col.startswith("tag") and -100 in df[col].values:
             log_error(f'fix_bad_values: Column {col} contains "---"')
             df[col] = df[col].replace(-100, 0)
+
 
 def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     error_found = False
@@ -529,6 +472,62 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
             log_error(f"check_edge_cols_for_errors: {f}\tRecording has both P1F and P1N tags")
 
     return error_found 
+
+
+def find_invalid_rows(df, cols_to_filter, cols_to_check, output_file="invalid_filenames.txt"):
+    """
+    Find rows where filter columns contain '1' but check columns contain '---'.
+    
+    Args:
+        df: DataFrame with all string values
+        cols_to_filter: List of column names to check for '1'
+        cols_to_check: List of column names to check for '---'
+        output_file: File to save invalid filenames to
+    
+    Returns:
+        List of invalid filenames
+    """
+    
+    # Find rows where at least one filter column has value "1"
+    filter_mask = df[cols_to_filter].eq(1).any(axis=1)
+    filtered_rows = df[filter_mask]
+    
+    log_error(f"Found {len(filtered_rows)} rows where at least one filter column equals '1'")
+    
+    # In those filtered rows, check if any of the check columns contain "---"
+    invalid_mask = filtered_rows[cols_to_check].eq("---").any(axis=1)
+    invalid_rows = filtered_rows[invalid_mask]
+    
+    log_error(f"Found {len(invalid_rows)} rows with invalid data (containing '---' in check columns)")
+    
+    # Get the filenames from invalid rows
+    if len(invalid_rows) > 0:
+        invalid_filenames = invalid_rows["filename"].tolist()
+        
+        # Save to file
+        with open(output_file, 'w') as f:
+            for filename in invalid_filenames:
+                f.write(f"{filename}\n")
+        
+        log_error(f"Saved {len(invalid_filenames)} invalid filenames to '{output_file}'")
+    else:
+        log_error("No invalid rows found!")
+        
+    return
+
+
+def check_for_tag_errors(df: pd.DataFrame):
+    #Check these cols, if any of these has a 1 then...
+    cols_to_filter = manual_cols + mini_manual_cols
+
+    #report any rows where any of these cols has the value "---"
+    cols_to_check = [data_col[ALTSONG1], data_col[ALTSONG2], data_col[MALE_SONG], data_col[COURT_SONG]]
+
+    find_invalid_rows(df, cols_to_filter, cols_to_check)
+
+    return
+
+
 
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.cache_resource
@@ -557,6 +556,8 @@ def load_data() -> pd.DataFrame:
                         index_col = [data_col[DATE]])
         combined_df = pd.concat([combined_df, df]) #NOTE This assumes the files don't have overlapping dates
 
+    # We've loaded all the data, let's do a quick error check
+    check_for_tag_errors(combined_df)
     return combined_df
 
 

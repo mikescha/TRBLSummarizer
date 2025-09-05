@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/.venv/Scripts/streamlit.exe",
             "console": "integratedTerminal",
-            "args": ["run", "TRBLSummarizer.py"]
+            "args": ["run", "trbl_summarizer.py"]
         }
     ]
 }
