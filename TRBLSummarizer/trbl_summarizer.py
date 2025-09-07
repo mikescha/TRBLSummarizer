@@ -185,12 +185,16 @@ GRAPH_WEATHER = 'Weather'
 graph_names = [GRAPH_SUMMARY, GRAPH_MANUAL, GRAPH_MINIMAN, GRAPH_PM, GRAPH_EDGE, GRAPH_WEATHER]
 legend_name = 'legend.png'
 legend_text = {GRAPH_SUMMARY: ["Settlement", "Incubation", "Brooding", "Fledgling"],
-               GRAPH_MANUAL: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"],
+#               GRAPH_MANUAL: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling"], #SEPT 2025 - don't want to graph MC
+               GRAPH_MANUAL: ["Male Song", "Female Chatter", "Hatchling/Nestling"],
+
                GRAPH_MINIMAN: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
                GRAPH_EDGE: ["Male Chorus", "Hatchling Call"],
                GRAPH_PM: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling", 
                           "Insect 30", "Insect 31", "Insect 32", "Insect 33", "Pacific Tree Frog", "Red-legged Frog", "Bull Frog"]
 }
+
+
 
 #default color map
 cmap = {data_col[MALE_SONG]:'Greens', 
@@ -231,20 +235,18 @@ FIG_FOLDER = 'Figures/'
 data_dir = Path(__file__).parents[0] / DATA_FOLDER
 pmj_data_dir = Path(__file__).parents[0] / PMJ_DATA_FOLDER
 figure_dir = Path(__file__).parents[0] / FIG_FOLDER
-SITE_INFO_FILE = 'TRBL Analysis tracking - All.csv'
+ALL_FILE = 'TRBL Analysis tracking - All.csv'
 SHEET_HEADER_SIZE = 2 #number of rows to skip over
 WEATHER_FILE = 'weather_history.csv'
 DATA_OLD_FILE = 'data_old.csv'
 error_file = Path(__file__).parents[0] / 'error.txt'
-SUMMARY_FILE = 'TRBL Analysis tracking - All.csv'
 DATES_FILE = 'analyzed dates.csv'
 
 #This is everything except the data files, because those are auto-generated
 files = {
-    SITE_INFO_FILE : data_dir / SITE_INFO_FILE,
+    ALL_FILE : data_dir / ALL_FILE,
     WEATHER_FILE : data_dir / WEATHER_FILE,
     DATA_OLD_FILE : data_dir / DATA_OLD_FILE,
-    SUMMARY_FILE : data_dir / SUMMARY_FILE, 
     DATES_FILE : Path(__file__).parents[0] / DATES_FILE
 }
 
@@ -403,9 +405,9 @@ def count_files_in_folder(fpath):
             i += 1
     return i
 
-def make_date(row):
-    s = f"{row['year']}-{row['month']:02}-{row['day']:02}"
-    return np.datetime64(s)
+def make_date(row) -> np.datetime64:
+    date_str = f"{row['year']}-{row['month']:02}-{row['day']:02}"
+    return np.datetime64(date_str)
 
 #
 #
@@ -413,9 +415,9 @@ def make_date(row):
 #
 #
 @st.cache_resource
-def get_target_sites() -> dict:
+def get_target_sites() -> list:
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_sites = pd.read_csv(files[SITE_INFO_FILE], usecols = ["Name", "Skip Site"], skiprows=SHEET_HEADER_SIZE)
+    all_sites = pd.read_csv(files[ALL_FILE], usecols = ["Name", "Skip Site"], skiprows=SHEET_HEADER_SIZE)
 
     #Clean it up. Only keep names that start with a 4-digit number and are not to be skipped. 
     filtered_sites = all_sites.loc[
@@ -587,18 +589,28 @@ def load_pm_data(site:str) -> pd.DataFrame:
             if is_non_zero_file(full_file_name):
                 #Validate that all columns exist, and abandon ship if we're missing any
                 headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
-                missing_columns = confirm_columns(site_columns, headers, fname)
-                if len(missing_columns) == 0: 
-                    df_temp = pd.read_csv(full_file_name, usecols=usecols)
-                    #make a new column that has the date in it, take into account that the table could be empty
-                    if len(df_temp):
-                        df_temp[DATE] = df_temp.apply(lambda row: make_date(row), axis=1)
-                    else:
-                        df_temp[DATE] = []
+                
+                df_temp = pd.read_csv(full_file_name, usecols=usecols)
+                #make a new column that has the date in it, take into account that the table could be empty
+                if len(df_temp):
+                    df_temp[DATE] = pd.to_datetime(pd.DataFrame({"year": df_temp["year"], "month": df_temp["month"], "day": df_temp["day"]}))
+                    df_temp[DATE+"2"] = df_temp.apply(lambda row: make_date(row), axis=1)
                 else:
-                    #columns are missing so can't do anything!
-                    log_error(f"load_pm_data: Columns {missing_columns} are missing from pattern matching file!")
-                    return pd.DataFrame()
+                    df_temp[DATE] = []
+
+                #SEPT2025 removing the error checking, as this is all now automated
+                #missing_columns = confirm_columns(site_columns, headers, fname)
+                # if len(missing_columns) == 0: 
+                #     df_temp = pd.read_csv(full_file_name, usecols=usecols)
+                #     #make a new column that has the date in it, take into account that the table could be empty
+                #     if len(df_temp):
+                #         df_temp[DATE] = df_temp.apply(lambda row: make_date(row), axis=1)
+                #     else:
+                #         df_temp[DATE] = []
+                # else:
+                #     #columns are missing so can't do anything!
+                #     log_error(f"load_pm_data: Columns {missing_columns} are missing from pattern matching file!")
+                #     return pd.DataFrame()
             else:
                 #NOTE: Dec 2024, removing the error logging because there will be a ton of these. Consider adding back
                 #       error checking for only the blackbird songs, although that also probably isn't necessary
@@ -625,7 +637,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
     #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
-    data_csv = Path(__file__).parents[0] / files[SUMMARY_FILE]
+    data_csv = Path(__file__).parents[0] / files[ALL_FILE]
 
     #Load up the file 
     #Skiprows is because the All file has junk at the top we want to ignore
@@ -685,11 +697,10 @@ def count_valid_pulses(pulse_data:dict) -> int:
 
 def get_val_from_df(df:pd.DataFrame, col) -> str:
     result = df.iloc[0,df.columns.get_loc(col)]
-    return result
+    return str(result)
 
 def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     nd_string = "ND"
-    # This function takes a row from the summary spreadsheet. The goal is to process it as follows:
     first_rec = get_val_from_df(summary_row, SUMMARY_FIRST_REC)
     last_rec = get_val_from_df(summary_row, SUMMARY_LAST_REC)
 
@@ -813,7 +824,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
 #Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
 #   - Exclude any data where the year of the data doesn't match the target year
-#   - Exclude any data where there aren't recordings on consecutive days  
+#   - Exclude any data where there aren't recordings on consecutive days  ##SEP2025 no longer doing this
 @st.cache_resource
 def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
@@ -841,13 +852,14 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
                 log_error(filtered_out.sort_values("type"))
 
 
+        #SEPT2025 No longer doing this, will rely on the dates Wendy put in  the All spreadsheet
         # Now, find first two consecutive items and drop everything after.
-        dates = df_site.index.unique()
-        for x,y in pairwise(dates):
-            if abs((x-y).days) == 1:
-                #found a match, need to keep only what's after this
-                df_site = df_site.query(f"date <= '{x.strftime('%Y-%m-%d')}'")
-                break
+        # dates = df_site.index.unique()
+        # for x,y in pairwise(dates):
+        #     if abs((x-y).days) == 1:
+        #         #found a match, need to keep only what's after this
+        #         df_site = df_site.query(f"date <= '{x.strftime('%Y-%m-%d')}'")
+        #         break
 
         #Sort oldest to newest, and filter to this year
         df_site = df_site.sort_index(ascending=True)
@@ -861,13 +873,15 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
                 log_error(filtered_out[FILENAME])
             else:
                 log_error(filtered_out.sort_values("type"))
+
+        #SEPT2025 No longer doing this, will rely on the dates Wendy put in  the All spreadsheet
         # Find first two consecutive items and drop everything before
-        dates = df_site.index.unique()
-        for x,y in pairwise(dates):
-            if abs((x-y).days) == 1:
-                #found a match, need to keep only what's after this
-                df_site = df_site.query(f"date >= '{x.strftime('%Y-%m-%d')}'")
-                break
+        # dates = df_site.index.unique()
+        # for x,y in pairwise(dates):
+        #     if abs((x-y).days) == 1:
+        #         #found a match, need to keep only what's after this
+        #         df_site = df_site.query(f"date >= '{x.strftime('%Y-%m-%d')}'")
+        #         break
 
         df_clean = pd.concat([df_clean, df_site])
     
@@ -1215,7 +1229,7 @@ def format_pm_dates(pm_dates:dict):
 #       them analyzed, it's changed to only work on bird vocalizations. Changed two things: 
 #       1) Below, added "if idx in pm_song_types" to limit analysis to only songs
 #       2) In make_empty_summary_row(), added the same if statement
-def summarize_pm(pt_pm: pd.DataFrame) -> pd.DataFrame:
+def summarize_pm(pt_pm: pd.DataFrame):
     # From pt_pm, get the first date that has a song count >= 4
     threshold = 4
     pulse_gap = 14
@@ -2013,7 +2027,7 @@ def make_img_filename(site:str, graph_type:str, extra="") ->str:
     return filename
 
 #Helper for when we need to remove a file
-def remove_file(full_path:str) -> bool:
+def remove_file(full_path:Path) -> bool:
     result = False
     try:
         os.remove(full_path)
@@ -2547,7 +2561,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
 
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
-    df = pd.read_csv(files[SITE_INFO_FILE], skiprows=SHEET_HEADER_SIZE)
+    df = pd.read_csv(files[ALL_FILE], skiprows=SHEET_HEADER_SIZE)
 
     #Make a dictionary, where the keys are in site_info_fields and the values are the values from the 
     #site info file in the columns that match site_info_fields, for the site==site_name
@@ -2555,9 +2569,6 @@ def get_site_info(site_name:str, site_info_fields:list) -> dict:
         site_info = df.loc[df["Name"] == site_name, site_info_fields].iloc[0].to_dict()
         site_info = {k: ("N/A" if pd.isna(v) else v) for k, v in site_info.items()}  # Replace NaN
 
-    # for f in site_info_fields:
-    #     value = df.loc[df['Name'] == site_name,f].values[0]
-    #     site_info[f] = "N/A" if pd.isna(value) else value 
     return site_info
 
 def show_station_info(site:pd.DataFrame):
@@ -3157,12 +3168,11 @@ for site in target_sites:
             for t in pm_file_types: 
                 #For each file type, get the filtered range of just that type
                 df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
-                pm_data_empty = pm_data_empty or len(df_for_file_type)
+                pm_data_empty = bool(pm_data_empty or len(df_for_file_type))
                 #Build the pivot table for it
                 pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, pm_date_range_dict)
                 #Concat as above
-                pt_pm = pd.concat([pt_pm, pt_for_file_type])
-    
+                pt_pm = pd.concat([pt_pm, pt_for_file_type])    
 
     else: #TODO Should just graph what we get unless the data is completely missing
         error_msgs.append(f"{site}: All pattern matching data not available, missing some or all files")
@@ -3225,8 +3235,11 @@ for site in target_sites:
 
     # Manual analyisis graph
     if not pt_manual.empty:
+        #SEPT2025- trying to hide COURT_SONG from the list of songs
+        new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
+
         graph = create_graph(df = pt_manual, 
-                            row_names = song_cols, 
+                            row_names = [data_col[s] for s in new_songs], #SEPT2025
                             cmap = cmap, 
                             title = GRAPH_MANUAL) # add this if we want to include the site name (site + ' ' if save_files else '')
         # Need to be able to build an image that looks like the graph labels so that it can be drawn
@@ -3266,17 +3279,18 @@ for site in target_sites:
         
         if len(month_locs)==0:
             month_locs = get_month_locs_from_graph() 
-
-        summarized_data, raw_pm_dates = summarize_pm(pt_pm)
-        if show_PM_dates:
-            add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
-                    
+                   
         with st.expander("Show pulse dates from Pattern Matching"):
-            if make_all_graphs:
-                append_to_csv(summarized_data, site, files[DATES_FILE])
+            if len(pt_pm):
+                summarized_data, raw_pm_dates = summarize_pm(pt_pm)
+                if show_PM_dates:
+                    add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
+                if make_all_graphs:
+                    append_to_csv(summarized_data, site, files[DATES_FILE])
+                else:
+                    pretty_print_table(summarized_data, body_alignment="left")
             else:
-                pretty_print_table(summarized_data, body_alignment="left")
-
+                st.write("No pattern matching data available")
 
         output_graph(site, GRAPH_PM, save_files, make_all_graphs, pm_data_empty)
 
@@ -3313,7 +3327,7 @@ for site in target_sites:
                 graph = create_weather_graph(weather_by_type, site)
                 output_graph(site, GRAPH_WEATHER, save_files, make_all_graphs)
     
-    if not being_deployed_to_streamlit or make_all_graphs or save_composite:
+    if not being_deployed_to_streamlit and (make_all_graphs or save_composite):
         combine_images(site, month_locs, show_weather_checkbox)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing

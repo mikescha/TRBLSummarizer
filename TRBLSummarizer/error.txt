@@ -1,18 +1,6 @@
-Logging started 05-Sep-25 17:36:22
-05-Sep-25 17:36:22: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2017.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:22: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2018.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:22: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2019.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:22: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2020.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:22: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2021.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:23: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2023.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:36:23: confirm_columns: File C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\data 2024.csv has an unexpected number of columns, 32 instead of 31
-05-Sep-25 17:37:07: Found 18395 rows where at least one filter column equals '1'
-05-Sep-25 17:37:31: Found 8039 rows with invalid data (containing '---' in check columns)
-05-Sep-25 17:37:35: Saved 8039 invalid filenames to 'invalid_filenames.txt'
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p1: In p1mcend end date is 'before start' but start date is not 'ND'
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p1: Found before start, HBC present in p1hatch, which is invalid data
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p1: Found invalid data in p1hatch: before start, HBC present
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p1: Second date is ND, but first date is not: p1fledgestart:5/3/2024, p1fledgedisp:ND
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p2: Second date is ND, but first date is not: p2hatch:5/24/2024, p2fledgestart:ND
-05-Sep-25 17:37:53: process_site: 2024 Baja Lago Mesa Redonda at p3: Second date is ND, but first date is not: p3hatch:6/21/2024, p3fledgestart:ND
+Logging started 07-Sep-25 19:10:02
+07-Sep-25 19:10:03: Date for 2024 Baja Rancho Cinega Redonda 1 in sheet and from data are different. From sheet: {'start': datetime.date(2024, 4, 23), 'end': datetime.date(2024, 8, 19)}; From data: {'start': datetime.date(2024, 3, 15), 'end': datetime.date(2024, 8, 19)}
+07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: In p1mcend end date is 'before start' but start date is not 'ND'
+07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: Found before start, HBC present in p1hatch, which is invalid data
+07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: Found invalid data in p1hatch: before start, HBC present
+07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
