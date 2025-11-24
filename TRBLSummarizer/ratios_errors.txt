@@ -1,0 +1,45 @@
+[ERROR] Bad hatch date for '2018 Markham Ravine westside': 'pre'
+[WARN] Call file not found: PMJ Data\2018 SJWA-rose-1\2018 SJWA-rose-1 Female.csv
+[WARN] Call file not found: PMJ Data\2018 SJWA-rose-1\2018 SJWA-rose-1 Nestling.csv
+[INFO] No female or nestling data for '2018 SJWA-rose-1'; still outputting rows with 'n/a' where needed.
+[WARN] Call file not found: PMJ Data\2018 SJWA-rose-2\2018 SJWA-rose-2 Female.csv
+[WARN] Call file not found: PMJ Data\2018 SJWA-rose-2\2018 SJWA-rose-2 Nestling.csv
+[INFO] No female or nestling data for '2018 SJWA-rose-2'; still outputting rows with 'n/a' where needed.
+[ERROR] Bad hatch date for '2019 Creed Road': 'ND (m)'
+[WARN] Call file not found: PMJ Data\2021 Conaway West\2021 Conaway West Female.csv
+[WARN] Call file not found: PMJ Data\2021 Conaway West\2021 Conaway West Nestling.csv
+[INFO] No female or nestling data for '2021 Conaway West'; still outputting rows with 'n/a' where needed.
+[WARN] Call file not found: PMJ Data\2021 SJWA\2021 SJWA Female.csv
+[WARN] Call file not found: PMJ Data\2021 SJWA\2021 SJWA Nestling.csv
+[INFO] No female or nestling data for '2021 SJWA'; still outputting rows with 'n/a' where needed.
+[ERROR] Bad hatch date for '2021 Willey Wetlands 3': 'pre'
+[ERROR] Bad hatch date for '2022 Private Site 2 - not real lat lon': 'pre'
+[ERROR] Bad hatch date for '2022 Private Site 3 - not real lat lon': 'pre'
+[ERROR] Bad hatch date for '2022 Newberry Springs - Lake Wainani': 'pre'
+[ERROR] Bad hatch date for '2022 Plumas Arboga East': 'pre'
+[ERROR] Bad hatch date for '2022 WA1': 'pre'
+[ERROR] Bad hatch date for '2022 WA1': 'pre (m)'
+[ERROR] Bad hatch date for '2023 Baja Rancho Cinega': 'pre'
+[ERROR] Bad hatch date for '2023 Baja Rancho Cinega': 'ND (m1)'
+[ERROR] Bad hatch date for '2023 Baja Rancho Cinega': 'ND (m2)'
+[ERROR] Bad hatch date for '2023 Hale Road': 'post (m)'
+[ERROR] Bad hatch date for '2023 Iron Point': 'pre'
+[ERROR] Bad hatch date for '2023 Markham Ravine A': 'post'
+[ERROR] Bad hatch date for '2023 Merced NWR - Cottonwood': 'pre'
+[ERROR] Bad hatch date for '2023 OR Dizney Rd': 'ND (a)'
+[ERROR] Bad hatch date for '2023 Panoche Creek Preserve - Corrals NW': 'pre'
+[ERROR] Bad hatch date for '2023 Panoche Creek Preserve - Corrals SE': 'pre'
+[ERROR] Bad hatch date for '2023 WA Harder Spring': 'ND (m)'
+[ERROR] Bad hatch date for '2023 West of Davis': 'pre'
+[ERROR] Bad hatch date for '2024 Baja Rancho Cinega Redonda 1': 'pre'
+[ERROR] Bad hatch date for '2024 Baja Lago Mesa Redonda': 'pre'
+[WARN] Call file not found: PMJ Data\2024 Newberry Springs\2024 Newberry Springs Female.csv
+[WARN] Call file not found: PMJ Data\2024 Newberry Springs\2024 Newberry Springs Nestling.csv
+[INFO] No female or nestling data for '2024 Newberry Springs'; still outputting rows with 'n/a' where needed.
+[ERROR] Bad hatch date for '2024 Newberry Springs': 'pre'
+[ERROR] Bad hatch date for '2024 SJWA Thistle NW of Bridge Street Pond': 'pre'
+[ERROR] Bad hatch date for '2024 Wind Wolves Preserve - Los Lobos fix lat lon': 'pre'
+[ERROR] Bad hatch date for '2024 Wind Wolves Preserve - Pleitito': 'pre'
+[ERROR] Bad hatch date for '2024 Wind Wolves Preserve - Santiago': 'pre'
+[ERROR] Bad hatch date for '2024 Wind Wolves Preserve - Tevis fix lat lon': 'pre'
+[DONE] Wrote results to: female-to-hatchling-ratios.csv

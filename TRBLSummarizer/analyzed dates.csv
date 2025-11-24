@@ -66,14 +66,14 @@ Last: 05/05","First: 05/14
 Last: 07/06","First: 04/27
 Last: 05/14",No data,No data,"First: 05/22
 Last: 05/24",No data,No data,"First: 05/29
-Last: 05/29","First: 06/06
-Last: 06/06","First: 06/09
+Last: 05/29",No data,"First: 06/09
 Last: 06/24",No data,"First: 05/30
 Last: 05/30",No data,No data,No data,No data
 2019 Leisure Town,"First: On or before 03/17
-Last: 03/19",No data,No data,"First: 06/12
-Last: 06/12",No data,"First: 04/04
-Last: 04/13",No data,No data,No data,No data,"First: 05/19
+Last: 03/19",No data,No data,No data,"First: 05/18
+Last: 05/18","First: 04/04
+Last: 04/13",No data,No data,"First: 06/12
+Last: 06/12",No data,"First: 05/19
 Last: 05/29",No data,No data,No data,No data
 2019 Markham Ravine,"First: On or before 05/10
 Last: 05/13","First: 05/13
@@ -333,7 +333,7 @@ Last: 06/18"
 2022 Laguna Seca,"First: On or before 03/20
 Last: 03/23","First: 05/10
 Last: 05/26",No data,"First: 05/27
-Last: 06/01",No data,"First: 04/08
+Last: 06/02",No data,"First: 04/08
 Last: 04/09",No data,No data,No data,No data,"First: 05/03
 Last: 05/11",No data,No data,No data,No data
 2022 Los Vaqueros Reservoir,"First: On or before 04/15
@@ -603,7 +603,7 @@ Last: 05/06",No data,"First: 05/26
 Last: 05/26","First: 06/07
 Last: 06/07",No data,"First: 05/22
 Last: 05/24",No data,No data,No data
-2023 OR Eureka Rd,No data,"First: 05/06
+2023 OR Eureka Rd,No data,"First: 05/04
 Last: 05/17",No data,"First: 05/24
 Last: 06/03","First: 05/30
 Last: 06/10",No data,No data,No data,No data,"First: 06/29
@@ -772,7 +772,7 @@ Last: 06/05","First: 06/17
 Last: 06/23"
 2024 Kern 1 - check lat lon
 2024 Los Vaqueros Reservoir,"First: On or before 03/15
-Last: 04/23","First: 04/21
+Last: 04/23","First: 04/18
 Last: 04/26","First: 06/11
 Last: 06/11","First: 06/13
 Last: 06/21","First: 06/18
@@ -792,6 +792,8 @@ Last: 05/27",No data,No data,No data,No data
 2024 Newberry Springs,No data,No data,No data,No data,"First: On or before 05/27
 Last: On or after 06/02",No data,No data,No data,"First: 05/28
 Last: On or after 06/02",No data
+2024 North Regional Pond,"First: 04/20
+Last: 04/21",No data,No data,No data,No data
 2024 OR Eureka Lane
 2024 Ohlone - Santa Lucia Preserve,"First: On or before 04/10
 Last: 05/07","First: 04/20

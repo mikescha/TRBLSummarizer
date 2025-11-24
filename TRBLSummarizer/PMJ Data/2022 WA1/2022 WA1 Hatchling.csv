@@ -1,2 +1,3 @@
-site_id,site,recording_id,year,month,day,validated
-33845,2022 WA1,84109615,2022,5,31,present
+id,recording,site,year,month,day,hour,minute,species,songtype,x1,x2,y1,y2,frequency,validated,url,score,site_id
+989535115,WA1am-2022-06-16_12-40.WAV,2022 WA1,2022,6,16,12,40,sp11,Simple Call,50.1653,52.8533,1406,4406,24000,(not validated),https://rfcx-streams-production.s3.eu-west-1.amazonaws.com/2022/06/16/08kslnnhld69/75ffe0b7-4994-40a6-8fb0-d8b048fbd492.flac?AWSAccessKeyId=AKIA45B7YWBX7MUJ7QCX&Expires=1764541947&Signature=7ga%2FqMvPv%2BkfJrimTCpsKcMuN0E%3D,0.222797,33845
+989535116,WA1am-2022-05-31_18-20.WAV,2022 WA1,2022,5,31,18,20,sp11,Simple Call,15.1467,17.8347,1406,4406,24000,present,https://rfcx-streams-production.s3.eu-west-1.amazonaws.com/2022/06/01/08kslnnhld69/c2a4f1f9-819c-4609-bde4-d97bd6f701c2.flac?AWSAccessKeyId=AKIA45B7YWBX7MUJ7QCX&Expires=1764541947&Signature=NplyLGLdUiWfmMCB7HUMxbbjhTs%3D,0.964293,33845

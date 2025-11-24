@@ -174,7 +174,8 @@ fig_h = 1
 WEATHER_PRCP = 'prcp'
 WEATHER_TMAX = 'tmax'
 WEATHER_TMIN = 'tmin'
-weather_cols = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN]
+WEATHER_WIND = 'wspd'
+weather_cols = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN, WEATHER_WIND]
 
 GRAPH_SUMMARY = "Summary"
 GRAPH_MANUAL = 'Manual Analysis'
@@ -223,9 +224,9 @@ cmap_pm = {"Male Song":         "Greens",
            "Insect 31":   	    "Greys",
            "Insect 32":         "Greys",	
            "Insect 33":         "Greys",
-           "Pacific Tree Frog": "Greys",	
-           "Red-legged Frog":   "Greys",
-           "Bull Frog":         "Greys"}
+           "Pacific Tree Frog": "YlGn",	
+           "Red-legged Frog":   "YlGn",
+           "Bull Frog":         "YlGn"}
 
 
 #Files, paths, etc.
@@ -309,7 +310,7 @@ pm_other_types = [PM_INSECT_SP30,
                  "Bull Frog"]
 
 #Abbreviations are used in the summary table, to reduce column width
-pm_file_types = pm_song_types #+ pm_other_types
+pm_file_types = pm_song_types + pm_other_types #INSECTS remove this if we are hiding the insects
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
@@ -705,7 +706,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     last_rec = get_val_from_df(summary_row, SUMMARY_LAST_REC)
 
     #TODO Is this the best way to handle the zero recording case?
-    if pd.isna(first_rec): #TODO: Log an error in this case
+    if pd.isna(first_rec):
         log_error("process_site: date of first recording was empty")
         return {}
 
@@ -1786,7 +1787,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     
     #distance between top of plot space and chart
     if title == GRAPH_PM:
-        gap_for_title = 0.8 # removed insects so don't need extra height, was 0.9
+        gap_for_title = 0.9 # removed insects so don't need extra height, was 0.9 #INSECTS put this back for insects
     else:
         gap_for_title = 0.8 if title else 1
 
@@ -1794,7 +1795,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     tick_spacing = 0
 
     #NOTE Dec 2024 adding this to accomodate all the insect calls in the PM graph
-    fig_height = fig_h if not title == GRAPH_PM else fig_h # removed insects so don't need extra height, was *2
+    fig_height = fig_h if not title == GRAPH_PM else fig_h * 2 # removed insects so don't need extra height, was *2 #INSECTS put this back for insects
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = row_count, ncols = 1,
@@ -2270,38 +2271,23 @@ def output_text(text:str, make_all_graphs:bool):
 #Load weather data from file
 #@st.cache_resource
 def load_weather_data_from_file() -> pd.DataFrame:
-    # #Validate the data file format
-    # try:
-    #     headers = pd.read_csv(files[WEATHER_FILE], nrows=0).columns.tolist()
-    #     weather_cols = {'row':'row','date':'date', 'datatype':'datatype', 'value':'value', 'site':'site'}
-
-    #     #Removed error checking, assuming it's right        
-    #     #This will show an error if something is wrong with the data 
-    #     #missing_columns = confirm_columns(weather_cols, headers, WEATHER_FILE)
-        
-    #     df = pd.read_csv(files[WEATHER_FILE], 
-    #                     parse_dates = [weather_cols['date']],
-    #                     index_col = [weather_cols['site']])
-    
-    # except: #something went wrong trhing to get the data, so just return an empty frame
-    #     df = pd.DataFrame()
-
     df = pd.read_csv(files[WEATHER_FILE])
 
-    # Select relevant columns
-    columns_to_keep = ['site', 'date', 'tmax', 'tmin', 'prcp']
-    df = df.iloc[:, :5]  # Keeping only the first five columns
-    df.columns = columns_to_keep  # Renaming columns explicitly
+    # Select and rename relevant columns
+    columns_to_keep = ['Name', 'date', 'tmax_F', 'tmin_F', 'precip_in', 'wind_speed_mean_m_s']
+    new_names = {'Name':'site', 'tmax_F':'tmax', 'tmin_F':'tmin', 'precip_in':'prcp', 'wind_speed_mean_m_s':'wspd'}
+    df = df[columns_to_keep].rename(columns=new_names)
 
     # Convert 'date' column to datetime format
     df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d')
+
     # Convert strings to numeric
     for col in ['tmax', 'tmin', 'prcp']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Transform the data to long format
     df_melted = df.melt(id_vars=['site', 'date'], 
-                        value_vars=['tmax', 'tmin', 'prcp'],
+                        value_vars=['tmax', 'tmin', 'prcp', 'wspd'],
                         var_name='datatype', value_name='value')
     df_melted.set_index('site', inplace=True)
 
@@ -2438,20 +2424,39 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
             figsize=(fig_w,fig_h))
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
+        ax3 = ax1.twinx() # makes a third y axis on the same x axis for wind
 
         plot_title(GRAPH_WEATHER) #site_name + ' ' +  to include site
 
         # Plot the data in the proper format on the correct axis.
-        wg_colors = {'high':'red', 'low':'pink', 'prcp':'blue'}
+        wg_colors = {'high':'#ff0000', 'low':'#ff8080', 'prcp':'blue', 'wspd':'gray'}
         for wt in weather_cols:
             w = weather_by_type[wt]
             if wt == WEATHER_PRCP:
                 ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
             elif wt == WEATHER_TMAX:
                 ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='.', markersize=2)
-            else: #TMIN
+            elif wt == WEATHER_TMIN: 
                 ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='.', markersize=2)
-        
+            elif wt == WEATHER_WIND:
+#                ax3.plot(w.index.values, w['value'], color = wg_colors['wspd'], marker='.', markersize=2)
+#                ax3.tick_params(axis='y', colors=wg_colors['wspd'])
+                wspd = w['value']
+                ax3.bar(
+                    w.index.values,
+                    wspd,
+                    width=0.8,                 # narrow daily bars
+                    color=wg_colors['wspd'],
+                    alpha=0.4,                  # light
+                    linewidth=0,
+                    zorder=1                    # behind temps
+                )
+                # Make wind bars occupy just the lower part of that axis
+                max_wind = 15 #wspd.max() for just the max for this site, but 15 is the fastest speed across all sites so we have a fixed scale and the data can be visually compared 
+                ax3.set_ylim(0, max_wind * 1.2)  # nice headroom
+            else: 
+                log_error(f"create_weather_graph: Unknown weather type {wt}")
+
         x_range = (mpl.dates.date2num(w.index.min()), mpl.dates.date2num(w.index.max()))
         add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
 
@@ -2476,12 +2481,16 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                      f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
         prcp_label = f"Precipitation (0-"\
                      f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
+        wind_label = f"Avg Daily Wind Speed (0-"\
+                     f"{weather_by_type[WEATHER_WIND]['value'].max():.2f} m/s)"
+        
         legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=3, label=tmax_label),
                            Line2D([0], [0], color=wg_colors['low'], lw=3, label=tmin_label),
-                           Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label)]
+                           Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label),
+                           Line2D([0], [0], color=wg_colors['wspd'], lw=3, label=wind_label)]
         
         #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
-        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3,
+        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=4,
                    fontsize=5, frameon=False)
 
     else:

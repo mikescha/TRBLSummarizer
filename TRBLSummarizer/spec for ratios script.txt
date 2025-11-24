@@ -1,0 +1,46 @@
+days_to_count = 10
+Open ".\Data\TRBL Analysis tracking - Breeding dates.csv"
+Skip row 1, start with row 2. These are the headers. 
+Read in columns: Name, B (which can be renamed to Hatch Date)
+
+Create a dataframe for results
+For each row, 
+	Get the value of Name and Hatch Date
+	Hatch Date will be a string. If the string is empty, then go to the next row.
+	For each line in the Hatch Date, 
+		#Get the date value, if there is one
+		If it's ND or blank, go to the next line
+		Otherwise, if it contains " (*)", drop that.
+		Verify that what remains looks like a date. If no, report an error including Name and the bad data, and go to the next line, otherwise continue. Call this hatch_date
+		
+		#Count the number of female calls within days_to_count of hatch_date
+		Open ".\PMJ Data\{Name}\{Name} Female.csv"
+		Make a table called "all_female_recordings" that includes the columns "year", "month", "day", "validated"
+		Create a new date column by combining month, day, and year like "mm/dd/yyyy" (e.g. 5/15/2024) and add it to the table
+		Sort the table by this new date field, from oldest to newest
+		Make a table called "potential_female_calls" which is all rows from all_female_recordings where the date is on or between (hatch_date-day_to_count) and hatch_date (e.g. if hatch_date is 5/15/2024 and days_to_count=10, then get all rows where the date is on 5/6/2024 through 5/15/2024). Note that there may be fewer than days_to_count days in the data, potentially zero.
+		
+		#Count the number of hatchling calls within days_to_count of hatch_date
+		Get the Name, and open ".\PMJ Data\{Name}\{Name} Nestling.csv."
+		Make a table called "all_hatchling_recordigns" that includes the columns "year", "month", "day", "validated"
+		Create a new date column by combining month, day, and year like "mm/dd/yyyy" (e.g. 5/15/2024) and add it to the table
+		Sort the table by this new date field, from oldest to newest
+		Make a table called "potential_hatchling_calls" which is all rows from all_hatchling_recordings where the date is on or between hatch_date and (hatch_date+days_to_count) (e.g. if hatch_date is 5/15/2024 and days_to_count=10, then get all rows where the date is on 5/15/2024 through 5/24/2024). Note that there may be fewer than days_to_count days in the data, potentially zero.
+
+		#Calculate and output the summary
+		Add the following to our results dataframe, in the following columns:
+			- "Site Name" : Name
+			- "Hatch Date" : hatch_date
+			- "Earliest Rec" : Earliest date in the potential_female_calls table.
+			- "Incubation Days" : Count of days from the earliest date until hatch_date, inclusive. If the hatch_date is 5/15/2024 and the earliest date was 5/10/2024, then the count of days would be 6.
+			- "Total Female Calls" : Count of all rows in potential_female_calls where validated="present".
+			- "Avg Female Calls/Day" : (Total Female Calls) / (Incubation Days) . Note that there could be zero calls or zero data available. If Incubation Days is zero then report "n/a"
+			- "Latest Rec" : Latest date in potential_hatchling_calls table
+			- "Hatchling Days" : Count of days from the hatch_date until the latest date, inclusive. If the hatch_date is 5/15/2024 and the latest date was 5/22/2024, then the count of days would be 8.
+			- "Total Hatchling Calls" : Count of all rows in potential_hatchling_calls where validated="present".
+			- "Avg Hatchling Calls/Day" : (Total Hatchling Calls) / (Hatchling Days) . Note that there could be zero calls or zero data available. If Hatchling Days is zero then report "n/a"
+			- "Ratio" : (Avg Female Calls/Day / Avg Hatchling Calls/Day). If Avg Hatchling Calls is zero, report "n/a"
+
+After processing all the rows in the entire table, write the results to a file called female-to-hatchling-ratios.csv
+
+			

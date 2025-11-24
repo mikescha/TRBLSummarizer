@@ -1,6 +1,25 @@
-Logging started 07-Sep-25 19:10:02
-07-Sep-25 19:10:03: Date for 2024 Baja Rancho Cinega Redonda 1 in sheet and from data are different. From sheet: {'start': datetime.date(2024, 4, 23), 'end': datetime.date(2024, 8, 19)}; From data: {'start': datetime.date(2024, 3, 15), 'end': datetime.date(2024, 8, 19)}
-07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: In p1mcend end date is 'before start' but start date is not 'ND'
-07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: Found before start, HBC present in p1hatch, which is invalid data
-07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: Found invalid data in p1hatch: before start, HBC present
-07-Sep-25 19:10:03: process_site: 2024 Baja Rancho Cinega Redonda 1 at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
+Logging started 24-Nov-25 13:35:33
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2mcstart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2mcend, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2mcend: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2hatch, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2hatch: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2fledgestart, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2fledgestart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2fledgedisp, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3mcstart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3mcend, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3mcend: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3hatch, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3hatch: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3fledgestart, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3fledgestart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3fledgedisp, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4mcstart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4mcend, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4mcend: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4hatch, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4hatch: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4fledgestart, which is invalid data
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4fledgestart: nan
+24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4fledgedisp, which is invalid data

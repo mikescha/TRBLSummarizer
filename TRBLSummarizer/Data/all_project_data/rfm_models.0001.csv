@@ -1,7 +1,0 @@
-model_id,name,date_created,user_id,species_id,scientific_name,songtype_id,songtype
-2718,TRBL nest chatter 01,10/23/2018 23:42:13,560,9897,Agelaius tricolor,7,Alternative Song 2
-2719,TRBL nest chatter 01a smaller,10/23/2018 23:49:43,560,9897,Agelaius tricolor,7,Alternative Song 2
-2720,TRBL nest chatter 01 larger,10/23/2018 23:53:42,560,9897,Agelaius tricolor,7,Alternative Song 2
-4028,Female Song Test using template finds,09/12/2021 11:02:42,2511,9897,Agelaius tricolor,7,Alternative Song 2
-4682,Female Song Test 2-01,08/29/2022 20:20:59,2511,9897,Agelaius tricolor,7,Alternative Song 2
-4683,Female Song Test 2-02,08/30/2022 01:15:31,2511,9897,Agelaius tricolor,7,Alternative Song 2
