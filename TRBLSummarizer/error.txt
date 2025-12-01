@@ -30,3 +30,147 @@ Logging started 02-Dec-25 10:32:49
 02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: Found pre in p1mcend, which is invalid data
 02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: Found invalid data in p1mcend: pre
 02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:33:17: process_site: 2019 Creed Road at p2: Second date is ND, but first date is not: p2mcend:5/21/2019, p2hatch:ND
+02-Dec-25 10:33:24: process_site: 2019 Iron Point at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:24: process_site: 2019 Iron Point at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:33:24: process_site: 2019 Iron Point at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:33:24: process_site: 2019 Iron Point at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:33:27: process_site: 2019 Leisure Town at p1: Found nan in p1mcend, which is invalid data
+02-Dec-25 10:33:27: process_site: 2019 Leisure Town at p1: Found invalid data in p1mcend: nan
+02-Dec-25 10:33:27: process_site: 2019 Leisure Town at p1: Second date is ND, but first date is not: p1mcend:nan, p1hatch:ND
+02-Dec-25 10:33:31: process_site: 2019 Markham Ravine at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:31: process_site: 2019 Markham Ravine at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:33:34: process_site: 2019 Markham Ravine 2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:34: process_site: 2019 Markham Ravine 2 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:33:37: process_site: 2019 Rush Ranch at p1: Second date is ND, but first date is not: p1mcend:5/8/2019, p1hatch:ND
+02-Dec-25 10:33:39: Date for 2020 Conaway Ranch in sheet and from data are different. From sheet: {'start': datetime.date(2020, 5, 18), 'end': datetime.date(2020, 7, 10)}; From data: {'start': datetime.date(2020, 3, 12), 'end': datetime.date(2020, 7, 10)}
+02-Dec-25 10:33:40: process_site: 2020 Conaway Ranch at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:40: process_site: 2020 Conaway Ranch at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:33:44: Date for 2020 Fort Ord in sheet and from data are different. From sheet: {'start': datetime.date(2020, 4, 8), 'end': datetime.date(2020, 7, 15)}; From data: {'start': datetime.date(2020, 3, 23), 'end': datetime.date(2020, 7, 15)}
+02-Dec-25 10:33:45: process_site: 2020 Fort Ord at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:45: process_site: 2020 Fort Ord at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:34:14: Date for 2021 Colusa NWR 27-1 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 21), 'end': datetime.date(2021, 6, 26)}; From data: {'start': datetime.date(2021, 4, 9), 'end': datetime.date(2021, 6, 26)}
+02-Dec-25 10:34:16: process_site: 2021 Colusa NWR 27-1 at p1: Second date is ND, but first date is not: p1hatch:6/4/2021, p1fledgestart:ND
+02-Dec-25 10:34:17: Date for 2021 Colusa NWR 27-2 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 21), 'end': datetime.date(2021, 6, 21)}; From data: {'start': datetime.date(2021, 4, 9), 'end': datetime.date(2021, 6, 21)}
+02-Dec-25 10:34:18: process_site: 2021 Colusa NWR 27-2 at p1: Found post in p1fledgestart, which is invalid data
+02-Dec-25 10:34:18: process_site: 2021 Colusa NWR 27-2 at p1: Found invalid data in p1fledgestart: post
+02-Dec-25 10:34:18: process_site: 2021 Colusa NWR 27-2 at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:34:21: Date for 2021 Conaway East in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 20), 'end': datetime.date(2021, 7, 5)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 7, 5)}
+02-Dec-25 10:34:22: process_site: 2021 Conaway East at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:34:22: process_site: 2021 Conaway East at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:34:23: Date for 2021 Conaway South in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 20), 'end': datetime.date(2021, 7, 5)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 7, 5)}
+02-Dec-25 10:34:26: Date for 2021 Conaway West in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 12), 'end': datetime.date(2021, 6, 28)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 6, 28)}
+02-Dec-25 10:34:27: process_site: 2021 Conaway West at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:34:27: process_site: 2021 Conaway West at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:34:32: Date for 2021 Dagnino Pond in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 29), 'end': datetime.date(2021, 7, 12)}; From data: {'start': datetime.date(2021, 4, 16), 'end': datetime.date(2021, 7, 12)}
+02-Dec-25 10:34:35: Date for 2021 Foley Ranch in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 4), 'end': datetime.date(2021, 6, 14)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 6, 14)}
+02-Dec-25 10:34:36: process_site: 2021 Foley Ranch at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:34:36: process_site: 2021 Foley Ranch at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:34:36: process_site: 2021 Foley Ranch at p2: Found post in p2fledgestart, which is invalid data
+02-Dec-25 10:34:36: process_site: 2021 Foley Ranch at p2: Found invalid data in p2fledgestart: post
+02-Dec-25 10:34:36: process_site: 2021 Foley Ranch at p2: Found post in p2fledgedisp, which is invalid data
+02-Dec-25 10:34:38: Date for 2021 Hale Road 2 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 4), 'end': datetime.date(2021, 6, 14)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 6, 14)}
+02-Dec-25 10:34:39: process_site: 2021 Hale Road 2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:34:39: process_site: 2021 Hale Road 2 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:34:39: process_site: 2021 Hale Road 2 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:34:39: process_site: 2021 Hale Road 2 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:34:44: process_site: 2021 Hay Landfill at p1: Found post in p1fledgestart, which is invalid data
+02-Dec-25 10:34:44: process_site: 2021 Hay Landfill at p1: Found invalid data in p1fledgestart: post
+02-Dec-25 10:34:44: process_site: 2021 Hay Landfill at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:34:48: process_site: 2021 Iron Point at p1: Second date is ND, but first date is not: p1mcend:4/19/2021, p1hatch:ND
+02-Dec-25 10:34:50: Date for 2021 Kern 1 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 9), 'end': datetime.date(2021, 8, 5)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 8, 5)}
+02-Dec-25 10:34:52: process_site: 2021 Kern 1 at p1: Second date is ND, but first date is not: p1hatch:5/31/2021, p1fledgestart:ND
+02-Dec-25 10:34:54: Date for 2021 Kern 2 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 6), 'end': datetime.date(2021, 7, 30)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 7, 30)}
+02-Dec-25 10:34:58: Date for 2021 Kern 3 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 6), 'end': datetime.date(2021, 8, 5)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 8, 5)}
+02-Dec-25 10:35:02: Date for 2021 Kern 4 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 19), 'end': datetime.date(2021, 8, 10)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 8, 10)}
+02-Dec-25 10:35:06: Date for 2021 Kern 5 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 27), 'end': datetime.date(2021, 8, 17)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 8, 17)}
+02-Dec-25 10:35:07: process_site: 2021 Kern 5 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:35:07: process_site: 2021 Kern 5 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:35:07: process_site: 2021 Kern 5 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:35:07: process_site: 2021 Kern 5 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:35:10: Date for 2021 Kern 6 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 1), 'end': datetime.date(2021, 8, 21)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 8, 23)}
+02-Dec-25 10:35:14: Date for 2021 Kern 7 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 17), 'end': datetime.date(2021, 9, 1)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 9, 1)}
+02-Dec-25 10:35:15: process_site: 2021 Kern 7 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:35:15: process_site: 2021 Kern 7 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:35:15: process_site: 2021 Kern 7 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:35:15: process_site: 2021 Kern 7 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:35:15: process_site: 2021 Kern 7 at p1: Second date is ND, but first date is not: p1hatch:5/31/2021, p1fledgestart:ND
+02-Dec-25 10:35:19: Date for 2021 Markham Ravine in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 30), 'end': datetime.date(2021, 6, 23)}; From data: {'start': datetime.date(2021, 4, 18), 'end': datetime.date(2021, 6, 23)}
+02-Dec-25 10:35:26: Date for 2021 Orchard Creek in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 19), 'end': datetime.date(2021, 7, 4)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 7, 4)}
+02-Dec-25 10:35:30: process_site: 2021 Orchard Creek at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:35:30: process_site: 2021 Orchard Creek at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:35:36: Date for 2021 Panoche Creek Preserve 1W in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 1), 'end': datetime.date(2021, 7, 14)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 7, 14)}
+02-Dec-25 10:35:52: Date for 2021 Panoche Creek Preserve 2E in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 1), 'end': datetime.date(2021, 7, 14)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 7, 14)}
+02-Dec-25 10:36:10: Date for 2021 Plumas Arboga in sheet and from data are different. From sheet: {'start': datetime.date(2021, 5, 14), 'end': datetime.date(2021, 6, 4)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 6, 4)}
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found post in p1fledgestart, which is invalid data
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found invalid data in p1fledgestart: post
+02-Dec-25 10:36:17: process_site: 2021 Plumas Arboga at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:36:28: Date for 2021 Rancho Jamul in sheet and from data are different. From sheet: {'start': datetime.date(2021, 3, 19), 'end': datetime.date(2021, 6, 5)}; From data: {'start': datetime.date(2021, 3, 15), 'end': datetime.date(2021, 6, 5)}
+02-Dec-25 10:36:31: process_site: 2021 Rancho Jamul at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:36:33: process_site: 2021 Rancho Jamul at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:36:33: process_site: 2021 Rancho Jamul at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:36:33: process_site: 2021 Rancho Jamul at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:36:43: process_site: 2021 Reeds Creek North at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:36:43: process_site: 2021 Reeds Creek North at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:36:43: process_site: 2021 Reeds Creek North at p1: Second date is ND, but first date is not: p1mcend:5/5/2021, p1hatch:ND
+02-Dec-25 10:36:48: process_site: 2021 Reeds Creek South at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:36:48: process_site: 2021 Reeds Creek South at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:36:48: process_site: 2021 Reeds Creek South at p1: Found post in p1fledgestart, which is invalid data
+02-Dec-25 10:36:48: process_site: 2021 Reeds Creek South at p1: Found invalid data in p1fledgestart: post
+02-Dec-25 10:36:48: process_site: 2021 Reeds Creek South at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:36:51: Date for 2021 Rodeo Grounds 1 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 19), 'end': datetime.date(2021, 6, 13)}; From data: {'start': datetime.date(2021, 3, 30), 'end': datetime.date(2021, 6, 13)}
+02-Dec-25 10:36:53: process_site: 2021 Rodeo Grounds 1 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:36:53: process_site: 2021 Rodeo Grounds 1 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:01: Date for 2021 SJWA in sheet and from data are different. From sheet: {'start': datetime.date(2021, 6, 2), 'end': datetime.date(2021, 6, 30)}; From data: {'start': datetime.date(2021, 3, 4), 'end': datetime.date(2021, 6, 30)}
+02-Dec-25 10:37:03: process_site: 2021 SJWA at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:03: process_site: 2021 SJWA at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:03: process_site: 2021 SJWA at p1: Second date is ND, but first date is not: p1hatch:6/15/2021, p1fledgestart:ND
+02-Dec-25 10:37:06: Date for 2021 Sedgwick in sheet and from data are different. From sheet: {'start': datetime.date(2021, 3, 6), 'end': datetime.date(2021, 5, 6)}; From data: {'start': datetime.date(2021, 3, 6), 'end': datetime.date(2021, 5, 8)}
+02-Dec-25 10:37:09: process_site: 2021 Sedgwick at p1: Found post in p1fledgestart, which is invalid data
+02-Dec-25 10:37:09: process_site: 2021 Sedgwick at p1: Found invalid data in p1fledgestart: post
+02-Dec-25 10:37:09: process_site: 2021 Sedgwick at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:37:12: Date for 2021 Willey Wetlands 1 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 6, 10), 'end': datetime.date(2021, 8, 17)}; From data: {'start': datetime.date(2021, 6, 3), 'end': datetime.date(2021, 8, 17)}
+02-Dec-25 10:37:14: process_site: 2021 Willey Wetlands 1 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:14: process_site: 2021 Willey Wetlands 1 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:37:14: process_site: 2021 Willey Wetlands 1 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:37:14: process_site: 2021 Willey Wetlands 1 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:37:18: Date for 2021 Willey Wetlands 2 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 6, 10), 'end': datetime.date(2021, 8, 17)}; From data: {'start': datetime.date(2021, 6, 3), 'end': datetime.date(2021, 8, 17)}
+02-Dec-25 10:37:19: process_site: 2021 Willey Wetlands 2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:19: process_site: 2021 Willey Wetlands 2 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:37:19: process_site: 2021 Willey Wetlands 2 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:37:19: process_site: 2021 Willey Wetlands 2 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:37:23: Date for 2021 Willey Wetlands 3 in sheet and from data are different. From sheet: {'start': datetime.date(2021, 6, 10), 'end': datetime.date(2021, 8, 15)}; From data: {'start': datetime.date(2021, 6, 3), 'end': datetime.date(2021, 8, 15)}
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: Found before start, HBC present in p1hatch, which is invalid data
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: Found invalid data in p1hatch: before start, HBC present
+02-Dec-25 10:37:25: process_site: 2021 Willey Wetlands 3 at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
+02-Dec-25 10:37:27: Date for 2021 Wind Wolves Preserve in sheet and from data are different. From sheet: {'start': datetime.date(2021, 4, 14), 'end': datetime.date(2021, 7, 20)}; From data: {'start': datetime.date(2021, 3, 23), 'end': datetime.date(2021, 7, 20)}
+02-Dec-25 10:37:34: Date for 2022 Baja 1 in sheet and from data are different. From sheet: {'start': datetime.date(2022, 3, 23), 'end': datetime.date(2022, 7, 12)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 7, 12)}
+02-Dec-25 10:37:36: process_site: 2022 Baja 1 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:36: process_site: 2022 Baja 1 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:38: Date for 2022 Baja 2 in sheet and from data are different. From sheet: {'start': datetime.date(2022, 3, 23), 'end': datetime.date(2022, 7, 17)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 7, 17)}
+02-Dec-25 10:37:39: process_site: 2022 Baja 2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:39: process_site: 2022 Baja 2 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:41: Date for 2022 Colusa NWR T27.1 in sheet and from data are different. From sheet: {'start': datetime.date(2022, 4, 18), 'end': datetime.date(2022, 8, 4)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 8, 4)}
+02-Dec-25 10:37:45: Date for 2022 Colusa NWR T27.2 in sheet and from data are different. From sheet: {'start': datetime.date(2022, 4, 18), 'end': datetime.date(2022, 8, 4)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 8, 4)}
+02-Dec-25 10:37:50: process_site: 2022 Conaway East at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:50: process_site: 2022 Conaway East at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:56: process_site: 2022 Conaway North at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:37:56: process_site: 2022 Conaway North at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:37:58: Date for 2022 Conaway North A in sheet and from data are different. From sheet: {'start': datetime.date(2022, 5, 4), 'end': datetime.date(2022, 6, 28)}; From data: {'start': datetime.date(2022, 5, 3), 'end': datetime.date(2022, 6, 28)}
+02-Dec-25 10:38:00: process_site: 2022 Conaway North A at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:38:00: process_site: 2022 Conaway North A at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:38:03: Date for 2022 Creed Road in sheet and from data are different. From sheet: {'start': datetime.date(2022, 2, 13), 'end': datetime.date(2022, 8, 20)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 8, 20)}
+02-Dec-25 10:38:22: Date for 2022 Hay Landfill in sheet and from data are different. From sheet: {'start': datetime.date(2022, 2, 13), 'end': datetime.date(2022, 9, 9)}; From data: {'start': datetime.date(2022, 2, 12), 'end': datetime.date(2022, 9, 9)}
+02-Dec-25 10:38:34: process_site: 2022 Laguna Seca at p1: Second date is ND, but first date is not: p1hatch:4/15/2022, p1fledgestart:ND
+02-Dec-25 10:38:34: process_site: 2022 Laguna Seca at p2: Second date is ND, but first date is not: p2hatch:5/25/2022, p2fledgestart:ND
+02-Dec-25 10:38:41: process_site: 2022 Los Vaqueros Reservoir at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:38:41: process_site: 2022 Los Vaqueros Reservoir at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:38:41: process_site: 2022 Los Vaqueros Reservoir at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:38:41: process_site: 2022 Los Vaqueros Reservoir at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
