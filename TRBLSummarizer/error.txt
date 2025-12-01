@@ -1,25 +1,32 @@
-Logging started 24-Nov-25 13:35:33
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2mcstart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2mcend, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2mcend: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2hatch, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2hatch: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2fledgestart, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found invalid data in p2fledgestart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p2: Found nan in p2fledgedisp, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3mcstart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3mcend, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3mcend: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3hatch, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3hatch: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3fledgestart, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found invalid data in p3fledgestart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p3: Found nan in p3fledgedisp, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4mcstart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4mcend, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4mcend: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4hatch, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4hatch: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4fledgestart, which is invalid data
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found invalid data in p4fledgestart: nan
-24-Nov-25 13:35:36: process_site: 2024 Kern 1 - check lat lon at p4: Found nan in p4fledgedisp, which is invalid data
+Logging started 02-Dec-25 10:32:49
+02-Dec-25 10:32:52: process_site: 2017 Rush Ranch at p1: Second date is ND, but first date is not: p1hatch:5/1/2017, p1fledgestart:ND
+02-Dec-25 10:32:52: process_site: 2017 Rush Ranch at p3: Second date is ND, but first date is not: p3hatch:6/29/2017, p3fledgestart:ND
+02-Dec-25 10:32:58: process_site: 2018 Iron Point at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:32:58: process_site: 2018 Iron Point at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:32:58: process_site: 2018 Iron Point at p1: Second date is ND, but first date is not: p1mcend:4/25/2018, p1hatch:ND
+02-Dec-25 10:33:00: process_site: 2018 Markham Ravine Main at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:00: process_site: 2018 Markham Ravine Main at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:33:00: process_site: 2018 Markham Ravine Main at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:33:00: process_site: 2018 Markham Ravine Main at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found before start, HBC absent in p1hatch, which is invalid data
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found invalid data in p1hatch: before start, HBC absent
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found pre in p1fledgestart, which is invalid data
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found invalid data in p1fledgestart: pre
+02-Dec-25 10:33:02: process_site: 2018 Markham Ravine westside at p1: Found post in p1fledgedisp, which is invalid data
+02-Dec-25 10:33:04: process_site: 2018 Red Wing Ranch at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:04: process_site: 2018 Red Wing Ranch at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:33:04: process_site: 2018 Red Wing Ranch at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:33:04: process_site: 2018 Red Wing Ranch at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start
+02-Dec-25 10:33:04: process_site: 2018 Red Wing Ranch at p1: Second date is ND, but first date is not: p1hatch:5/17/2018, p1fledgestart:ND
+02-Dec-25 10:33:10: process_site: 2018 SJWA-rose-2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:10: process_site: 2018 SJWA-rose-2 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:33:10: process_site: 2018 SJWA-rose-2 at p1: Second date is ND, but first date is not: p1mcend:4/20/2018, p1hatch:ND
+02-Dec-25 10:33:13: process_site: 2019 Colusa NWR 27-1 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:13: process_site: 2019 Colusa NWR 27-1 at p1: p1mcend is a valid date, but p1mcstart is not ND, date, or before start
+02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: Found invalid data in p1mcstart: pre
+02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: Found pre in p1mcend, which is invalid data
+02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: Found invalid data in p1mcend: pre
+02-Dec-25 10:33:15: process_site: 2019 Colusa NWR 27-2 at p1: p1hatch is a valid date, but p1mcend is not ND, date, or before start

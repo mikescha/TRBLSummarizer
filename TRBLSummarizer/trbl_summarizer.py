@@ -209,8 +209,6 @@ cmap_names = {data_col[MALE_SONG]:"Male Song",
               data_col[COURT_SONG]:"Male Chorus",
               data_col[ALTSONG2]:"Female Chatter",
               data_col[ALTSONG1]:"Hatchling/Nestling/Fledgling",
-#   temporarily don't need this
-#              "Fledgling":"Fledgling",
 } 
 
 #color map for pattern matching
@@ -239,7 +237,6 @@ figure_dir = Path(__file__).parents[0] / FIG_FOLDER
 ALL_FILE = 'TRBL Analysis tracking - All.csv'
 SHEET_HEADER_SIZE = 2 #number of rows to skip over
 WEATHER_FILE = 'weather_history.csv'
-DATA_OLD_FILE = 'data_old.csv'
 error_file = Path(__file__).parents[0] / 'error.txt'
 DATES_FILE = 'analyzed dates.csv'
 
@@ -247,12 +244,9 @@ DATES_FILE = 'analyzed dates.csv'
 files = {
     ALL_FILE : data_dir / ALL_FILE,
     WEATHER_FILE : data_dir / WEATHER_FILE,
-    DATA_OLD_FILE : data_dir / DATA_OLD_FILE,
     DATES_FILE : Path(__file__).parents[0] / DATES_FILE
 }
 
-# Mar 2024: This is the new set of summary data that Wendy created
-# Source data is from the Google Sheet
 #TODO: For clarity, rename all symbols that are constants to be all caps.
 
 PULSE_COUNT = "pulse_count"
@@ -260,26 +254,23 @@ ABANDONED = "abandon"
 PULSES = ["p1", "p2", "p3", "p4"]
 SUMMARY_FIRST_REC = "First Recording"
 SUMMARY_LAST_REC = "Last Recording"
-summary_edge_dates = [SUMMARY_FIRST_REC, SUMMARY_LAST_REC]
+SUMMARY_EDGE_DATES = [SUMMARY_FIRST_REC, SUMMARY_LAST_REC]
 PULSE_MC_START = "mcstart"
 PULSE_MC_END = "mcend"
+PULSE_INC_START = "incstart"
 PULSE_HATCH = "hatch"
 PULSE_FIRST_FLDG = "fledgestart"
 PULSE_LAST_FLDG = "fledgedisp"
-pulse_date_types = [PULSE_MC_START, PULSE_MC_END, PULSE_HATCH, PULSE_FIRST_FLDG, PULSE_LAST_FLDG, ABANDONED]
-#Mar 2025, these weren't needed to dropping them
-#pulse_numeric_types = ["Inc Length", "Async Score", "Fldg Age"]
-pulse_numeric_types = ["Site ID", "Altitude", "Number of Recordings"]
-summary_date_cols = [p + ' ' + d for p in PULSES for d in pulse_date_types]
-#summary_numeric_cols = [p + ' ' + n for p in PULSES for n in pulse_numeric_types]
-summary_numeric_cols = pulse_numeric_types
+PULSE_DATE_TYPES = [PULSE_MC_START, PULSE_MC_END, PULSE_INC_START, PULSE_HATCH, PULSE_FIRST_FLDG, PULSE_LAST_FLDG, ABANDONED]
+summary_date_cols = [p + ' ' + d for p in PULSES for d in PULSE_DATE_TYPES]
+summary_numeric_cols = ["Site ID", "Altitude", "Number of Recordings"]
 
 PHASE_MALE_CHORUS = "Settlement"
 PHASE_INC = "Incubation"
 PHASE_BROOD = "Brooding"
 PHASE_FLDG = "Fledgling"
 pulse_phases = {PHASE_MALE_CHORUS : [PULSE_MC_START, PULSE_MC_END],
-                PHASE_INC : [PULSE_MC_END, PULSE_HATCH],
+                PHASE_INC : [PULSE_MC_END, PULSE_HATCH],#WENDY Should this change?
                 PHASE_BROOD : [PULSE_HATCH, PULSE_FIRST_FLDG],
                 PHASE_FLDG : [PULSE_FIRST_FLDG, PULSE_LAST_FLDG]}
 
@@ -553,10 +544,20 @@ def load_data() -> pd.DataFrame:
         #an exception. Hopefully the rest of the code is robust enough to deal...
         usecols = [item for item in usecols if item not in missing_columns]
 
-        df = pd.read_csv(file_name, 
-                        usecols = usecols,
-                        parse_dates = [data_col[DATE]],
-                        index_col = [data_col[DATE]])
+        # df = pd.read_csv(file_name, 
+        #                 usecols = usecols,
+        #                 parse_dates = [data_col[DATE]],
+        #                 index_col = [data_col[DATE]])
+
+        # 0) Read the file         
+        df = pd.read_csv(file_name, usecols=usecols)
+
+        # 1) Convert the date column explicitly
+        df['date'] = pd.to_datetime(df['date'], format='mixed', dayfirst=False)
+
+        # 2) Make it the index
+        df = df.set_index('date')
+
         combined_df = pd.concat([combined_df, df]) #NOTE This assumes the files don't have overlapping dates
 
     # We've loaded all the data, let's do a quick error check
@@ -852,16 +853,6 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
             else:
                 log_error(filtered_out.sort_values("type"))
 
-
-        #SEPT2025 No longer doing this, will rely on the dates Wendy put in  the All spreadsheet
-        # Now, find first two consecutive items and drop everything after.
-        # dates = df_site.index.unique()
-        # for x,y in pairwise(dates):
-        #     if abs((x-y).days) == 1:
-        #         #found a match, need to keep only what's after this
-        #         df_site = df_site.query(f"date <= '{x.strftime('%Y-%m-%d')}'")
-        #         break
-
         #Sort oldest to newest, and filter to this year
         df_site = df_site.sort_index(ascending=True)
         original_size = df_site.shape[0]
@@ -874,15 +865,6 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
                 log_error(filtered_out[FILENAME])
             else:
                 log_error(filtered_out.sort_values("type"))
-
-        #SEPT2025 No longer doing this, will rely on the dates Wendy put in  the All spreadsheet
-        # Find first two consecutive items and drop everything before
-        # dates = df_site.index.unique()
-        # for x,y in pairwise(dates):
-        #     if abs((x-y).days) == 1:
-        #         #found a match, need to keep only what's after this
-        #         df_site = df_site.query(f"date >= '{x.strftime('%Y-%m-%d')}'")
-        #         break
 
         df_clean = pd.concat([df_clean, df_site])
     

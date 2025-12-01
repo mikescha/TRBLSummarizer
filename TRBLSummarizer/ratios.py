@@ -123,16 +123,20 @@ def summarize_for_hatch_date(
     (with a 'date' column), compute all summary metrics and return a dict for results.
     """
     # Female window: from hatch_date - (DAYS_TO_COUNT - 1) to hatch_date inclusive
-    female_start = hatch_date - timedelta(days=DAYS_TO_COUNT - 1)
-    female_end = hatch_date
+    # female_start = hatch_date - timedelta(days=DAYS_TO_COUNT - 1)
+    # female_end = hatch_date
+    female_start = hatch_date - timedelta(8)
+    female_end = female_start + timedelta(days=4) 
 
     potential_female = female_df[
         (female_df["date"] >= female_start) & (female_df["date"] <= female_end)
     ]
 
     # Nestling window: start HATCHLING_OFFSET_DAYS after hatch_date, for DAYS_TO_COUNT days
-    hatchling_start = hatch_date + timedelta(days=HATCHLING_OFFSET_DAYS)
-    hatchling_end = hatchling_start + timedelta(days=DAYS_TO_COUNT - 1)
+    # hatchling_start = hatch_date + timedelta(days=HATCHLING_OFFSET_DAYS)
+    # hatchling_end = hatchling_start + timedelta(days=DAYS_TO_COUNT - 1)
+    hatchling_start = hatch_date + timedelta(days=4)
+    hatchling_end = hatchling_start + timedelta(days=4)
 
     potential_hatchling = nestling_df[
         (nestling_df["date"] >= hatchling_start) & (nestling_df["date"] <= hatchling_end)
