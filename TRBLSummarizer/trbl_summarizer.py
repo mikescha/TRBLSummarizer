@@ -30,7 +30,8 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-being_deployed_to_streamlit = True
+BEING_DEPLOYED_TO_STREAMLIT = True
+SHOW_MANUAL_ANALYSIS = False  # Dec 2025, we don't want this for the graphs for the reports
 
 # Constants and Globals
 #
@@ -167,15 +168,15 @@ edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
 
 #Constants for the graphing, so they can be shared across weather and blackbird graphs
 #For setting figure width and height, values in inches
-fig_w = 6.5
-fig_h = 1
+FIG_W = 6.5
+FIG_H = 1
 
 #constants for the weather data files
 WEATHER_PRCP = 'prcp'
 WEATHER_TMAX = 'tmax'
 WEATHER_TMIN = 'tmin'
 WEATHER_WIND = 'wspd'
-weather_cols = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN, WEATHER_WIND]
+WEATHER_COLS = [WEATHER_PRCP, WEATHER_TMAX, WEATHER_TMIN, WEATHER_WIND]
 
 GRAPH_SUMMARY = "Summary"
 GRAPH_MANUAL = 'Manual Analysis'
@@ -301,7 +302,7 @@ pm_other_types = [PM_INSECT_SP30,
                  "Bull Frog"]
 
 #Abbreviations are used in the summary table, to reduce column width
-pm_file_types = pm_song_types + pm_other_types #INSECTS remove this if we are hiding the insects
+pm_file_types = pm_song_types #+ pm_other_types # remove this if we are hiding the insects
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
@@ -364,7 +365,7 @@ def my_time():
     return dt.now().strftime('%d-%b-%y %H:%M:%S')
 
 def init_logging():
-    if not being_deployed_to_streamlit:
+    if not BEING_DEPLOYED_TO_STREAMLIT:
         remove_file(error_file)
         with error_file.open("a") as f:
             f.write(f"Logging started {my_time()}\n")    
@@ -372,7 +373,7 @@ def init_logging():
 def log_error(msg: str):
     global error_list
     error_list += f"{msg}\n\n"
-    if not being_deployed_to_streamlit:
+    if not BEING_DEPLOYED_TO_STREAMLIT:
         with error_file.open("a") as f:
             f.write(f"{my_time()}: {msg}\n")
 
@@ -1316,7 +1317,10 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
 # Graphing
 #
 #
-
+GRAPH_FONT = 'Franklin Gothic Book'
+TITLE_FONT_SIZE = 14
+AXIS_FONT_SIZE = 10
+LEGEND_FONT_SIZE = 8
 
 # Set up base theme
 # See https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
@@ -1327,7 +1331,7 @@ def set_global_theme():
     line_color = 'gray'
     line_width = '0.75'
     custom_params = {'figure.dpi':DPI, 
-#                     'font.family':'Arial',                      
+                     'font.family':GRAPH_FONT,                      
                      'font.family':'sans serif', 
                      'font.size':'12',
                      'font.stretch':'normal',
@@ -1370,7 +1374,7 @@ def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
 
     n = len(cmap_names)
     # Create one axis per legend item
-    fig, axs = plt.subplots(nrows=1, ncols=n, figsize=(fig_w*0.6, fig_h*0.1))
+    fig, axs = plt.subplots(nrows=1, ncols=n, figsize=(FIG_W*0.8, FIG_H*0.15))
 
     for ax, (key, label) in zip(axs, cmap_names.items()):
         # Set the axis coordinate system to [0,1] in both directions
@@ -1383,8 +1387,9 @@ def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
         # Add the label text immediately to the right of the color block.
         # Here, x=0.37 places the text just to the right of the block.
         ax.text(0.37, 0.5, label, transform=ax.transAxes, 
-                va="center", ha="left", 
-                fontsize=5)
+                va="center", ha="left",
+                fontfamily=GRAPH_FONT, 
+                fontsize=LEGEND_FONT_SIZE)
         
         # Remove the axis visuals
         ax.set_axis_off()
@@ -1469,7 +1474,7 @@ def format_xdateticks(date_axis:plt.Axes, mmdd = False):
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
 def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, summary_graph=False, skip_month_names=False):
-    font_size = 8
+    font_size = 9
     target_ax = -1
     if weather_graph:
         y = -0.4
@@ -1479,7 +1484,7 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
         target_ax = -1  #TEMPORARILY
         font_size = 7  #TODO figure out why the fonts need to be adjusted like this
     else:
-        y = 1.9+(0.25 if len(axs)>4 else 0)
+        y = 1.9+(0 if len(axs)>4 else 0) #Dec 2025, was (0.25 if len(axs)>4 but that was pushing the ax label down too much
 
     month_count = len(month_lengths)
     n = 0
@@ -1493,7 +1498,8 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
         mid = x + center_pt
         if not skip_month_names:
             axs[target_ax].text(x=mid, y=y, s=month, 
-                        fontsize=font_size, va="bottom", ha="center") 
+                        fontsize=AXIS_FONT_SIZE, va="bottom", ha="center",
+                        fontfamily=GRAPH_FONT) 
 
         x += month_lengths[month]
         if n < month_count:
@@ -1512,7 +1518,8 @@ def draw_axis_labels(month_lengths:dict, axs:np.ndarray, weather_graph=False, su
 # in the figure which causes the graph to shrink!
 def plot_title(title:str):
     plt.suptitle(' ' + title, x=0, y=1,
-                 fontsize=10, horizontalalignment='left')
+                 fontsize=TITLE_FONT_SIZE, horizontalalignment='left',
+                 fontfamily=GRAPH_FONT)
 
 # Mar 2024, this is unused so I'm going to comment it out for now, but keeping it just in case...
 # def add_watermark(title:str):
@@ -1548,12 +1555,12 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
 
     #This number is the percentage of the height, starting from the botom of the chart that we're going to reserve
     #for the charts themselves. 
-    gap_for_title = 0.62 + (pc * 0.06)  #TEMPORARILY was 0.72, 0.04
+    gap_for_title = 0.6 + (pc * 0.06)  #TEMPORARILY was 0.72, 0.04
 #    gap_for_title = 0.88 #Good for 4 rows
 #    gap_for_title = 0.76 #Good for 1 row
 
-    chart_height = 0.25  # In inches
-    figsize = (fig_w, (pc + rows_for_labels) * chart_height) 
+    chart_height = 0.5  # In inches
+    figsize = (FIG_W, (pc + rows_for_labels) * chart_height) 
 
     #create a chart that has pc+rows_for_labels rows, and 1 column
     fig, axs = plt.subplots(nrows = total_rows, ncols=1, 
@@ -1757,7 +1764,7 @@ def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool)
 
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame, 
+def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=False, raw_data=pd.DataFrame(), 
                  draw_vert_rects=False, draw_horiz_rects=False,title='', hatch_dates={}) -> plt.figure:
     plt.close() #close any prior graph that was open
 
@@ -1769,7 +1776,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     
     #distance between top of plot space and chart
     if title == GRAPH_PM:
-        gap_for_title = 0.9 # removed insects so don't need extra height, was 0.9 #INSECTS put this back for insects
+        gap_for_title = 0.87 # removed insects so don't need extra height, was 0.9 #INSECTS put this back for insects
     else:
         gap_for_title = 0.8 if title else 1
 
@@ -1777,7 +1784,10 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     tick_spacing = 0
 
     #NOTE Dec 2024 adding this to accomodate all the insect calls in the PM graph
-    fig_height = fig_h if not title == GRAPH_PM else fig_h * 2 # removed insects so don't need extra height, was *2 #INSECTS put this back for insects
+    # Dec 2025, I removed insects so don't need extra height, was *2 #INSECTS put this back for insects
+    # Right now the height works well for 4 rows like mini-manual has. Will want to scale it for other graphs
+    # if we ever bring them back
+    fig_height = FIG_H if not title == GRAPH_PM else FIG_H * 1.5 
 
     # Create the base figure for the graphs
     fig, axs = plt.subplots(nrows = row_count, ncols = 1,
@@ -1785,7 +1795,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                             gridspec_kw={'height_ratios': np.repeat(1,row_count), 
                                          'left':0, 'right':1, 'bottom':0, 'top':gap_for_title,
                                          'hspace':0},  #hspace is row spacing (gap between rows)
-                            figsize=(fig_w,fig_height))
+                            figsize=(FIG_W,fig_height))
 
     # If we have one, add the title for the graph and set appropriate formatting
     if len(title) :
@@ -2025,7 +2035,7 @@ def remove_file(full_path:Path) -> bool:
 # Save the graphic to a different folder. All file-related options are managed from here.
 def save_figure(site:str, graph_type:str, delete_only=False):
     #Do nothing if we're on the server, we can't save files there or download them without a lot of complexity
-    if being_deployed_to_streamlit:
+    if BEING_DEPLOYED_TO_STREAMLIT:
         return
 
     filename = make_img_filename(site, graph_type)
@@ -2138,7 +2148,7 @@ def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
 
     #Add the title
     draw = ImageDraw.Draw(final)
-    if being_deployed_to_streamlit:
+    if BEING_DEPLOYED_TO_STREAMLIT:
         font = ImageFont.load_default(size=title_font_size)
     else:
         font = ImageFont.truetype("arialbd.ttf", size=title_font_size)
@@ -2147,7 +2157,7 @@ def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
     #Add the months
     margin_left = 27 * scale
     margin_right = 1982 * scale
-    if being_deployed_to_streamlit:
+    if BEING_DEPLOYED_TO_STREAMLIT:
         font = ImageFont.load_default(size=month_font_size)
     else:
         font = ImageFont.truetype("arial.ttf", size=month_font_size)
@@ -2190,6 +2200,11 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
 
     pattern = f"{site} -*clean.png"
     matching_files = glob.glob(os.path.join(figure_dir, pattern))
+
+    #Drop files we don't want
+    if not SHOW_MANUAL_ANALYSIS:
+        matching_files = [f for f in matching_files if "manual" not in f.lower()]
+
     #clean_site_files = [file for file in matching_files if "clean" in file]  #Can use this if we need to do additional filtering
     site_fig_dict = {}
     for graph_type in graph_names:
@@ -2292,7 +2307,7 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
             # drop it into a dict. Then, reindex the table to match our date range and 
             # fill in empty values
             date_range = pd.date_range(date_range_dict[START], date_range_dict[END]) 
-            for w in weather_cols:
+            for w in WEATHER_COLS:
                 site_weather_by_type[w] = site_weather.loc[site_weather['datatype']==w]
                 #reindex the table to match our date range and fill in empty values
                 site_weather_by_type[w]  = site_weather_by_type[w].set_index('date')
@@ -2303,7 +2318,7 @@ def get_weather_data(site_name:str, date_range_dict:dict) -> dict:
     return site_weather_by_type
 
 # add the ticks and associated content for the weather graph
-def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:pd.Series):
+def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, ax3:plt.axes, wg_colors:dict, x_range:pd.Series):
     # TICK FORMATTING AND CONTENT
     x_min, x_max = x_range
     x_min -= 0.5
@@ -2371,6 +2386,12 @@ def add_weather_graph_ticks(ax1:plt.axes, ax2:plt.axes, wg_colors:dict, x_range:
         which='both',      # both major and minor ticks are affected
         left=False, right=False,  # ticks along the sides are off
         labelleft=False, labelright=False) # labels on the Y are off 
+    ax3.tick_params(
+        axis='y',
+        which='both',      # both major and minor ticks are affected
+        left=False, right=False,  # ticks along the sides are off
+        labelleft=False, labelright=False) # labels on the Y are off 
+    
     return
 
 #Used below to get min temp that isn't zero
@@ -2398,21 +2419,27 @@ def min_above_zero(s:pd.Series):
 # -  
 
 
-def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
-    if len(weather_by_type)>0:
-        # The use of rows, cols, and gridspec is to force the graph to be drawn in the same 
-        # proportions and size as the heatmaps
-        fig, ax1 = plt.subplots(nrows = 1, ncols = 1, 
+
+def create_weather_graph(weather_by_type:dict, site_name:str) :
+    if len(weather_by_type) > 0:
+        fig, ax1 = plt.subplots(
             gridspec_kw={'left':0, 'right':1, 'bottom':0, 'top':0.8},
-            figsize=(fig_w,fig_h))
+            figsize=(FIG_W,FIG_H*1.25)
+        )
+        fig.subplots_adjust(
+            left=0,
+            right=1,
+            top=0.50,   # leave room for "Weather" title
+            bottom=0.40 # leave room for months + legend
+        )
         ax2 = ax1.twinx() # makes a second y axis on the same x axis 
         ax3 = ax1.twinx() # makes a third y axis on the same x axis for wind
 
-        plot_title(GRAPH_WEATHER) #site_name + ' ' +  to include site
+        plot_title(GRAPH_WEATHER)
 
         # Plot the data in the proper format on the correct axis.
         wg_colors = {'high':'#ff0000', 'low':'#ff8080', 'prcp':'blue', 'wspd':'gray'}
-        for wt in weather_cols:
+        for wt in WEATHER_COLS:
             w = weather_by_type[wt]
             if wt == WEATHER_PRCP:
                 ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
@@ -2440,7 +2467,7 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                 log_error(f"create_weather_graph: Unknown weather type {wt}")
 
         x_range = (mpl.dates.date2num(w.index.min()), mpl.dates.date2num(w.index.max()))
-        add_weather_graph_ticks(ax1, ax2, wg_colors, x_range)
+        add_weather_graph_ticks(ax1, ax2, ax3, wg_colors, x_range)
 
         # HORIZONTAL TICKS AND LABLING 
         #x_min = ax1.get_xlim()[0]
@@ -2457,13 +2484,13 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
 
         # Add a legend for the figure
         # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
-        tmax_label = f"High temp ({min_above_zero(weather_by_type[WEATHER_TMAX]['value']):.0f}-"\
+        tmax_label = f"High temp\n({min_above_zero(weather_by_type[WEATHER_TMAX]['value']):.0f}-"\
                      f"{weather_by_type[WEATHER_TMAX]['value'].max():.0f}\u00B0F)"
-        tmin_label = f"Low temp ({min_above_zero(weather_by_type[WEATHER_TMIN]['value']):.0f}-"\
+        tmin_label = f"Low temp\n({min_above_zero(weather_by_type[WEATHER_TMIN]['value']):.0f}-"\
                      f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
-        prcp_label = f"Precipitation (0-"\
+        prcp_label = f"Precipitation\n(0-"\
                      f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
-        wind_label = f"Avg Daily Wind Speed (0-"\
+        wind_label = f"Avg Daily Wind Speed\n(0-"\
                      f"{weather_by_type[WEATHER_WIND]['value'].max():.2f} m/s)"
         
         legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=3, label=tmax_label),
@@ -2471,10 +2498,14 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> plt.figure:
                            Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label),
                            Line2D([0], [0], color=wg_colors['wspd'], lw=3, label=wind_label)]
         
-        #draw the legend below the chart. that's what the bbox_to_anchor with -0.5 does
-        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=4,
-                   fontsize=5, frameon=False)
-
+        #draw the legend below the chart. that's what the bbox_to_anchor with -0.2 does
+        ax1.legend(handles=legend_elements, 
+                   loc='upper center', 
+                   bbox_to_anchor=(0.1, -0.3, 0.8, 0.1),  
+                   mode='expand',
+                   ncol=4,
+                   prop={'family': GRAPH_FONT, 'size': LEGEND_FONT_SIZE},
+                   frameon=False)
     else:
         fig = plt.figure()
 
@@ -2818,8 +2849,8 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     }).T
 
     #Use the default width and double the height since we're graphing so much data
-    fig, ax = plt.subplots(figsize=(fig_w, fig_h/2))
-    aspect_ratio = fig_w / (fig_h/2)
+    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H/2))
+    aspect_ratio = FIG_W / (FIG_H/2)
 
     #We're not using this so commenting it out now
     for date_idx, date in enumerate(data):
@@ -2942,7 +2973,7 @@ with container_mid:
 
 with container_bottom:
     st.write("Contact wendy.schackwitz@gmail.com with any questions")
-    if not being_deployed_to_streamlit:
+    if not BEING_DEPLOYED_TO_STREAMLIT:
         make_all_graphs = st.checkbox('Make all graphs')
     else:
         make_all_graphs = False
@@ -2985,7 +3016,7 @@ if make_all_graphs:
 
 else:
     target_sites = [get_site_to_analyze(site_list, container_top)]
-    if not being_deployed_to_streamlit:
+    if not BEING_DEPLOYED_TO_STREAMLIT:
         save_composite = container_top.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
         save_files = save_composite
     
@@ -3225,7 +3256,8 @@ for site in target_sites:
         #was:   log_error(f"{site} didn't have any site summary data")
 
     # Manual analyisis graph
-    if not pt_manual.empty:
+     
+    if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
         #SEPT2025- trying to hide COURT_SONG from the list of songs
         new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
 
@@ -3318,7 +3350,7 @@ for site in target_sites:
                 graph = create_weather_graph(weather_by_type, site)
                 output_graph(site, GRAPH_WEATHER, save_files, make_all_graphs)
     
-    if not being_deployed_to_streamlit and (make_all_graphs or save_composite):
+    if not BEING_DEPLOYED_TO_STREAMLIT and (make_all_graphs or save_composite):
         combine_images(site, month_locs, show_weather_checkbox)
 
 #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
@@ -3356,7 +3388,7 @@ if not make_all_graphs and len(df_site):
         #Add weather at the end
         if len(weather_by_type):
             weather_data = pd.DataFrame()
-            for t in weather_cols:
+            for t in WEATHER_COLS:
                 weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
                 weather_data.rename(columns={'value':t}, inplace=True)
                 if t != WEATHER_PRCP:

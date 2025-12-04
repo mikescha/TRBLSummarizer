@@ -7,12 +7,12 @@ DAYS_TO_COUNT = 10
 HATCHLING_OFFSET_DAYS = 2
 
 BASE_DIR = Path(".")
-TRACKING_CSV = BASE_DIR / "Data" / "TRBL Analysis tracking - Breeding dates.csv"
+BREEDING_DATES_CSV = BASE_DIR / "breeding dates.csv"
 PMJ_DIR = BASE_DIR / "PMJ Data"
 OUTPUT_CSV = BASE_DIR / "female-to-hatchling-ratios.csv"
 
 # Source column name for site in the tracking CSV (row-2 headers)
-NAME_SOURCE_COL = "Name_old"
+NAME_SOURCE_COL = "Name"
 
 
 def parse_hatch_date_line(name: str, raw_line: str) -> datetime | None:
@@ -39,34 +39,37 @@ def parse_hatch_date_line(name: str, raw_line: str) -> datetime | None:
     # Code length is 1–2 alphanumeric characters
     s = re.sub(r"\s*\([A-Za-z0-9]{1,2}\)$", "", s).strip()
 
-    # Try to parse as date (month/day/year style)
-    try:
-        dt = pd.to_datetime(s, errors="raise", dayfirst=False)
-    except Exception:
-        print(f"[ERROR] Bad hatch date for '{name}': {raw_line!r}")
+    if s not in ["pre", "post", "ND", "n/a"]:
+        # Try to parse as date (month/day/year style)
+        try:
+            dt = pd.to_datetime(s, errors="raise", dayfirst=False)
+        except Exception:
+            print(f"[ERROR] Bad hatch date for '{name}': {raw_line!r}")
+            return None
+    else:
         return None
-
+    
     # Normalize to midnight
     return dt.normalize()
 
 
-def load_tracking_table() -> pd.DataFrame:
+def load_breeding_dates_table() -> pd.DataFrame:
     """Load the tracking CSV, using row 2 as headers (skip row 1),
     and keep only Name + Hatch Date (from column B).
     """
     df = pd.read_csv(
-        TRACKING_CSV,
+        BREEDING_DATES_CSV,
         header=1,  # row 2 is header row
         dtype=str,
     )
 
-    expected_cols = [NAME_SOURCE_COL, "B"]
+    expected_cols = [NAME_SOURCE_COL, "hatch"]
     missing = [c for c in expected_cols if c not in df.columns]
     if missing:
         raise ValueError(f"Missing expected columns in tracking CSV: {missing}")
 
     # Rename the source column to the internal canonical 'Name'
-    df = df[[NAME_SOURCE_COL, "B"]].rename(columns={NAME_SOURCE_COL: "Name", "B": "Hatch Date"})
+    df = df[[NAME_SOURCE_COL, "B"]].rename(columns={NAME_SOURCE_COL: "Name", "hatch": "Hatch Date"})
     return df
 
 
@@ -208,11 +211,11 @@ def summarize_for_hatch_date(
 
 
 def main():
-    tracking_df = load_tracking_table()
+    breeding_dates_df = load_breeding_dates_table()
 
     results = []
 
-    for _, row in tracking_df.iterrows():
+    for _, row in breeding_dates_df.iterrows():
         name = str(row["Name"]).strip() if pd.notna(row["Name"]) else ""
         hatch_cell = row["Hatch Date"]
 
