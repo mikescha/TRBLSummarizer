@@ -13,6 +13,9 @@ OUTPUT_CSV = BASE_DIR / "female-to-hatchling-ratios.csv"
 
 # Source column name for site in the tracking CSV (row-2 headers)
 NAME_SOURCE_COL = "Name"
+HATCH_COL = "hatch"
+OUTCOME_COL = "Outcome"
+PULSE_COL = "Pulse Name"
 
 
 def parse_hatch_date_line(name: str, raw_line: str) -> datetime | None:
@@ -59,17 +62,16 @@ def load_breeding_dates_table() -> pd.DataFrame:
     """
     df = pd.read_csv(
         BREEDING_DATES_CSV,
-        header=1,  # row 2 is header row
         dtype=str,
     )
-
-    expected_cols = [NAME_SOURCE_COL, "hatch"]
+    expected_cols = [NAME_SOURCE_COL, HATCH_COL, OUTCOME_COL, PULSE_COL]
     missing = [c for c in expected_cols if c not in df.columns]
     if missing:
         raise ValueError(f"Missing expected columns in tracking CSV: {missing}")
 
-    # Rename the source column to the internal canonical 'Name'
-    df = df[[NAME_SOURCE_COL, "B"]].rename(columns={NAME_SOURCE_COL: "Name", "hatch": "Hatch Date"})
+    df = df[expected_cols]
+    df = df.rename(columns={HATCH_COL:"Hatch Date"})
+    #df = df[[NAME_SOURCE_COL, hatch_str]].rename(columns={NAME_SOURCE_COL: "Name", hatch_str: "Hatch Date"})
     return df
 
 
@@ -121,25 +123,23 @@ def summarize_for_hatch_date(
     hatch_date: pd.Timestamp,
     female_df: pd.DataFrame,
     nestling_df: pd.DataFrame,
+    pulse: str, 
+    outcome: str
 ) -> dict:
     """Given a site name, a hatch_date, and already-loaded female/nestling dataframes
     (with a 'date' column), compute all summary metrics and return a dict for results.
     """
     # Female window: from hatch_date - (DAYS_TO_COUNT - 1) to hatch_date inclusive
-    # female_start = hatch_date - timedelta(days=DAYS_TO_COUNT - 1)
-    # female_end = hatch_date
-    female_start = hatch_date - timedelta(8)
-    female_end = female_start + timedelta(days=4) 
+    female_start = hatch_date - timedelta(days=DAYS_TO_COUNT)
+    female_end = hatch_date - timedelta(days=1)
 
     potential_female = female_df[
         (female_df["date"] >= female_start) & (female_df["date"] <= female_end)
     ]
 
     # Nestling window: start HATCHLING_OFFSET_DAYS after hatch_date, for DAYS_TO_COUNT days
-    # hatchling_start = hatch_date + timedelta(days=HATCHLING_OFFSET_DAYS)
-    # hatchling_end = hatchling_start + timedelta(days=DAYS_TO_COUNT - 1)
-    hatchling_start = hatch_date + timedelta(days=4)
-    hatchling_end = hatchling_start + timedelta(days=4)
+    hatchling_start = hatch_date + timedelta(days=HATCHLING_OFFSET_DAYS)
+    hatchling_end = hatchling_start + timedelta(days=DAYS_TO_COUNT - 1)
 
     potential_hatchling = nestling_df[
         (nestling_df["date"] >= hatchling_start) & (nestling_df["date"] <= hatchling_end)
@@ -148,7 +148,7 @@ def summarize_for_hatch_date(
     # Female summaries (dates based on any recordings in window, not only 'present')
     if not potential_female.empty:
         earliest_rec = potential_female["date"].min()
-        incubation_days = (hatch_date - earliest_rec).days + 1
+        incubation_days = (hatch_date - earliest_rec).days
         total_female_calls = count_valid_calls(potential_female)
         avg_female_per_day = (
             total_female_calls / incubation_days if incubation_days > 0 else None
@@ -193,6 +193,8 @@ def summarize_for_hatch_date(
 
     return {
         "Site Name": name,
+        PULSE_COL : pulse,
+        OUTCOME_COL : outcome,
         "Hatch Date": fmt_date(hatch_date),
         "Earliest Rec": fmt_date(earliest_rec),
         "Incubation Days": incubation_days,
@@ -244,6 +246,8 @@ def main():
                 # Output a row indicating this line existed but could not be parsed
                 results.append({
                     "Site Name": name,
+                    PULSE_COL : row[PULSE_COL],
+                    OUTCOME_COL : row[OUTCOME_COL],
                     "Hatch Date": str(raw_line).strip(),
                     "Earliest Rec": "n/a",
                     "Incubation Days": 0,
@@ -257,7 +261,7 @@ def main():
                 })
                 continue
 
-            summary = summarize_for_hatch_date(name, hatch_dt, female_df, nestling_df)
+            summary = summarize_for_hatch_date(name, hatch_dt, female_df, nestling_df, row[PULSE_COL], row[OUTCOME_COL])
             results.append(summary)
 
     if results:
@@ -265,6 +269,8 @@ def main():
     else:
         columns = [
             "Site Name",
+            PULSE_COL,
+            OUTCOME_COL,
             "Hatch Date",
             "Earliest Rec",
             "Incubation Days",

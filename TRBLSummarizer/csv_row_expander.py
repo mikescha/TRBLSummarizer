@@ -122,7 +122,10 @@ def example_process_row(row):
     site_name = row.get('Name')
     breeding_type = row.get('Breeding Type', '')
     complex_types = row.get('Complex Types', '')
-    
+    first_rec = row.get('First Recording', '')
+    last_rec = row.get('Last Recording', '')
+       	
+
     # Define pulse outcomes to process
     pulses = ['p1', 'p2', 'p3', 'p4']
     outcome_columns = ['Outcome']
@@ -143,6 +146,8 @@ def example_process_row(row):
             'Group': group,
             'Name' : site_name,
             'Pretty Name': pretty_site_name,
+            'Deployment Start': first_rec,
+            'Deployment End' : last_rec,
             'Breeding Type': breeding_type,
             'Complex Types': complex_types,
             'Pulse Name': pretty_site_name + ' ' + pulse,
