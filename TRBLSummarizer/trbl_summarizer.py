@@ -410,7 +410,7 @@ def make_date(row) -> np.datetime64:
 @st.cache_resource
 def get_target_sites() -> list:
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_sites = pd.read_csv(files[ALL_FILE], usecols = ["Name", "Skip Site"], skiprows=SHEET_HEADER_SIZE)
+    all_sites = pd.read_csv(files[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
 
     #Clean it up. Only keep names that start with a 4-digit number and are not to be skipped. 
     filtered_sites = all_sites.loc[
@@ -653,10 +653,6 @@ def load_summary_data() -> pd.DataFrame:
     # Empty values or strings are converted to NaN
     df[summary_numeric_cols] = df[summary_numeric_cols].apply(pd.to_numeric, errors='coerce')
     df[summary_numeric_cols] = df[summary_numeric_cols].astype(pd.Int64Dtype())  # Keeps NaNs
-
-    # If we want to make those "NaN" or "NaT" into a string we can do this:
-    #for d in date_cols:
-    #    df[d] = df[d].fillna("ND")
 
     return df
 
@@ -3229,6 +3225,9 @@ for site in target_sites:
     else: 
         st.subheader(site)
     
+    if not pd.isna(summary_row["Comment for Skip Site"].item()):
+        st.write(f":red-background[Duplicate site: {summary_row["Comment for Skip Site"].item()}]")
+
     if len(error_msgs):
         for error_msg in error_msgs:
             st.write(f":red-background[{error_msg}]")
