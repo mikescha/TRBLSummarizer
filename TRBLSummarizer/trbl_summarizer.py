@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = False  # Dec 2025, we don't want this for the graphs for the reports
 
 # Constants and Globals
@@ -726,7 +726,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
             start, end = pulse_phases[phase]
 
             target1 = f"{pulse}{start}"
-            value1 = get_val_from_df(summary_row, target1) #TODO Test case where it's actually ND in the table instead of blank
+            value1 = get_val_from_df(summary_row, target1) 
             result1 = pd.NaT
 
             target2 = f"{pulse}{end}"
@@ -747,10 +747,10 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                     result1 = pd.NaT
             #Check: if the phase = brooding and it is "Before Start, HBC Present" then we want to draw a left-pointing
             #arrow on the graph. So, if we find this, save it with a signal we can pass along to the graph maker
-            elif value1 == "before start, hbc present":
-                result1 = convert_to_datetime("6/1/1967")
-            elif value1 == "before start, hbc absent":
-                pass
+            elif value1.lower() == "before start, hbc present".lower():
+                result1 = convert_to_datetime("6/1/1967") 
+            elif value1.lower() == "before start, hbc absent".lower():
+                pass #Don't do anything right now, maybe later
             elif value1 == "before start":
                 #If the start date is "before start" then we don't know when it was exactly. I used to use the
                 #date of the first recording as "before start" but that's not correct, so we took this line 
@@ -784,11 +784,11 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                     log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
                     result2 = abandoned_date - pd.Timedelta(days=1)
-            elif value2 == "before start":
+            elif value2.lower() == "before start".lower():
                 #In this scenario, the start should be ND, throw an error if not
                 if not value1 == nd_string:
                     log_error(f"{error_prefix}: In {target2} end date is 'before start' but start date is not 'ND'")
-            elif value2 == "after end":
+            elif value2.lower() == "after end".lower():
                 #See commentary above about "before start". It used to use the date of the last recording:
                 #    result2 = summary_dict[SUMMARY_LAST_REC]
                 pass
@@ -1851,7 +1851,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                     hatch_date = hatch_dates[pulse]
                     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
                         hatch_index = 0  #Always drawing this on the first cell
-                        axs[i].plot(hatch_index+0.5, 0.5, 
+                        axs[i].plot(hatch_index+0.9, 0.5, 
                                     marker='<', color='black', markersize=marker_size, mew=0.5,
                                     transform=axs[i].get_xaxis_transform())
 
