@@ -1,9 +1,6 @@
-Logging started 07-Dec-25 16:37:30
-07-Dec-25 16:37:31: Date for 2023 Panoche Creek Preserve - Corrals NW in sheet and from data are different. From sheet: {'start': datetime.date(2023, 4, 29), 'end': datetime.date(2023, 6, 12)}; From data: {'start': datetime.date(2023, 3, 11), 'end': datetime.date(2023, 6, 12)}
-07-Dec-25 16:37:32: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: Found invalid data in p1mcstart: pre
-07-Dec-25 16:37:32: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: Found pre in p1mcend, which is invalid data
-07-Dec-25 16:37:32: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: Found invalid data in p1mcend: pre
-07-Dec-25 16:37:32: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: Found before start, HBC present in p1hatch, which is invalid data
-07-Dec-25 16:37:32: process_site: 2023 Panoche Creek Preserve - Corrals NW at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
-07-Dec-25 16:37:34: check_tags: PCP.NWam-2023-04-30_13-00.WAV missing song tag
-07-Dec-25 16:37:34: check_tags: PCP.NWam-2023-05-01_14-00.WAV missing song tag
+Logging started 08-Dec-25 13:33:46
+08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found invalid data in p1mcstart: pre
+08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found pre in p1mcend, which is invalid data
+08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found invalid data in p1mcend: pre
+08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found before start, HBC present in p1hatch, which is invalid data
+08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
