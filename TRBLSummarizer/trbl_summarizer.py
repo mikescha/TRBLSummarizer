@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = False  # Dec 2025, we don't want this for the graphs for the reports
 
 # Constants and Globals
@@ -1842,7 +1842,7 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
-        marker_size = 7 #for the overlay arrows, Determine marker size proportional to cell dimensions
+        marker_size = 9 #for the overlay arrows, Determine marker size proportional to cell dimensions
 
         if title == GRAPH_PM:
             #NOTE Add dates of first hatching if they exist
@@ -1851,15 +1851,30 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
                     hatch_date = hatch_dates[pulse]
                     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
                         hatch_index = 0  #Always drawing this on the first cell
-                        axs[i].plot(hatch_index+0.9, 0.5, 
-                                    marker='<', color='black', markersize=marker_size, mew=0.5,
-                                    transform=axs[i].get_xaxis_transform())
+                        arrow = axs[i].plot(hatch_index, 0.5, 
+                                    marker='<',
+                                    markerfacecolor='black',
+                                    markeredgecolor='white',
+                                    markeredgewidth=1.0,  
+                                    #color='black', 
+                                    #mew=0.5,
+                                    markersize=marker_size, 
+                                    transform=axs[i].get_xaxis_transform(),
+                                    clip_on=False)
+                        for a in arrow:
+                            a.set_in_layout(False)
 
                     elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
                         hatch_index = df_to_graph.columns.get_loc(hatch_date)
                         # Plot the "arrow" centered in the cell
                         axs[i].plot(hatch_index+0.7, 0.5, 
-                                    marker='>', color='black', markersize=marker_size, mew=0.5,
+                                    marker='>', 
+                                    markerfacecolor='black',
+                                    markeredgecolor='white',
+                                    markeredgewidth=1.0,  
+                                    #color='black', 
+                                    #mew=0.5,
+                                    markersize=marker_size,
                                     transform=axs[i].get_xaxis_transform())
                     else:
                         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")

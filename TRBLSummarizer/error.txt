@@ -1,6 +1,7 @@
-Logging started 08-Dec-25 13:33:46
-08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found invalid data in p1mcstart: pre
-08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found pre in p1mcend, which is invalid data
-08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found invalid data in p1mcend: pre
-08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: Found before start, HBC present in p1hatch, which is invalid data
-08-Dec-25 13:33:47: process_site: 2022 Private Site 3 - not real lat lon at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
+Logging started 08-Dec-25 16:17:57
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: Found invalid data in p1mcstart: pre
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: Found per in p1mcend, which is invalid data
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: Found invalid data in p1mcend: per
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: Found before start, HBC present in p1hatch, which is invalid data
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
+08-Dec-25 16:17:59: process_site: 2022 Private Site 2 - not real lat lon at p1: Found post in p1fledgedisp, which is invalid data
