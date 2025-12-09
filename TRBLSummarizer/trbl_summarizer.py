@@ -423,6 +423,12 @@ def get_target_sites() -> list:
     else:
         show_error('No site files found')
 
+    for site in filtered_sites:
+        st.markdown(f"""
+            <script>
+            console.log("Site:", {site});
+            </script>
+            """, unsafe_allow_html=True)
     return filtered_sites
 
 #Used by the two functions that follow to do file format validation
