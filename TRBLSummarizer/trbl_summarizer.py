@@ -1313,7 +1313,11 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
 # Graphing
 #
 #
-GRAPH_FONT = 'Franklin Gothic Book'
+if BEING_DEPLOYED_TO_STREAMLIT:
+    GRAPH_FONT = 'Verdana'
+else:
+    GRAPH_FONT = 'Franklin Gothic Book'
+
 TITLE_FONT_SIZE = 14
 AXIS_FONT_SIZE = 10
 LEGEND_FONT_SIZE = 8
