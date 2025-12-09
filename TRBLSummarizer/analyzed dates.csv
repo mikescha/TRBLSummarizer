@@ -64,8 +64,8 @@ Last: 04/29",No data,"First: 05/03
 Last: 05/05","First: 05/14
 Last: 07/06","First: 04/27
 Last: 05/14",No data,No data,"First: 05/22
-Last: 05/24",No data,No data,"First: 05/29
-Last: 05/29",No data,"First: 06/09
+Last: 05/25",No data,No data,"First: 05/29
+Last: 05/29",No data,"First: 06/10
 Last: 06/24",No data,"First: 05/30
 Last: 05/30",No data,No data,No data,No data
 2019 Leisure Town,"First: On or before 03/17
@@ -395,24 +395,22 @@ Last: 05/19","First: 05/31
 Last: On or after 06/28",No data,No data,"First: 05/26
 Last: 06/01","First: 06/04
 Last: 06/13",No data
-2022 Private Site 1 - not real lat lon,No data,"First: 04/20
-Last: 04/20","First: 05/04
+2022 Private Site 1 - not real lat lon,No data,"First: 04/24
+Last: 05/12","First: 05/04
 Last: 05/09","First: 05/02
-Last: 05/24","First: 05/08
-Last: 05/17",No data,"First: 05/06
-Last: 05/06","First: 05/28
+Last: 05/30","First: 05/08
+Last: 05/17",No data,No data,"First: 05/28
 Last: 05/28",No data,No data
 2022 Private Site 2 - not real lat lon,No data,No data,"First: On or before 04/19
-Last: 04/20","First: 04/21
-Last: 04/30","First: 04/25
+Last: 04/20","First: On or before 04/19
+Last: On or after 05/02","First: 04/25
 Last: On or after 05/02",No data,"First: 04/20
 Last: 04/27",No data,No data,No data
-2022 Private Site 3 - not real lat lon,No data,"First: 04/20
-Last: 05/16","First: 04/22
-Last: 04/30","First: 04/23
-Last: 05/04","First: 05/09
-Last: 05/21",No data,No data,No data,"First: 05/22
-Last: 05/22",No data
+2022 Private Site 3 - not real lat lon,No data,"First: On or before 04/19
+Last: 05/06","First: 04/22
+Last: 04/30","First: 04/21
+Last: 05/17","First: 05/09
+Last: 05/21"
 2022 Rancho Jamul,"First: 03/20
 Last: 04/10","First: 03/30
 Last: 04/03",No data,"First: 04/19
@@ -575,9 +573,17 @@ Last: 06/23","First: 06/21
 Last: 06/21","First: 06/19
 Last: 07/03","First: 06/29
 Last: 07/13"
+2023 Markham Ravine,"First: 05/09
+Last: 05/16","First: 05/17
+Last: 06/02","First: 06/02
+Last: 06/02","First: 06/03
+Last: 06/05","First: 06/13
+Last: 06/13",No data,No data,No data,No data,"First: 07/15
+Last: On or after 07/17",No data,No data,No data,"First: 07/15
+Last: 07/15",No data
 2023 Merced NWR - Cottonwood,No data,No data,No data,No data,"First: 05/13
 Last: 05/28",No data,"First: On or before 05/12
-Last: 05/17",No data,No data,No data
+Last: 05/27",No data,No data,No data
 2023 Merced NWR Deadman Wetland Ditch,No data,"First: 05/24
 Last: 05/28","First: 06/03
 Last: 06/03","First: 06/03
@@ -661,7 +667,7 @@ Last: 06/19","First: On or before 06/16
 Last: 06/20","First: 06/19
 Last: 07/06","First: 07/05
 Last: 07/07","First: 07/07
-Last: 07/07","First: 07/15
+Last: 07/17","First: 07/15
 Last: 07/17"
 2023 San Luis NWR - West Bank Creek,"First: On or before 05/26
 Last: 05/29","First: 05/30
@@ -772,8 +778,7 @@ Last: 06/15",No data,No data,No data
 2024 Markham Ravine 2
 2024 Markham Ravine 3
 2024 Merced NWR - Cottonwood Trail,"First: On or before 04/25
-Last: 05/02","First: 05/07
-Last: 05/11",No data,No data,"First: 05/18
+Last: 05/02",No data,No data,No data,"First: 05/18
 Last: 06/06","First: 05/20
 Last: 05/27",No data,No data,No data,No data
 2024 Moore Lake - confirm lat lon

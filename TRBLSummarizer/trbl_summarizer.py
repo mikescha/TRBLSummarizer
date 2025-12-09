@@ -3185,7 +3185,7 @@ for site in target_sites:
     #
     #Load all the PM files, any errors will return an empty table. For later graphing purposes, 
     df_pattern_match = load_pm_data(site)
-    df_pattern_match = clean_data(df_pattern_match, [site])
+    df_pattern_match = clean_data(df_pattern_match, [site]) #THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
     pm_data_empty = False
     pt_pm = pd.DataFrame()
     pm_date_range_dict = {}
