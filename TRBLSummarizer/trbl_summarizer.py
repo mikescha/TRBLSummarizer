@@ -1314,7 +1314,7 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
 #
 #
 if BEING_DEPLOYED_TO_STREAMLIT:
-    GRAPH_FONT = 'Verdana'
+    GRAPH_FONT = 'Sans Serif'
 else:
     GRAPH_FONT = 'Franklin Gothic Book'
 
