@@ -2966,6 +2966,22 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     return
 
 
+def get_ratio(site):
+    '''
+    Read the ratios file and retrieve the value for this site
+    '''
+    all_ratios = pd.read_csv(r"./TRBLSummarizer/female-to-hatchling-ratios.csv")
+    ratio_rows = all_ratios[all_ratios["Site Name"]==site]
+    if len(ratio_rows):
+        ratio_str = "Female-to-Hatchling Ratios: "
+        for i, (index, row) in enumerate(ratio_rows.iterrows()): 
+            ratio = "n/a" if pd.isna(row["Ratio"]) else f"{row["Ratio"]:.2f}"
+            ratio_str += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}"
+            if i < (len(ratio_rows) - 1):
+                ratio_str += ",  "
+    else:
+        ratio_str = "None found"
+    return ratio_str
 # ===========================================================================================================
 # ===========================================================================================================
 #
@@ -3045,6 +3061,7 @@ if profiling:
     profiler = Profiler()
     profiler.start()
 
+df_site = pd.DataFrame()
 site_counter = 0
 for site in target_sites:
     error_msgs = []
@@ -3251,8 +3268,11 @@ for site in target_sites:
         for error_msg in error_msgs:
             st.write(f":red-background[{error_msg}]")
 
-    if show_station_info_checkbox:
-        show_station_info(summary_row)
+    if not make_all_graphs:
+        if show_station_info_checkbox:
+            show_station_info(summary_row)
+        ratio_str = get_ratio(site)
+        st.success(f"{ratio_str}")
 
     #list of month positions in the graphs
     month_locs = {} 
