@@ -208,3 +208,4 @@ Id,Name,Number of Recordings,Latitude,Longitude,Altitude,Timezone,Skip,Elevation
 32016,Testing Data 2021 RG1,227,38.863,-121.287,100,America/Los_Angeles,Y,,,,,,,
 32010,Training Data 2021 PA,21,39.03,-121.537,100,America/Los_Angeles,Y,,,,,,,
 32015,Training data 2021 RG1,227,38.863,-121.287,100,America/Los_Angeles,Y,,,,,,,
+82630,2019 Red Wing Ranch,1148,38.962,-121.346,100,America/Los_Angeles,,,,,,,,

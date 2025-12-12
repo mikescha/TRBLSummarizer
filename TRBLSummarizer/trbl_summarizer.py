@@ -30,7 +30,7 @@ import gc
 profiling = False
 
 #Set to true before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = False  # Dec 2025, we don't want this for the graphs for the reports
 
 # Constants and Globals

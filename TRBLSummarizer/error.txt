@@ -1,1 +1,2 @@
-Logging started 09-Dec-25 12:32:38
+Logging started 13-Dec-25 09:02:02
+13-Dec-25 09:02:04: process_site: 2018 SJWA WSS at p1: Second date is ND, but first date is not: p1mcend:4/19/2018, p1hatch:ND
