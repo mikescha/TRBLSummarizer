@@ -1,18 +1,18 @@
 Site Name,Pulse Name,Outcome,Hatch Date,Earliest Rec,Incubation Days,Total Female Calls,Avg Female Calls/Day,Latest Rec,Hatchling Days,Total Hatchling Calls,Avg Hatchling Calls/Day,Ratio
 2017 Rush Ranch,2017 Rush Ranch p1,Abandoned,2017-05-01,2017-04-21,10,7,0.7,2017-05-12,10,0,0.0,n/a
-2017 Rush Ranch,2017 Rush Ranch p2,Successful,2017-05-30,2017-05-20,10,151,15.1,2017-06-10,10,170,17.0,0.888
-2017 Rush Ranch,2017 Rush Ranch p3,Successful,2017-06-29,2017-06-19,10,143,14.3,2017-07-06,6,22,3.667,3.9
-2018 Rush Ranch,2018 Rush Ranch p1,Successful,2018-05-25,2018-05-15,10,37,3.7,2018-06-05,10,31,3.1,1.194
+2017 Rush Ranch,2017 Rush Ranch p2,Successful,2017-05-30,2017-05-20,10,162,16.2,2017-06-10,10,179,17.9,0.905
+2017 Rush Ranch,2017 Rush Ranch p3,Successful,2017-06-29,2017-06-19,10,157,15.7,2017-07-06,6,22,3.667,4.282
+2018 Rush Ranch,2018 Rush Ranch p1,Successful,2018-05-25,2018-05-15,10,54,5.4,2018-06-05,10,31,3.1,1.742
 2020 Creed Road,2020 Denverton Creek p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2020 Rush Ranch,2020 Rush Ranch p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2018 Iron Point,2018 Iron Point p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2018 Red Wing Ranch,2018 Red Wing Ranch p1,Abandoned,2018-05-17,2018-05-07,10,192,19.2,2018-05-28,10,0,0.0,n/a
+2018 Red Wing Ranch,2018 Red Wing Ranch p1,Abandoned,2018-05-17,2018-05-07,10,195,19.5,2018-05-28,10,0,0.0,n/a
 2018 Markham Ravine Main,2018 Markham Ravine p1,Successful,2018-07-01,2018-06-26,5,4,0.8,2018-07-11,9,3,0.333,2.4
 2018 Markham Ravine westside,2018 Markham Ravine - West p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2018 SJWA-rose-2,2018 San Jacinto Wildlife Area Bridge St. Pond p1,Abandoned,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2019 Creed Road,2019 Denverton Creek p1,Successful,2019-05-10,2019-04-30,10,65,6.5,2019-05-21,10,42,4.2,1.548
 2019 Creed Road,2019 Denverton Creek p2,Abandoned,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2019 Hay Landfill,2019 Hay Landfill p1,Successful,2019-04-27,2019-04-17,10,125,12.5,2019-05-08,10,69,6.9,1.812
+2019 Hay Landfill,2019 Hay Landfill p1,Successful,2019-04-27,2019-04-17,10,125,12.5,2019-05-08,10,70,7.0,1.786
 2019 Hay Landfill,2019 Hay Landfill p2,Partially Abandoned,2019-06-09,2019-05-30,10,65,6.5,2019-06-20,10,8,0.8,8.125
 2019 Leisure Town,2019 Leisure Town Road p1,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2019 Leisure Town,2019 Leisure Town Road p2,Successful,2019-06-04,2019-05-25,10,2,0.2,2019-06-15,10,5,0.5,0.4
@@ -21,174 +21,174 @@ Site Name,Pulse Name,Outcome,Hatch Date,Earliest Rec,Incubation Days,Total Femal
 2019 Rush Ranch,2019 Rush Ranch p1,Abandoned,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2019 Markham Ravine 2,2019 Markham Ravine 2 p1,Partially Abandoned,2019-05-31,2019-05-21,10,172,17.2,2019-06-10,9,35,3.889,4.423
 2019 Colusa NWR 27-1,2019 Colusa NWR T27.1 p1,Successful,2019-06-12,2019-06-02,10,0,0.0,2019-06-23,10,0,0.0,n/a
-2019 Colusa NWR 27-2,2019 Colusa NWR T27.2 p1,Successful,2019-05-28,2019-05-21,7,16,2.286,2019-06-08,10,4,0.4,5.714
-2020 Hay Landfill,2020 Hay Landfill p1,Successful,2020-04-27,2020-04-17,10,18,1.8,2020-05-08,10,23,2.3,0.783
+2019 Colusa NWR 27-2,2019 Colusa NWR T27.2 p1,Successful,2019-05-28,2019-05-21,7,26,3.714,2019-06-08,10,4,0.4,9.286
+2020 Hay Landfill,2020 Hay Landfill p1,Successful,2020-04-27,2020-04-17,10,21,2.1,2020-05-08,10,23,2.3,0.913
 2020 Hay Landfill,2020 Hay Landfill p2,Successful,2020-06-03,2020-05-24,10,6,0.6,2020-06-13,9,8,0.889,0.675
 2020 Markham Ravine,2020 Markham Ravine p1,Partially Abandoned,2020-05-19,2020-05-09,10,240,24.0,2020-05-29,9,48,5.333,4.5
 2020 Iron Point,2020 Iron Point p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2020 Conaway Ranch,2020 Conaway Ranch p1,Successful,2020-06-06,2020-05-27,10,16,1.6,2020-06-17,10,0,0.0,n/a
 2021 Sedgwick,2021 Sedgwick p1,Unknown,2021-04-28,2021-04-18,10,60,6.0,2021-05-06,7,56,8.0,0.75
-2021 Hay Landfill,2021 Hay Landfill p1,Unknown,2021-04-24,2021-04-14,10,66,6.6,2021-05-05,10,8,0.8,8.25
-2020 Ohlone - Santa Lucia Preserve,2020 Ohlone p1,Successful,2020-05-04,2020-04-24,10,59,5.9,2020-05-15,10,81,8.1,0.728
-2021 Plumas Arboga,2021 Plumas Arboga p1,Unknown,2021-05-26,2021-05-16,10,207,20.7,2021-06-04,8,41,5.125,4.039
-2021 Foley Ranch,2021 Foley Ranch p1,Successful,2021-05-12,2021-05-04,8,174,21.75,2021-05-23,10,197,19.7,1.104
+2021 Hay Landfill,2021 Hay Landfill p1,Unknown,2021-04-24,2021-04-14,10,38,3.8,2021-05-05,10,8,0.8,4.75
+2020 Ohlone - Santa Lucia Preserve,2020 Ohlone p1,Successful,2020-05-04,2020-04-24,10,59,5.9,2020-05-15,10,84,8.4,0.702
+2021 Plumas Arboga,2021 Plumas Arboga p1,Unknown,2021-05-26,2021-05-16,10,259,25.9,2021-06-04,8,62,7.75,3.342
+2021 Foley Ranch,2021 Foley Ranch p1,Successful,2021-05-12,2021-05-04,8,179,22.375,2021-05-23,10,281,28.1,0.796
 2021 Foley Ranch,2021 Foley Ranch p2,Unknown,2021-06-12,2021-06-02,10,12,1.2,2021-06-14,1,0,0.0,n/a
 2021 Creed Road,2021 Denverton Creek p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2021 Hale Road 2,2021 Hale Road 2 p1,Successful,2021-05-14,2021-05-04,10,305,30.5,2021-05-25,10,182,18.2,1.676
+2021 Hale Road 2,2021 Hale Road 2 p1,Successful,2021-05-14,2021-05-04,10,311,31.1,2021-05-25,10,275,27.5,1.131
 2021 Rancho Jamul,2021 Rancho Jamul p1,Successful,2021-05-09,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2021 Dagnino Pond,2021 Dagnino Pond p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2021 Colusa NWR 27-1,2021 Colusa NWR T27.1 p1,Successful,2021-06-04,2021-05-25,10,9,0.9,2021-06-15,10,0,0.0,n/a
-2021 Colusa NWR 27-2,2021 Colusa NWR T27.2 p1,Unknown,2021-06-15,2021-06-05,10,67,6.7,2021-06-21,5,0,0.0,n/a
-2021 Rodeo Grounds 1,2021 Rodeo Grounds p1,Successful,2021-05-02,2021-04-22,10,301,30.1,2021-05-13,10,218,21.8,1.381
-2021 Panoche Creek Preserve 2E,2021 Panoche Creek Preserve 2 East p1,Successful,2021-04-30,2021-04-20,10,126,12.6,2021-05-11,10,94,9.4,1.34
-2021 Panoche Creek Preserve 1W,2021 Panoche Creek Preserve 1 West p1,Partially Abandoned,2021-05-02,2021-04-22,10,89,8.9,2021-05-13,10,2,0.2,44.5
-2021 Orchard Creek,2021 Orchard Creek p1,Successful,2021-05-01,2021-04-21,10,225,22.5,2021-05-12,10,37,3.7,6.081
-2021 Orchard Creek,2021 Orchard Creek p2,Successful,2021-05-24,2021-05-14,10,148,14.8,2021-06-04,10,181,18.1,0.818
+2021 Colusa NWR 27-1,2021 Colusa NWR T27.1 p1,Successful,2021-06-04,2021-05-25,10,14,1.4,2021-06-15,10,0,0.0,n/a
+2021 Colusa NWR 27-2,2021 Colusa NWR T27.2 p1,Unknown,2021-06-15,2021-06-05,10,89,8.9,2021-06-21,5,0,0.0,n/a
+2021 Rodeo Grounds 1,2021 Rodeo Grounds p1,Successful,2021-05-02,2021-04-22,10,311,31.1,2021-05-13,10,253,25.3,1.229
+2021 Panoche Creek Preserve 2E,2021 Panoche Creek Preserve 2 East p1,Successful,2021-04-30,2021-04-20,10,157,15.7,2021-05-11,10,94,9.4,1.67
+2021 Panoche Creek Preserve 1W,2021 Panoche Creek Preserve 1 West p1,Partially Abandoned,2021-05-02,2021-04-22,10,121,12.1,2021-05-13,10,2,0.2,60.5
+2021 Orchard Creek,2021 Orchard Creek p1,Successful,2021-05-01,2021-04-21,10,146,14.6,2021-05-12,10,86,8.6,1.698
+2021 Orchard Creek,2021 Orchard Creek p2,Successful,2021-05-24,2021-05-14,10,149,14.9,2021-06-04,10,238,23.8,0.626
 2021 Willey Wetlands 3,2021 Willey Wetlands 3 p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2021 Kern 2,2021 Kern 2 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2021 Rush Ranch,2021 Rush Ranch p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2021 Kern 1,2021 Kern 1 p1,Successful,2021-05-31,2021-05-21,10,0,0.0,2021-06-11,10,0,0.0,n/a
 2021 Kern 3,2021 Kern 3 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2021 Conaway South,2021 Conaway South p1,Successful,2021-06-10,2021-05-31,10,99,9.9,2021-06-21,10,128,12.8,0.773
-2021 Reeds Creek South,2021 Reeds Creek South p1,Unknown,2021-05-18,2021-05-08,10,200,20.0,2021-05-20,1,0,0.0,n/a
+2021 Conaway South,2021 Conaway South p1,Successful,2021-06-10,2021-05-31,10,128,12.8,2021-06-21,10,165,16.5,0.776
+2021 Reeds Creek South,2021 Reeds Creek South p1,Unknown,2021-05-18,2021-05-08,10,209,20.9,2021-05-20,1,0,0.0,n/a
 2021 Kern 4,2021 Kern 4 p1,Partially Abandoned,2021-05-08,2021-04-28,10,37,3.7,2021-05-19,10,2,0.2,18.5
 2021 Iron Point,2021 Iron Point p1,Abandoned,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2021 Wind Wolves Preserve,2021 Wind Wolves Preserve p1,Successful,2021-05-14,2021-05-04,10,130,13.0,2021-05-25,10,39,3.9,3.333
-2021 SJWA,2021 San Jacinto Wildlife Area p1,Abandoned,2021-06-15,2021-06-05,10,73,7.3,2021-06-26,10,10,1.0,7.3
+2021 Wind Wolves Preserve,2021 Wind Wolves Preserve p1,Successful,2021-05-14,2021-05-04,10,160,16.0,2021-05-25,10,41,4.1,3.902
+2021 SJWA,2021 San Jacinto Wildlife Area p1,Abandoned,2021-06-15,2021-06-05,10,133,13.3,2021-06-26,10,10,1.0,13.3
 2021 Markham Ravine,2021 Markham Ravine p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2021 Kern 5,2021 Kern 5 p1,Successful,2021-04-30,2021-04-27,3,38,12.667,2021-05-11,10,220,22.0,0.576
-2021 Kern 5,2021 Kern 5 p2,Successful,2021-05-28,2021-05-18,10,46,4.6,2021-06-08,10,322,32.2,0.143
+2021 Kern 5,2021 Kern 5 p1,Successful,2021-04-30,2021-04-27,3,40,13.333,2021-05-11,10,220,22.0,0.606
+2021 Kern 5,2021 Kern 5 p2,Successful,2021-05-28,2021-05-18,10,56,5.6,2021-06-08,10,331,33.1,0.169
 2021 Kern 6,2021 Kern 6 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2021 Kern 7,2021 Kern 7 p1,Abandoned,2021-05-31,2021-05-21,10,41,4.1,2021-06-11,10,0,0.0,n/a
 2022 WA1,2022 Washington State - McCain Wetands p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2022 OR1,2022 Oregon 1 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Hay Landfill,2022 Hay Landfill p1,Successful,2022-04-12,2022-04-02,10,119,11.9,2022-04-23,10,23,2.3,5.174
+2022 Hay Landfill,2022 Hay Landfill p1,Successful,2022-04-12,2022-04-02,10,125,12.5,2022-04-23,10,23,2.3,5.435
 2022 Hay Landfill,2022 Hay Landfill p2,Successful,2022-05-17,2022-05-07,10,2,0.2,2022-05-28,10,9,0.9,0.222
-2022 WA Harder Spring,2022 Washington State - Harder Spring p1,Successful,2022-05-17,2022-05-07,10,53,5.3,2022-05-28,10,77,7.7,0.688
-2022 WA Harder Spring,2022 Washington State - Harder Spring p2,Successful,2022-06-07,2022-05-28,10,139,13.9,2022-06-18,10,255,25.5,0.545
-2022 Sedgwick,2022 Sedgwick p1,Successful,2022-04-14,2022-04-04,10,55,5.5,2022-04-25,10,220,22.0,0.25
-2022 Sedgwick,2022 Sedgwick p2,Successful,2022-05-22,2022-05-12,10,17,1.7,2022-06-02,10,228,22.8,0.075
+2022 WA Harder Spring,2022 Washington State - Harder Spring p1,Successful,2022-05-17,2022-05-07,10,67,6.7,2022-05-28,10,100,10.0,0.67
+2022 WA Harder Spring,2022 Washington State - Harder Spring p2,Successful,2022-06-07,2022-05-28,10,117,11.7,2022-06-18,10,304,30.4,0.385
+2022 Sedgwick,2022 Sedgwick p1,Successful,2022-04-14,2022-04-04,10,42,4.2,2022-04-25,10,229,22.9,0.183
+2022 Sedgwick,2022 Sedgwick p2,Successful,2022-05-22,2022-05-12,10,2,0.2,2022-06-02,10,245,24.5,0.008
 2022 Plumas Arboga East,2022 Plumas Arboga East p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Plumas Arboga East,2022 Plumas Arboga East p2,Successful,2022-05-22,2022-05-12,10,89,8.9,2022-06-02,10,368,36.8,0.242
+2022 Plumas Arboga East,2022 Plumas Arboga East p2,Successful,2022-05-22,2022-05-12,10,98,9.8,2022-06-02,10,493,49.3,0.199
 2022 Colusa NWR T27.1,2022 Colusa NWR T27.1 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Rancho Jamul,2022 Rancho Jamul p1,Successful,2022-04-13,2022-04-03,10,46,4.6,2022-04-24,10,29,2.9,1.586
-2022 SJWA,2022 San Jacinto Wildlife Area p1,Successful,2022-05-26,2022-05-16,10,52,5.2,2022-06-06,10,46,4.6,1.13
-2022 Paicines Ranch - Teal Pond,2022 Paicines Ranch - Teal Pond p1,Successful,2022-04-22,2022-04-12,10,50,5.0,2022-05-03,10,23,2.3,2.174
-2022 OR2,2022 Oregon 2 p1,Successful,2022-05-16,2022-05-06,10,25,2.5,2022-05-27,10,0,0.0,n/a
+2022 Rancho Jamul,2022 Rancho Jamul p1,Successful,2022-04-13,2022-04-03,10,2,0.2,2022-04-24,10,29,2.9,0.069
+2022 SJWA,2022 San Jacinto Wildlife Area p1,Successful,2022-05-26,2022-05-16,10,2,0.2,2022-06-06,10,46,4.6,0.043
+2022 Paicines Ranch - Teal Pond,2022 Paicines Ranch - Teal Pond p1,Successful,2022-04-22,2022-04-12,10,31,3.1,2022-05-03,10,34,3.4,0.912
+2022 OR2,2022 Oregon 2 p1,Successful,2022-05-16,2022-05-06,10,6,0.6,2022-05-27,10,0,0.0,n/a
 2022 Newberry Springs - Lake Wainani,2022 Newberry Springs - Lake Wainani p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2022 Marsh Creek Reservoir,2022 Marsh Creek Reservoir p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2022 Laguna Seca,2022 Laguna Seca p1,Successful,2022-04-15,2022-04-05,10,0,0.0,2022-04-26,10,5,0.5,0.0
 2022 Laguna Seca,2022 Laguna Seca p2,Successful,2022-05-25,2022-05-15,10,72,7.2,2022-06-05,10,65,6.5,1.108
-2022 Creed Road,2022 Denverton Creek p1,Successful,2022-04-15,2022-04-05,10,236,23.6,2022-04-26,10,156,15.6,1.513
+2022 Creed Road,2022 Denverton Creek p1,Successful,2022-04-15,2022-04-05,10,242,24.2,2022-04-26,10,269,26.9,0.9
 2022 Colusa NWR T27.2,2022 Colusa NWR T27.2 p1,Successful,2022-05-31,2022-05-21,10,16,1.6,2022-06-11,10,29,2.9,0.552
 2022 Wind Wolves Preserve Santiago Wetlands,2022 Wind Wolves Preserve Santiago Wetlands p1,Successful,2022-04-20,2022-04-10,10,9,0.9,2022-05-01,10,5,0.5,1.8
 2022 Wind Wolves Preserve Pleitito Creek,2022 Wind Wolves Preserve Pleitito Creek p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Ohlone - Santa Lucia Preserve,2022 Ohlone p1,Successful,2022-05-02,2022-04-22,10,30,3.0,2022-05-13,10,47,4.7,0.638
+2022 Ohlone - Santa Lucia Preserve,2022 Ohlone p1,Successful,2022-05-02,2022-04-22,10,30,3.0,2022-05-13,10,51,5.1,0.588
 2022 Conaway New Easement Pond West,2022 Conaway New Easement Pond West p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Conaway North,2022 Conaway North p1,Successful,2022-05-21,2022-05-11,10,607,60.7,2022-06-01,10,488,48.8,1.244
-2022 Conaway East,2022 Conaway East p1,Partially Abandoned,2022-05-23,2022-05-13,10,246,24.6,2022-06-03,10,50,5.0,4.92
-2022 Los Vaqueros Reservoir,2022 Los Vaqueros Reservoir p1,Successful,2022-04-19,2022-04-15,4,100,25.0,2022-04-30,10,262,26.2,0.954
+2022 Conaway North,2022 Conaway North p1,Successful,2022-05-21,2022-05-11,10,731,73.1,2022-06-01,10,588,58.8,1.243
+2022 Conaway East,2022 Conaway East p1,Partially Abandoned,2022-05-23,2022-05-13,10,234,23.4,2022-06-03,10,50,5.0,4.68
+2022 Los Vaqueros Reservoir,2022 Los Vaqueros Reservoir p1,Successful,2022-04-19,2022-04-15,4,104,26.0,2022-04-30,10,262,26.2,0.992
 2022 Foley Ranch A,2022 Foley Ranch A p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Panoche Creek Preserve Loc5,2022 Panoche Creek Preserve Location 5 p1,Successful,2022-04-20,2022-04-14,6,82,13.667,2022-05-01,10,126,12.6,1.085
+2022 Panoche Creek Preserve Loc5,2022 Panoche Creek Preserve Location 5 p1,Successful,2022-04-20,2022-04-14,6,95,15.833,2022-05-01,10,145,14.5,1.092
 2022 Private Site 1 - not real lat lon,2022 Private Site 1 - approximate lat lon p1,Successful,2022-04-30,2022-04-20,10,61,6.1,2022-05-11,10,186,18.6,0.328
 2022 Private Site 3 - not real lat lon,2022 Private Site 3 - approximate lat lon p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2022 Private Site 2 - not real lat lon,2022 Private Site 2 - approximate lat lon p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Baja 1,2022 Baja 1 p1,Successful,2022-04-14,2022-04-04,10,41,4.1,2022-04-25,10,103,10.3,0.398
-2023 OR Eureka Rd,2023 Oregon State - Eureka Rd p1,Successful,2023-05-19,2023-05-09,10,56,5.6,2023-05-30,10,53,5.3,1.057
-2023 WA McCain Wetlands,2023 Washington State - McCain Wetlands p1,Successful,2023-05-15,2023-05-05,10,74,7.4,2023-05-26,10,20,2.0,3.7
+2022 Baja 1,2022 Baja 1 p1,Successful,2022-04-14,2022-04-04,10,52,5.2,2022-04-25,10,116,11.6,0.448
+2023 OR Eureka Rd,2023 Oregon State - Eureka Rd p1,Successful,2023-05-19,2023-05-09,10,53,5.3,2023-05-30,10,55,5.5,0.964
+2023 WA McCain Wetlands,2023 Washington State - McCain Wetlands p1,Successful,2023-05-15,2023-05-05,10,72,7.2,2023-05-26,10,24,2.4,3.0
 2023 Baja Rancho Cinega,2023 Baja Rancho Cinega p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Baja Rancho Cinega,2023 Baja Rancho Cinega p2,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Baja Rancho Cinega,2023 Baja Rancho Cinega p3,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Baja Rancho Cinega,2023 Baja Rancho Cinega p4,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 OR Dizney Rd,2023 Oregon State - Dizney Rd p1,Partially Abandoned,2023-05-19,2023-05-09,10,137,13.7,2023-05-30,10,18,1.8,7.611
+2023 OR Dizney Rd,2023 Oregon State - Dizney Rd p1,Partially Abandoned,2023-05-19,2023-05-09,10,145,14.5,2023-05-30,10,18,1.8,8.056
 2023 WA Harder Spring,2023 Washington State - Harder Spring p1,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 WA Harder Spring,2023 Washington State - Harder Spring p2,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Los Vaqueros - Walnut Trail Marsh,2023 Los Vaqueros - Walnut Trail Marsh p1,Abandoned,2023-04-26,2023-04-16,10,52,5.2,2023-05-07,10,0,0.0,n/a
-2023 Kentucky Lateral,2023 Kentucky Lateral p1,Successful,2023-04-26,2023-04-16,10,179,17.9,2023-05-07,10,95,9.5,1.884
+2023 Los Vaqueros - Walnut Trail Marsh,2023 Los Vaqueros - Walnut Trail Marsh p1,Abandoned,2023-04-26,2023-04-16,10,58,5.8,2023-05-07,10,0,0.0,n/a
+2023 Kentucky Lateral,2023 Kentucky Lateral p1,Successful,2023-04-26,2023-04-16,10,179,17.9,2023-05-07,10,120,12.0,1.492
 2023 Markham Ravine,2023 Markham Ravine p1,Successful,2023-05-31,2023-05-21,10,89,8.9,2023-06-11,10,26,2.6,3.423
-2023 Plumas Arboga 8 - North Regional Pond,2023 Plumas Arboga 8 - North Regional Pond p1,Successful,2023-05-06,2023-04-26,10,255,25.5,2023-05-17,10,92,9.2,2.772
-2023 Plumas Arboga 8 - North Regional Pond,2023 Plumas Arboga 8 - North Regional Pond p2,Successful,2023-06-15,2023-06-05,10,250,25.0,2023-06-26,10,314,31.4,0.796
+2023 Plumas Arboga 8 - North Regional Pond,2023 Plumas Arboga 8 - North Regional Pond p1,Successful,2023-05-06,2023-04-26,10,254,25.4,2023-05-17,10,96,9.6,2.646
+2023 Plumas Arboga 8 - North Regional Pond,2023 Plumas Arboga 8 - North Regional Pond p2,Successful,2023-06-15,2023-06-05,10,254,25.4,2023-06-26,10,320,32.0,0.794
 2023 Bridge St Pond,2023 San Jacinto Wildlife Area Bridge St. Pond p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 West of Davis,2023 San Jacinto Wildlife Area West of Davis p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 West of Davis,2023 San Jacinto Wildlife Area West of Davis p2,Successful,2023-05-22,2023-05-12,10,53,5.3,2023-06-02,10,76,7.6,0.697
+2023 West of Davis,2023 San Jacinto Wildlife Area West of Davis p2,Successful,2023-05-22,2023-05-12,10,59,5.9,2023-06-02,10,122,12.2,0.484
 2023 Peterson Ranch Pond - East,2023 Peterson Ranch Pond - East p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p1,Successful,2023-04-28,2023-04-18,10,238,23.8,2023-05-09,10,178,17.8,1.337
-2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p2,Successful,2023-06-15,2023-06-05,10,48,4.8,2023-06-26,10,87,8.7,0.552
-2023 OR Prineville North,2023 Oregon State - Prineville North p1,Successful,2023-05-15,2023-05-05,10,144,14.4,2023-05-26,10,297,29.7,0.485
-2023 OR Prineville North,2023 Oregon State - Prineville North p2,Successful,2023-06-20,2023-06-10,10,71,7.1,2023-07-01,10,91,9.1,0.78
+2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p1,Successful,2023-04-28,2023-04-18,10,238,23.8,2023-05-09,10,303,30.3,0.785
+2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p2,Successful,2023-06-15,2023-06-05,10,49,4.9,2023-06-26,10,116,11.6,0.422
+2023 OR Prineville North,2023 Oregon State - Prineville North p1,Successful,2023-05-15,2023-05-05,10,126,12.6,2023-05-26,10,313,31.3,0.403
+2023 OR Prineville North,2023 Oregon State - Prineville North p2,Successful,2023-06-20,2023-06-10,10,71,7.1,2023-07-01,10,93,9.3,0.763
 2023 Merced NWR - Cottonwood,2023 Merced NWR - Cottonwood p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Merced NWR - Cottonwood,2023 Merced NWR - Cottonwood p2,Successful,2023-05-25,2023-05-15,10,58,5.8,2023-06-05,10,0,0.0,n/a
 2023 San Luis Bear Creek,2023 San Luis Bear Creek p1,Successful,2023-07-02,2023-06-22,10,335,33.5,2023-07-13,10,107,10.7,3.131
-2023 North Regional Pond,2023 North Regional Pond p1,Successful,2023-05-05,2023-04-25,10,15,1.5,2023-05-16,10,6,0.6,2.5
+2023 North Regional Pond,2023 North Regional Pond p1,Successful,2023-05-05,2023-04-25,10,7,0.7,2023-05-16,10,6,0.6,1.167
 2023 Delevan NWR T43.1,2023 Delevan NWR T43.1 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Colusa NWR T27.1,2023 Colusa NWR T27.1 p1,Successful,2023-07-16,2023-07-06,10,251,25.1,2023-07-27,10,109,10.9,2.303
+2023 Colusa NWR T27.1,2023 Colusa NWR T27.1 p1,Successful,2023-07-16,2023-07-06,10,254,25.4,2023-07-27,10,109,10.9,2.33
 2023 Virginia at Ostrom,2023 Virginia at Ostrom p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Iron Point,2023 Iron Point p1,Partially Abandoned,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Laguna Fry Confluence - 45 Sump,2023 Laguna Fry Confluence - 45 Sump p1,Successful,2023-05-11,2023-05-01,10,275,27.5,2023-05-22,10,200,20.0,1.375
+2023 Laguna Fry Confluence - 45 Sump,2023 Laguna Fry Confluence - 45 Sump p1,Successful,2023-05-11,2023-05-01,10,281,28.1,2023-05-22,10,201,20.1,1.398
 2023 Creed Rd,2023 Denverton Creek p1,Abandoned,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Hale Road,2023 Hale Road p1,Successful,2023-06-06,2023-05-27,10,455,45.5,2023-06-17,10,171,17.1,2.661
+2023 Hale Road,2023 Hale Road p1,Successful,2023-06-06,2023-05-27,10,462,46.2,2023-06-17,10,320,32.0,1.444
 2023 Hale Road,2023 Hale Road p2,Unknown,post,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 San Luis NWR - West Bank Creek,2023 San Luis NWR - West Bank Creek p1,Partially Abandoned,2023-06-13,2023-06-03,10,103,10.3,2023-06-24,10,17,1.7,6.059
-2023 Laguna Fry Confluence - Site 1,2023 Laguna Fry Confluence - Site 1 p1,Successful,2023-05-16,2023-05-09,7,160,22.857,2023-05-27,10,156,15.6,1.465
-2023 Sedgwick,2023 Sedgwick p1,Successful,2023-04-15,2023-04-05,10,52,5.2,2023-04-26,10,117,11.7,0.444
+2023 Laguna Fry Confluence - Site 1,2023 Laguna Fry Confluence - Site 1 p1,Successful,2023-05-16,2023-05-09,7,214,30.571,2023-05-27,10,208,20.8,1.47
+2023 Sedgwick,2023 Sedgwick p1,Successful,2023-04-15,2023-04-05,10,52,5.2,2023-04-26,10,120,12.0,0.433
 2023 Kern - Canebreak Ecological Reserve 4,2023 Kern - Canebreak Ecological Reserve 4 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Wind Wolves Preserve Site 2,2023 Wind Wolves Preserve Site 2 p1,Successful,2023-05-01,2023-04-21,10,74,7.4,2023-05-12,10,22,2.2,3.364
-2023 Kern - HQ2,2023 Kern - Headquarters 2 p1,Successful,2023-06-08,2023-05-29,10,130,13.0,2023-06-19,10,230,23.0,0.565
-2023 Kern - HQ2,2023 Kern - Headquarters 2 p2,Successful,2023-07-13,2023-07-03,10,105,10.5,2023-07-24,10,393,39.3,0.267
+2023 Kern - HQ2,2023 Kern - Headquarters 2 p1,Successful,2023-06-08,2023-05-29,10,127,12.7,2023-06-19,10,243,24.3,0.523
+2023 Kern - HQ2,2023 Kern - Headquarters 2 p2,Successful,2023-07-13,2023-07-03,10,105,10.5,2023-07-24,10,408,40.8,0.257
 2023 Wind Wolves Preserve site 1,2023 Wind Wolves Preserve site 1 p1,Successful,2023-05-05,2023-04-25,10,13,1.3,2023-05-08,2,0,0.0,n/a
 2023 Delevan T6,2023 Delevan T6 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2023 Conaway Ranch - HQ,2023 Conaway Ranch - Headquarters p1,Successful,2023-06-13,2023-06-03,10,293,29.3,2023-06-24,10,197,19.7,1.487
-2023 Conaway Ranch NE,2023 Conaway Ranch Northeast p1,Successful,2023-06-11,2023-06-01,10,157,15.7,2023-06-22,10,75,7.5,2.093
-2023 Plumas Arboga 2,2023 Plumas Arboga 2 p1,Successful,2023-06-07,2023-05-28,10,397,39.7,2023-06-18,10,181,18.1,2.193
-2023 Conaway Ranch North 2,2023 Conaway Ranch North 2 p1,Successful,2023-06-28,2023-06-18,10,287,28.7,2023-07-09,10,145,14.5,1.979
-2023 Conaway Ranch North 1,2023 Conaway Ranch North 1 p1,Successful,2023-06-18,2023-06-08,10,312,31.2,2023-06-29,10,294,29.4,1.061
+2023 Conaway Ranch - HQ,2023 Conaway Ranch - Headquarters p1,Successful,2023-06-13,2023-06-03,10,296,29.6,2023-06-24,10,262,26.2,1.13
+2023 Conaway Ranch NE,2023 Conaway Ranch Northeast p1,Successful,2023-06-11,2023-06-01,10,163,16.3,2023-06-22,10,88,8.8,1.852
+2023 Plumas Arboga 2,2023 Plumas Arboga 2 p1,Successful,2023-06-07,2023-05-28,10,401,40.1,2023-06-18,10,348,34.8,1.152
+2023 Conaway Ranch North 2,2023 Conaway Ranch North 2 p1,Successful,2023-06-28,2023-06-18,10,295,29.5,2023-07-09,10,172,17.2,1.715
+2023 Conaway Ranch North 1,2023 Conaway Ranch North 1 p1,Successful,2023-06-18,2023-06-08,10,325,32.5,2023-06-29,10,319,31.9,1.019
 2023 South Virginia Road 3,2023 South Virginia Road 3 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Merced NWR Deadman Wetland Ditch,2023 Merced NWR Deadman Wetland Ditch p1,Abandoned,2023-05-30,2023-05-23,7,73,10.429,2023-06-09,9,6,0.667,15.643
-2023 Weagell Property 1,2023 Weagell Property 1 p1,Successful,2023-05-03,2023-04-23,10,247,24.7,2023-05-14,10,64,6.4,3.859
-2023 Weagell Property 1,2023 Weagell Property 1 p2,Successful,2023-05-16,2023-05-06,10,175,17.5,2023-05-27,10,117,11.7,1.496
-2023 Weagell Property 1,2023 Weagell Property 1 p3,Successful,2023-06-06,2023-05-27,10,13,1.3,2023-06-17,10,116,11.6,0.112
-2023 Weagell Property 1,2023 Weagell Property 1 p4,Unknown,2023-06-13,2023-06-03,10,15,1.5,2023-06-18,4,11,2.75,0.545
-2023 Rancho Jamul North Pond - fix lat lon,2023 Rancho Jamul - North Pond p1,Successful,2023-05-16,2023-05-06,10,1,0.1,2023-05-26,9,24,2.667,0.038
-2023 Rancho Jamul Site 1 fix lat lon,2023 Rancho Jamul - Site 1 p1,Successful,2023-04-25,2023-04-15,10,50,5.0,2023-05-06,10,13,1.3,3.846
-2023 Rancho Jamul Site 1 fix lat lon,2023 Rancho Jamul - Site 1 p2,Unknown,2023-06-22,2023-06-12,10,14,1.4,2023-07-03,10,16,1.6,0.875
+2023 Weagell Property 1,2023 Weagell Property 1 p1,Successful,2023-05-03,2023-04-23,10,253,25.3,2023-05-14,10,65,6.5,3.892
+2023 Weagell Property 1,2023 Weagell Property 1 p2,Successful,2023-05-16,2023-05-06,10,182,18.2,2023-05-27,10,119,11.9,1.529
+2023 Weagell Property 1,2023 Weagell Property 1 p3,Successful,2023-06-06,2023-05-27,10,24,2.4,2023-06-17,10,116,11.6,0.207
+2023 Weagell Property 1,2023 Weagell Property 1 p4,Unknown,2023-06-13,2023-06-03,10,21,2.1,2023-06-18,4,11,2.75,0.764
+2023 Rancho Jamul North Pond - fix lat lon,2023 Rancho Jamul - North Pond p1,Successful,2023-05-16,2023-05-06,10,1,0.1,2023-05-26,9,30,3.333,0.03
+2023 Rancho Jamul Site 1 fix lat lon,2023 Rancho Jamul - Site 1 p1,Successful,2023-04-25,2023-04-15,10,5,0.5,2023-05-06,10,13,1.3,0.385
+2023 Rancho Jamul Site 1 fix lat lon,2023 Rancho Jamul - Site 1 p2,Unknown,2023-06-22,2023-06-12,10,12,1.2,2023-07-03,10,16,1.6,0.75
 2023 Rancho Jamul Site 1 fix lat lon,2023 Rancho Jamul - Site 1 p3,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Panoche Creek Preserve - Corrals SE,2023 Panoche Creek Preserve - Corrals South East p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2023 Delevan NWR T43.2,2023 Delevan NWR T43.2 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2022 Panoche Creek Preserve Loc3,2022 Panoche Creek Preserve Location 3 p1,Successful,2022-04-20,2022-04-10,10,79,7.9,2022-05-01,10,140,14.0,0.564
+2022 Panoche Creek Preserve Loc3,2022 Panoche Creek Preserve Location 3 p1,Successful,2022-04-20,2022-04-10,10,98,9.8,2022-05-01,10,148,14.8,0.662
 2022 Panoche Creek Preserve Loc4,2022 Panoche Creek Preserve Location 4 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2020 Fort Ord,2020 Fort Ord p1,Successful,2020-04-24,2020-04-14,10,20,2.0,2020-05-05,10,78,7.8,0.256
-2023 Colusa NWR T27.2,2023 Colusa NWR T27.2 p1,Successful,2023-06-20,2023-06-10,10,85,8.5,2023-07-01,10,155,15.5,0.548
-2024 Los Vaqueros Reservoir,2024 Los Vaqueros Reservoir p1,Partially Abandoned,2024-05-05,2024-04-25,10,12,1.2,2024-05-16,10,0,0.0,n/a
-2024 Los Vaqueros Reservoir,2024 Los Vaqueros Reservoir p2,Successful,2024-06-10,2024-05-31,10,333,33.3,2024-06-21,10,192,19.2,1.734
+2020 Fort Ord,2020 Fort Ord p1,Successful,2020-04-24,2020-04-14,10,20,2.0,2020-05-05,10,79,7.9,0.253
+2023 Colusa NWR T27.2,2023 Colusa NWR T27.2 p1,Successful,2023-06-20,2023-06-10,10,87,8.7,2023-07-01,10,165,16.5,0.527
+2024 Los Vaqueros Reservoir,2024 Los Vaqueros Reservoir p1,Partially Abandoned,2024-05-05,2024-04-25,10,11,1.1,2024-05-16,10,0,0.0,n/a
+2024 Los Vaqueros Reservoir,2024 Los Vaqueros Reservoir p2,Successful,2024-06-10,2024-05-31,10,340,34.0,2024-06-21,10,192,19.2,1.771
 2024 Ohlone - Santa Lucia Preserve,2024 Ohlone Pond p1,Successful,2024-05-02,2024-04-22,10,43,4.3,2024-05-13,10,93,9.3,0.462
 2024 Markham Ravine 1,2024 Markham Ravine 1 p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 OR Eureka Lane,2024 Oregon State -  Eureka Lane p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Moore Lake - confirm lat lon,2024 Moore Lake p1,No Birds,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 SJWA Thistle NW of Bridge Street Pond,2024 San Jacinto Wildlife Area - Thistle Patch NW of Bridge Street Pond p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Merced NWR - Cottonwood Trail,2024 Merced NWR - Cottonwood Trail p1,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Dublin Ranch Preserve - Lin Livermore Conservation Area,2024 Dublin Ranch Preserve - Lin Livermore Conservation Area p1,Successful,2024-05-31,2024-05-21,10,14,1.4,2024-06-11,10,24,2.4,0.583
-2024 WA Harder Spring,2024 Washington State - Harder Spring p1,Successful,2024-07-18,2024-07-08,10,10,1.0,2024-07-29,10,29,2.9,0.345
-2024 WA McCain Pond,2024 Washington State - McCain Pond p1,Successful,2024-05-10,2024-04-30,10,45,4.5,2024-05-21,10,13,1.3,3.462
+2024 Dublin Ranch Preserve - Lin Livermore Conservation Area,2024 Dublin Ranch Preserve - Lin Livermore Conservation Area p1,Successful,2024-05-31,2024-05-21,10,12,1.2,2024-06-11,10,29,2.9,0.414
+2024 WA Harder Spring,2024 Washington State - Harder Spring p1,Successful,2024-07-18,2024-07-08,10,10,1.0,2024-07-29,10,42,4.2,0.238
+2024 WA McCain Pond,2024 Washington State - McCain Pond p1,Successful,2024-05-10,2024-04-30,10,46,4.6,2024-05-21,10,13,1.3,3.538
 2024 Rancho Jamul - North Pond,2024 Rancho Jamul - North Pond p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Rancho Jamul - Main Pond 1,2024 Rancho Jamul - Main Pond 1 p1,Successful,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Rancho Jamul - Main Pond 1,2024 Rancho Jamul - Main Pond 1 p2,Successful,2024-05-26,2024-05-16,10,61,6.1,2024-06-06,10,5,0.5,12.2
-2024 Sedgwick,2024 Sedgwick p1,Successful,2024-04-20,2024-04-10,10,11,1.1,2024-05-01,10,110,11.0,0.1
+2024 Rancho Jamul - Main Pond 1,2024 Rancho Jamul - Main Pond 1 p2,Successful,2024-05-26,2024-05-16,10,4,0.4,2024-06-06,10,5,0.5,0.8
+2024 Sedgwick,2024 Sedgwick p1,Successful,2024-04-20,2024-04-10,10,12,1.2,2024-05-01,10,130,13.0,0.092
 2024 Baja Lago Mesa Redonda,2024 Baja Lago Mesa Redonda p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Baja Lago Mesa Redonda,2024 Baja Lago Mesa Redonda p2,Successful,2024-05-24,2024-05-14,10,15,1.5,2024-06-04,10,165,16.5,0.091
+2024 Baja Lago Mesa Redonda,2024 Baja Lago Mesa Redonda p2,Successful,2024-05-24,2024-05-14,10,15,1.5,2024-06-04,10,167,16.7,0.09
 2024 Baja Lago Mesa Redonda,2024 Baja Lago Mesa Redonda p3,Successful,2024-06-21,2024-06-11,10,0,0.0,2024-07-02,10,6,0.6,0.0
 2024 Baja Rancho Cinega Redonda 1,2024 Baja Rancho Cinega Redonda 1 p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Baja Rancho Cinega Redonda 1,2024 Baja Rancho Cinega Redonda 1 p2,Successful,2024-05-25,2024-05-15,10,0,0.0,2024-06-05,10,72,7.2,0.0
+2024 Baja Rancho Cinega Redonda 1,2024 Baja Rancho Cinega Redonda 1 p2,Successful,2024-05-25,2024-05-15,10,0,0.0,2024-06-05,10,75,7.5,0.0
 2024 Baja Rancho Cinega Redonda 1,2024 Baja Rancho Cinega Redonda 1 p3,Successful,2024-06-18,2024-06-08,10,0,0.0,2024-06-29,10,15,1.5,0.0
-2024 Baja Rancho Cinega Redonda 2,2024 Baja Rancho Cinega Redonda 2 p1,Successful,2024-04-29,2024-04-23,6,96,16.0,2024-05-10,10,272,27.2,0.588
-2024 Baja Rancho Cinega Redonda 2,2024 Baja Rancho Cinega Redonda 2 p2,Successful,2024-06-04,2024-05-25,10,99,9.9,2024-06-15,10,299,29.9,0.331
-2024 Colusa NWR T27.1,2024 Colusa NWR T27.1 p1,Partially Abandoned,2024-06-11,2024-06-01,10,237,23.7,2024-06-22,10,26,2.6,9.115
+2024 Baja Rancho Cinega Redonda 2,2024 Baja Rancho Cinega Redonda 2 p1,Successful,2024-04-29,2024-04-23,6,100,16.667,2024-05-10,10,283,28.3,0.589
+2024 Baja Rancho Cinega Redonda 2,2024 Baja Rancho Cinega Redonda 2 p2,Successful,2024-06-04,2024-05-25,10,99,9.9,2024-06-15,10,318,31.8,0.311
+2024 Colusa NWR T27.1,2024 Colusa NWR T27.1 p1,Partially Abandoned,2024-06-11,2024-06-01,10,230,23.0,2024-06-22,10,26,2.6,8.846
 2024 Colusa NWR T27.2,2024 Colusa NWR T27.2 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Kern 1 - check lat lon,2024 Kern 1 p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Panoche Creek Preserve - Dollar Marsh East,2024 Panoche Creek Preserve - Dollar Marsh East p1,Successful,2024-04-29,2024-04-19,10,253,25.3,2024-05-10,10,159,15.9,1.591
+2024 Panoche Creek Preserve - Dollar Marsh East,2024 Panoche Creek Preserve - Dollar Marsh East p1,Successful,2024-04-29,2024-04-19,10,277,27.7,2024-05-10,10,247,24.7,1.121
 2024 Wind Wolves Preserve - Tevis fix lat lon,2024 Wind Wolves Preserve - Tevis p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Wind Wolves Preserve - Los Lobos fix lat lon,2024 Wind Wolves Preserve - Los Lobos p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Wind Wolves Preserve - Pleitito,2024 Wind Wolves Preserve - Pleitito p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
-2024 Wind Wolves Preserve - Pleitito,2024 Wind Wolves Preserve - Pleitito p2,Successful,2024-05-25,2024-05-15,10,31,3.1,2024-06-05,10,159,15.9,0.195
+2024 Wind Wolves Preserve - Pleitito,2024 Wind Wolves Preserve - Pleitito p2,Successful,2024-05-25,2024-05-15,10,31,3.1,2024-06-05,10,164,16.4,0.189
 2024 Wind Wolves Preserve - Santiago,2024 Wind Wolves Preserve - Santiago p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 Newberry Springs,2024 Newberry Springs p1,Successful,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a
 2024 North Regional Pond,2024 North Regional Pond p1,No Colony,ND,n/a,0,0,n/a,n/a,0,0,n/a,n/a
