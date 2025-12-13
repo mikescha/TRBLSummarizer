@@ -1,2 +1,12 @@
-Logging started 13-Dec-25 09:02:02
-13-Dec-25 09:02:04: process_site: 2018 SJWA WSS at p1: Second date is ND, but first date is not: p1mcend:4/19/2018, p1hatch:ND
+Logging started 13-Dec-25 12:25:03
+13-Dec-25 12:25:04: Date for 2024 Baja Lago Mesa Redonda in sheet and from data are different. From sheet: {'start': datetime.date(2024, 5, 2), 'end': datetime.date(2024, 8, 4)}; From data: {'start': datetime.date(2024, 3, 15), 'end': datetime.date(2024, 8, 4)}
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: Found invalid data in p1mcstart: pre
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: Found pre in p1mcend, which is invalid data
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: Found invalid data in p1mcend: pre
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: Found before start, HBC present in p1hatch, which is invalid data
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: p1fledgestart is a valid date, but p1hatch is not ND, date, or before start
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p1: Second date is ND, but first date is not: p1fledgestart:5/3/2024, p1fledgedisp:ND
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p2: Found invalid data in p2mcstart: pre
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p2: p2mcend is a valid date, but p2mcstart is not ND, date, or before start
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p2: Second date is ND, but first date is not: p2hatch:5/24/2024, p2fledgestart:ND
+13-Dec-25 12:25:05: process_site: 2024 Baja Lago Mesa Redonda at p3: Second date is ND, but first date is not: p3hatch:6/21/2024, p3fledgestart:ND
