@@ -302,7 +302,7 @@ pm_other_types = [PM_INSECT_SP30,
                  "Bull Frog"]
 
 #Abbreviations are used in the summary table, to reduce column width
-pm_file_types = pm_song_types #+ pm_other_types # remove this if we are hiding the insects
+pm_file_types = pm_song_types + pm_other_types # remove this if we are hiding the insects
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
 pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
 
