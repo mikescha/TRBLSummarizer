@@ -1811,18 +1811,13 @@ def create_graph(df: pd.DataFrame, row_names:list, cmap:dict, draw_connectors=Fa
     # numbers are used to differentiate no data from data with zero value
     df_clean = df.mask(df <= 0)
 
-    # heatmap_max = st.number_input(
-    #     "Maximum value for heatmap color scale",  
-    #     min_value=0,
-    #     value=36,      # default value
-    #     step=2, key="heatmap_max_global"
-    # )
-
     i=0
     for row in row_names:
         # plotting the heatmap
+        #Using a constant for now so that rows can be compared to each other. One value for mini-man because
+        #she only did 4 recordings per day for it. A separate one for everything else.
+        heatmap_max = 4 if title[0:4].lower() == "mini" else 36
 #        heatmap_max = df_clean.loc[row].max()
-        heatmap_max = 36 #Using a constant for now so that rows can be compared to each other.
 
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[row].to_frame().transpose()
