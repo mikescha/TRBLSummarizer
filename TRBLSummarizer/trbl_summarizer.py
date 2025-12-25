@@ -243,19 +243,19 @@ CMAP_PM = {"Male Song":         "Greens",
 DATA_FOLDER = 'Data/'
 PMJ_DATA_FOLDER = 'PMJ Data/'
 FIG_FOLDER = 'Figures/'
-data_dir = Path(__file__).parents[0] / DATA_FOLDER
-pmj_data_dir = Path(__file__).parents[0] / PMJ_DATA_FOLDER
-figure_dir = Path(__file__).parents[0] / FIG_FOLDER
+DATA_DIR = Path(__file__).parents[0] / DATA_FOLDER
+PMJ_DATA_DIR = Path(__file__).parents[0] / PMJ_DATA_FOLDER
+FIGURE_DIR = Path(__file__).parents[0] / FIG_FOLDER
 ALL_FILE = 'TRBL Analysis tracking - All.csv'
 SHEET_HEADER_SIZE = 2 #number of rows to skip over
 WEATHER_FILE = 'weather_history.csv'
-error_file = Path(__file__).parents[0] / 'error.txt'
+ERROR_FILE = Path(__file__).parents[0] / 'error.txt'
 DATES_FILE = 'analyzed dates.csv'
 
 #This is everything except the data files, because those are auto-generated
-files = {
-    ALL_FILE : data_dir / ALL_FILE,
-    WEATHER_FILE : data_dir / WEATHER_FILE,
+FILES = {
+    ALL_FILE : DATA_DIR / ALL_FILE,
+    WEATHER_FILE : DATA_DIR / WEATHER_FILE,
     DATES_FILE : Path(__file__).parents[0] / DATES_FILE
 }
 
@@ -383,15 +383,15 @@ def my_time():
 
 def init_logging():
     if not BEING_DEPLOYED_TO_STREAMLIT:
-        remove_file(error_file)
-        with error_file.open("a") as f:
+        remove_file(ERROR_FILE)
+        with ERROR_FILE.open("a") as f:
             f.write(f"Logging started {my_time()}\n")    
 
 def log_error(msg: str):
     global error_list
     error_list += f"{msg}\n\n"
     if not BEING_DEPLOYED_TO_STREAMLIT:
-        with error_file.open("a") as f:
+        with ERROR_FILE.open("a") as f:
             f.write(f"{my_time()}: {msg}\n")
 
 def show_error(msg: str):
@@ -434,7 +434,7 @@ def make_date(row: pd.Series) -> pd.Timestamp:
 @st.cache_resource
 def get_target_sites() -> list:
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_sites = pd.read_csv(files[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
+    all_sites = pd.read_csv(FILES[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
 
     #Clean it up. Only keep names that start with a 4-digit number and are not to be skipped. 
     filtered_sites = all_sites.loc[
@@ -551,7 +551,7 @@ def check_for_tag_errors(df: pd.DataFrame):
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
 @st.cache_resource
 def load_data() -> pd.DataFrame:
-    files_to_load = [data_dir / f"data {year}.csv" for year in range(2017, 2025)]
+    files_to_load = [DATA_DIR / f"data {year}.csv" for year in range(2017, 2025)]
     combined_df = pd.DataFrame()
     for file_name in files_to_load:
         #Validate the data file format
@@ -606,7 +606,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
             site_columns['day'], site_columns[validated]]
 
     # Add the site name so we look into the appropriate folder
-    site_dir = pmj_data_dir / site
+    site_dir = PMJ_DATA_DIR / site
     if os.path.isdir(site_dir):
         for t in pm_file_types:
             fname = f"{site} {t}.csv"
@@ -673,7 +673,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
     #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
-    data_csv = Path(__file__).parents[0] / files[ALL_FILE]
+    data_csv = Path(__file__).parents[0] / FILES[ALL_FILE]
 
     #Load up the file 
     #Skiprows is because the All file has junk at the top we want to ignore
@@ -984,7 +984,7 @@ def make_pattern_match_pt(site_df: pd.DataFrame, type_name:str, date_range_dict:
     # If the pivot table is empty, ensure all dates exist with value 0
     if aggregate.empty:
         all_dates = site_df.index.unique()  # Get all dates from original df
-        aggregate = pd.DataFrame(0, index=all_dates, columns=[type_name])  # Fill with zeros
+        aggregate = pd.DataFrame(np.nan, index=all_dates, columns=[type_name])  # Fill with zeros
         aggregate.index.name = DATE  # Set the index name properly
     
     return normalize_pt(aggregate, date_range_dict)
@@ -1386,7 +1386,7 @@ def set_global_theme():
 
 def output_cmap():
     #Save the legend
-    figure_path = figure_dir / LEGEND_NAME
+    figure_path = FIGURE_DIR / LEGEND_NAME
     if os.path.exists(figure_path):
         os.remove(figure_path)
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight', pad_inches=0)    
@@ -1794,6 +1794,17 @@ def draw_missing_day_boxes(
             fig.add_artist(rect)
 
 
+def file_missing(site, graph_type, type):
+    if graph_type == GRAPH_PM:
+        site_dir = PMJ_DATA_DIR / site
+        if os.path.isdir(site_dir):
+            fname = f"{site} {type}.csv"
+            full_file_name = site_dir / fname
+            if is_non_zero_file(full_file_name):
+                return False
+    
+    return True
+
 
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
@@ -1890,7 +1901,7 @@ def create_graph(df: pd.DataFrame,
             # Zero → white (force the lowest color to white)
             cmap_final.set_under("white")
 
-            # No data (NaN / masked) → gray
+            # No data (NaN / masked) → white 
             cmap_final.set_bad("white") 
 
         axs[i] = sns.heatmap(
@@ -1913,10 +1924,11 @@ def create_graph(df: pd.DataFrame,
             if graph_type == GRAPH_EDGE and df.loc[row].lt(0).any():
                 pass
             else:
-                label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
-                axs[i].text(0.5,0.5,f"No data for {label}", 
-                            font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-                            color='gray', verticalalignment='center')
+                if file_missing(site, graph_type, row):
+                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
+                    axs[i].text(0.5,0.5,f"No data for {label}", 
+                                font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
+                                color='gray', verticalalignment='center')
         elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys():
                 axs[i].text(0.5,0.5,f"{PM_OTHER_TYPES[row]}", 
                             font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
@@ -2152,11 +2164,11 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, ):
         return
 
     filename = make_img_filename(site, graph_type)
-    figure_path = figure_dir / filename
+    figure_path = FIGURE_DIR / filename
     remove_file(figure_path)
 
     cleaned_image_filename = make_img_filename(site, graph_type, extra=' clean')    
-    cleaned_figure_path = figure_dir / cleaned_image_filename
+    cleaned_figure_path = FIGURE_DIR / cleaned_image_filename
     remove_file(cleaned_figure_path)
     if not delete_only:
         MONTH_NAMES = {
@@ -2354,11 +2366,11 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
         return
     
     composite_filename = make_img_filename(site, "composite")
-    composite_path = figure_dir / composite_filename
+    composite_path = FIGURE_DIR / composite_filename
     remove_file(composite_path)
 
     pattern = f"{site} -*clean.png"
-    matching_files = glob.glob(os.path.join(figure_dir, pattern))
+    matching_files = glob.glob(os.path.join(FIGURE_DIR, pattern))
 
     #Drop files we don't want
     if not SHOW_MANUAL_ANALYSIS:
@@ -2371,7 +2383,7 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
         assert len(result) <= 1
         if result:
             site_fig_dict[graph_type] = result[0]
-    legend = figure_dir / LEGEND_NAME
+    legend = FIGURE_DIR / LEGEND_NAME
      
     if len(site_fig_dict): 
         # exclude weather for now, we need to add it after the legend
@@ -2428,7 +2440,7 @@ def output_text(text:str, make_all_graphs:bool):
 #Load weather data from file
 #@st.cache_resource
 def load_weather_data_from_file() -> pd.DataFrame:
-    df = pd.read_csv(files[WEATHER_FILE])
+    df = pd.read_csv(FILES[WEATHER_FILE])
 
     # Select and rename relevant columns
     columns_to_keep = ['Name', 'date', 'tmax_F', 'tmin_F', 'precip_in', 'wind_speed_mean_m_s']
@@ -2761,7 +2773,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
 
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
-    df = pd.read_csv(files[ALL_FILE], skiprows=SHEET_HEADER_SIZE)
+    df = pd.read_csv(FILES[ALL_FILE], skiprows=SHEET_HEADER_SIZE)
 
     #Make a dictionary, where the keys are in site_info_fields and the values are the values from the 
     #site info file in the columns that match site_info_fields, for the site==site_name
@@ -3203,8 +3215,8 @@ if make_all_graphs:
     #target_sites = [string for string in target_sites if string.startswith("2024 ")]
 
     # This is the file where we write all the dates we extracted from the data
-    if os.path.exists(files[DATES_FILE]):
-        os.remove(files[DATES_FILE])
+    if os.path.exists(FILES[DATES_FILE]):
+        os.remove(FILES[DATES_FILE])
     
     # For now, I'm not saving all the files, only the composite because it's taking up too much space. 
     # When she needs all the files, we'll bring this back
@@ -3503,7 +3515,7 @@ for site in target_sites:
                 if show_PM_dates:
                     add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
                 if make_all_graphs:
-                    append_to_csv(summarized_data, site, files[DATES_FILE])
+                    append_to_csv(summarized_data, site, FILES[DATES_FILE])
                 else:
                     pretty_print_table(summarized_data, body_alignment="left")
             else:
