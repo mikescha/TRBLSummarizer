@@ -784,7 +784,7 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 result1 = convert_to_datetime("6/1/1967") 
             elif value1.lower() == "before start, hbc absent".lower():
                 pass #Don't do anything right now, maybe later
-            elif value1 == "before start":
+            elif value1 == "pre":
                 #If the start date is "before start" then we don't know when it was exactly. I used to use the
                 #date of the first recording as "before start" but that's not correct, so we took this line 
                 #out:
@@ -792,8 +792,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 #
                 #Not sure if there's anything to do here...
                 pass
-            elif value1 == "after end":
-                if value2 != "after end":
+            elif value1 == "post":
+                if value2 != "post":
                     log_error(f"{error_prefix}: {target1} is 'after end' but {target2} is not")
             elif value1 == nd_string or value1 == "" or pd.isna(value1):
                 #this is OK, we aren't going to draw anything in this case
@@ -817,11 +817,11 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                     log_error(f"{error_prefix}: Column Abandoned does not have a valid abandoned date")
                 else:
                     result2 = abandoned_date - pd.Timedelta(days=1)
-            elif value2.lower() == "before start".lower():
+            elif value2.lower() == "pre".lower():
                 #In this scenario, the start should be ND, throw an error if not
                 if not value1 == nd_string:
-                    log_error(f"{error_prefix}: In {target2} end date is 'before start' but start date is not 'ND'")
-            elif value2.lower() == "after end".lower():
+                    log_error(f"{error_prefix}: In {target2} end date is 'pre' but start date is not 'ND'")
+            elif value2.lower() == "post".lower():
                 #See commentary above about "before start". It used to use the date of the last recording:
                 #    result2 = summary_dict[SUMMARY_LAST_REC]
                 pass
