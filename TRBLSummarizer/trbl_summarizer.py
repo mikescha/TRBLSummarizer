@@ -1287,9 +1287,7 @@ def parse_date(date_str):
 # Assume that the data cleaning code has removed any extraneous dates, such as if data 
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
-    '''
-    TODONOW Get all the default dates from the All sheet, column O & P
-    '''
+
     date_range_dict_from_sheet = get_site_info(df["site"].iloc[0], ["First Recording", "Last Recording"])
     date_range_dict_from_sheet[START] = date_range_dict_from_sheet.pop("First Recording")
     date_range_dict_from_sheet[END] = date_range_dict_from_sheet.pop("Last Recording")
@@ -1306,8 +1304,10 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
     normalized_from_data = {k: parse_date(v) for k, v in date_range_dict.items()}
 
     if normalized_from_sheet != normalized_from_data:
-        #log an error? 
-        log_error(f"Date for {df["site"].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}")
+        #it's OK for the very first recording to have a different date, but we should log it
+        #if the second one is also different. 
+        if df.index[1].date() != normalized_from_sheet["start"]:
+            log_error(f"Date for {df["site"].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}")
         pass
 
     #For now, use the sheet data
@@ -2822,7 +2822,7 @@ def check_tags(df: pd.DataFrame):
         with st.expander('See errors'):
             st.write(error_list)
     else:
-        st.write('No tag errors found')
+        st.write('No data errors found')
     
     return
 
