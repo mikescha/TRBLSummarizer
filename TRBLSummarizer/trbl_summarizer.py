@@ -1,3 +1,4 @@
+from __future__ import annotations
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -42,7 +43,7 @@ import gc
 
 #Set to true before I deploy
 BEING_DEPLOYED_TO_STREAMLIT = True
-SHOW_MANUAL_ANALYSIS = False  # Dec 2025, we don't want this for the graphs for the reports
+SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we don't want this for the graphs for the reports
 INCLUDE_INSECT_AND_FROG_DATA = True
 
 
@@ -1807,8 +1808,105 @@ def file_missing(site, graph_type, type):
 
 
 
+def normalize_by_recordings_per_day(
+    site: str,
+    df_to_graph: pd.DataFrame,
+    recordings_parquet: str | Path,
+    *,
+    # if you pass hour_start/hour_end, we assume recordings_parquet is the per-day-hour parquet
+    hour_start: int | None = None,
+    hour_end: int | None = None,
+    # interpret hour_end as exclusive (recommended): [hour_start, hour_end)
+    end_exclusive: bool = True,
+    recordings_col: str = "n_recordings",
+    site_col: str = "site",
+    date_col: str = "date",
+    hour_col: str = "hour",
+) -> pd.DataFrame:
+    """
+    Normalize a 1-row dataframe by #recordings per day for a given site.
+
+    Two modes:
+
+    Mode A (daily counts parquet):
+      recordings_parquet has columns: site, date, n_recordings
+      -> denominator is total recordings for that (site, date)
+
+    Mode B (hourly counts parquet):
+      recordings_parquet has columns: site, date, hour, n_recordings
+      -> if hour_start/hour_end are provided, denominator is sum of recordings in that hour range.
+
+    Parameters:
+      hour_start/hour_end:
+        - if both are None -> daily counts mode
+        - if both are ints -> hourly mode
+        Example 6am–6pm: hour_start=6, hour_end=18 (end-exclusive gives 6..17)
+    """
+
+    if df_to_graph.shape[0] != 1:
+        raise ValueError(f"df_to_graph must be 1-row, got shape={df_to_graph.shape}")
+
+    # Normalize df_to_graph columns to normalized Timestamps
+    df_num = df_to_graph.copy()
+    df_num.columns = pd.to_datetime(df_num.columns, errors="raise").normalize()
+    df_num = df_num.apply(pd.to_numeric, errors="coerce")
+
+    parquet_path = Path(recordings_parquet)
+
+    # -------------------------
+    # Mode B: hourly denominator
+    # -------------------------
+    if (hour_start is None) ^ (hour_end is None):
+        raise ValueError("Provide both hour_start and hour_end, or neither.")
+
+    if hour_start is not None and hour_end is not None:
+        if not (0 <= hour_start <= 23 and 0 <= hour_end <= 24):
+            raise ValueError("hour_start must be 0..23 and hour_end must be 0..24")
+
+        cols = [site_col, date_col, hour_col, recordings_col]
+        rec = pd.read_parquet(parquet_path, columns=cols)
+
+        # filter to site
+        rec = rec.loc[rec[site_col].astype(str) == str(site), [date_col, hour_col, recordings_col]].copy()
+
+        rec[date_col] = pd.to_datetime(rec[date_col], errors="raise").dt.normalize()
+        rec[hour_col] = pd.to_numeric(rec[hour_col], errors="coerce").astype("Int64")
+
+        # filter hours
+        if end_exclusive:
+            hour_mask = (rec[hour_col] >= hour_start) & (rec[hour_col] < hour_end)
+        else:
+            hour_mask = (rec[hour_col] >= hour_start) & (rec[hour_col] <= hour_end)
+
+        rec = rec.loc[hour_mask]
+
+        # collapse to per-day denominator
+        denom_by_day = rec.groupby(date_col, as_index=True)[recordings_col].sum()
+
+        denom = denom_by_day.reindex(df_num.columns)
+        normalized_by_day = df_num.div(denom, axis="columns")
+        return normalized_by_day
+
+    # ------------------------
+    # Mode A: daily denominator
+    # ------------------------
+    cols = [site_col, date_col, recordings_col]
+    rec = pd.read_parquet(parquet_path, columns=cols)
+
+    rec = rec.loc[rec[site_col].astype(str) == str(site), [date_col, recordings_col]].copy()
+    rec[date_col] = pd.to_datetime(rec[date_col], errors="raise").dt.normalize()
+
+    denom_by_day = rec.groupby(date_col, as_index=True)[recordings_col].sum()
+    denom = denom_by_day.reindex(df_num.columns)
+
+    return df_num.div(denom, axis="columns")
+
+
+
+
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
-def create_graph(df: pd.DataFrame, 
+def create_graph(site: str,
+                 df: pd.DataFrame, 
                  row_names : list, 
                  cmap : dict,  
                  raw_data = pd.DataFrame(), 
@@ -1883,11 +1981,6 @@ def create_graph(df: pd.DataFrame,
     i=0
     for row in row_names:
         # plotting the heatmap
-        #Using a constant for now so that rows can be compared to each other. One value for mini-man because
-        #she only did 4 recordings per day for it. A separate one for everything else.
-        #heatmap_max = df_clean.loc[row].max()
-        heatmap_max = 4 if graph_type == GRAPH_MINIMAN else 36
-
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[row].to_frame().transpose()
         cmap_final = sns.color_palette(cmap[row] if len(cmap)>1 else cmap[0], as_cmap=True)
@@ -1904,11 +1997,17 @@ def create_graph(df: pd.DataFrame,
             # No data (NaN / masked) → white 
             cmap_final.set_bad("white") 
 
+        if graph_type == GRAPH_MINIMAN:
+            df_norm = df_to_graph / 4  #4 recordings per day
+        else:
+            parquet_path = r"C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\recordings_per_day_hour.parquet"
+            df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
+
         axs[i] = sns.heatmap(
-            data = df_to_graph,
+            data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
-            vmin = 0, vmax = heatmap_max if heatmap_max > 0 else 1,
+            vmin = 0, vmax = 1, #Max is 1 because everything is normalized by recordings per day
             cbar = False,
             xticklabels = tick_spacing,
             yticklabels = False
@@ -2690,35 +2789,19 @@ def create_weather_graph(weather_by_type:dict, site_name:str) -> tuple[Figure, l
 # Bonus functions
 #
 
-
-#Used for formatting output table
-#The function can take at most one paramenter. In this case, if there is a param and the 
-# value passed in is zero, then we use the props that are passed in, otherwise none. In this
-# way, the cell in question gets formatted using props if the value is zero. 
-# It would be called like this:
-#        #union_pt = union_pt.style.applymap(style_zero, props='color:gray;')
-#
-#https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html
-def style_zero(v, props=''):
-    return props if v == 0 else None
-
 # In this case, we return specific formatting based on whether the cell is zero, non-zero but not 
 # a date, or a date. This is to make non-zero values that aren't dates easier to see.
 # Color options: https://www.w3schools.com/colors/colors_names.asp
 def style_cells(v):
-    zeroprops = 'color:gray;'
-    nonzeroprops = 'color:black;background-color:YellowGreen;text-align:center;'
-    result = ''
-    if v == 0:
+    zeroprops = 'background-color:GhostWhite;'
+    nonzeroprops = 'color:DarkBlue;background-color:Ivory'
+    if v == '':
         result = zeroprops
     elif isinstance(v, pd.Timestamp): #if it's a date, do nothing
         result = ''
     else: #it must be a non-date, non-zero value so format it to call it out
         result = nonzeroprops
     return result
-
-def style_center_align(s, props='text-align: center;'):
-    return props
 
 # For pretty printing a table
 def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
@@ -3495,31 +3578,35 @@ for site in target_sites:
                 if pd.notna(hatch_date):
                     hatch_dates[p] = hatch_date
 
-        graph, axs = create_graph(df = pt_pm, 
+        graph, axs = create_graph(
+                            site = site,
+                            df = pt_pm, 
                             row_names = pm_file_types, 
                             cmap = CMAP_PM, 
                             title = GRAPH_PM,
                             graph_type = GRAPH_PM,
                             hatch_dates = hatch_dates,
-                            missing_days = missing_days) 
+                            missing_days = missing_days
+        ) 
         
         if month_locs=={}:
             cols = pd.DatetimeIndex(pt_pm.columns)
             start = cols.min().normalize()
             end   = cols.max().normalize()
             month_locs = get_visible_month_day_ranges(start, end) 
-            
-        with st.expander("Show pulse dates from Pattern Matching"):
-            if len(pt_pm):
-                summarized_data, raw_pm_dates = summarize_pm(pt_pm)
-                if show_PM_dates:
-                    add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
-                if make_all_graphs:
-                    append_to_csv(summarized_data, site, FILES[DATES_FILE])
-                else:
-                    pretty_print_table(summarized_data, body_alignment="left")
-            else:
-                st.write("No pattern matching data available")
+
+        #TODO need to change this to pull the breeding dates     
+        # with st.expander("Show pulse dates "):
+        #     if len(pt_pm):
+        #         summarized_data, raw_pm_dates = summarize_pm(pt_pm)
+        #         if show_PM_dates:
+        #             add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
+        #         if make_all_graphs:
+        #             append_to_csv(summarized_data, site, FILES[DATES_FILE])
+        #         else:
+        #             pretty_print_table(summarized_data, body_alignment="left")
+        #     else:
+        #         st.write("No pattern matching data available")
 
         output_graph(site, graph, GRAPH_PM,
                      save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=pm_data_empty)
@@ -3530,12 +3617,15 @@ for site in target_sites:
         #SEPT2025- trying to hide COURT_SONG from the list of songs
         new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
 
-        graph, axs = create_graph(df = pt_manual, 
+        graph, axs = create_graph(
+                            site = site,
+                            df = pt_manual, 
                             row_names = [data_col[s] for s in new_songs], #SEPT2025
                             cmap = CMAP, 
                             title = GRAPH_MANUAL,
                             graph_type=GRAPH_MANUAL,
-                            missing_days = missing_days) 
+                            missing_days = missing_days
+        ) 
         # add this if we want to include the site name (site + ' ' if save_files else '')
         # Need to be able to build an image that looks like the graph labels so that it can be drawn
         # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
@@ -3553,14 +3643,17 @@ for site in target_sites:
 
     # MiniManual Analysis
     if not pt_mini_manual.empty:
-        graph, axs = create_graph(df = pt_mini_manual, 
+        graph, axs = create_graph(
+                            site = site,
+                            df = pt_mini_manual, 
                             row_names = song_cols, 
                             cmap = CMAP, 
                             raw_data = df_site,
                             draw_vert_rects = True,
-                            title = "Manual Analysis",
+                            title = "Manual Analysis (Periodic)",
                             graph_type = GRAPH_MINIMAN,
-                            missing_days = missing_days)
+                            missing_days = missing_days
+        )
         if month_locs=={}:
             cols = pd.DatetimeIndex(pt_mini_manual.columns)
             start = cols.min().normalize()
@@ -3573,14 +3666,17 @@ for site in target_sites:
     # Edge Analysis
     if not pt_edge.empty and False:
         cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
-        graph, axs = create_graph(df = pt_edge, 
+        graph, axs = create_graph(
+                            site = site,
+                            df = pt_edge, 
                             row_names = edge_cols,
                             cmap = cmap_edge, 
                             raw_data = df_site,
                             draw_horiz_rects = True,
                             title = GRAPH_EDGE,
                             graph_type="edge",
-                            missing_days = missing_days)
+                            missing_days = missing_days
+        )
         if month_locs=={}:
             cols = pd.DatetimeIndex(pt_edge.columns)
             start = cols.min().normalize()
@@ -3658,15 +3754,25 @@ if not make_all_graphs and len(df_site):
         union_pt.reset_index(inplace=True)
         union_pt.rename(columns={'index':'Date'}, inplace=True)
 
-        # Format the overview table so it's easy to read and output it 
-        # Learn about formatting
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/style.html#
-        union_pt = union_pt.style.map(style_cells)
+        #Make a copy and clean it up for display
+        df_display = union_pt.copy()
+
+        sty_union = (
+            df_display
+            .style
+            .map(style_cells)
+            .set_properties(**{"text-align": "center"})
+        )
     
-        #Apply formatting to the weather if the weather data is there
-        if len(weather_by_type):
-            union_pt.format(formatter={'PRCP':'{:.2f}', 'Date':lambda x:x.strftime('%m-%d-%y')})
-        st.dataframe(union_pt)
+        st.dataframe(
+            sty_union,
+            column_config={
+                "Date": st.column_config.DateColumn(format="MM-DD-YY"),
+                "PRCP": st.column_config.NumberColumn(format="%.2f"),
+                # numeric columns: right alignment is the default in Streamlit’s grid for numbers
+            },
+        )
+
 
     # Put a box with first and last dates for the Song columns, with counts on that date
     with st.expander("See overview of dates"): 
