@@ -770,8 +770,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 #It's a good date, so format it
                 result1 = convert_to_datetime(value1)
 
-                if (value2 not in ["after end", nd_string]) and not is_valid_date(value2):
-                    log_error(f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not 'after end', ND, or a date")
+                if (value2.lower() not in [nd_string.lower(), "post"]) and not is_valid_date(value2):
+                    log_error(f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, post, or a date")
 
             elif pd.notna(value1) and value1.startswith(ABANDONED):
                 if not is_valid_date(abandoned_date):
@@ -803,8 +803,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
                 log_error(f"{error_prefix}: Found invalid data in {target1}: {value1}")
 
             if is_valid_date_string(value2):
-                if (value1 not in ["before start", nd_string]) and not is_valid_date_string(value1):
-                    log_error(f"{error_prefix}: {target2} is a valid date, but {target1} is not ND, date, or before start")
+                if (value1.lower() not in ["pre", nd_string.lower()]) and not is_valid_date_string(value1):
+                    log_error(f"{error_prefix}: {target2} is a valid date, but {target1} is not ND, pre, or a valid date")
                 #It's a good date, so format it
                 if phase == PHASE_FLDG:
                     #For fledgling phase, don't subtract one from the end date
@@ -1336,7 +1336,7 @@ def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict
 #
 #
 if BEING_DEPLOYED_TO_STREAMLIT:
-    GRAPH_FONT = "Sans Serif'"
+    GRAPH_FONT = "sans serif"
     GRAPH_FONT_TTF = "comic.ttf" #never used in this case
 else:
     GRAPH_FONT = "Franklin Gothic Book"
@@ -2731,7 +2731,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
         return ts.strftime('%m-%d-%y')
     
     # Do this so that the original DF doesn't get edited, because of how Python handles parameters 
-    output_df = df
+    output_df = df.copy()
 
     # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
     for col in output_df.columns:
@@ -3669,9 +3669,10 @@ if not make_all_graphs and len(df_site):
         st.dataframe(union_pt)
 
     # Put a box with first and last dates for the Song columns, with counts on that date
-    with st.expander("See overview of dates"):  
-        output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
-        pretty_print_table(pd.DataFrame.from_dict(output))
+    with st.expander("See overview of dates"): 
+        st.write("Currently hiding this, let me know if you want it")
+        # output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
+        # pretty_print_table(pd.DataFrame.from_dict(output))
 
     # Scan the list of tags and flag any where there is "---" for the value.
     if container_mid.checkbox('Show errors', value=True): 
