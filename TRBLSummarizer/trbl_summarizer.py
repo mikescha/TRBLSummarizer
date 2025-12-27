@@ -3594,7 +3594,7 @@ for site in target_sites:
             start = cols.min().normalize()
             end   = cols.max().normalize()
             month_locs = get_visible_month_day_ranges(start, end) 
-
+ 
         #TODO need to change this to pull the breeding dates     
         # with st.expander("Show pulse dates "):
         #     if len(pt_pm):
