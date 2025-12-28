@@ -2002,7 +2002,7 @@ def create_graph(site: str,
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 4  #4 recordings per day
         else:
-            parquet_path = Path(r"TRBLSummarizer\Data\recordings_per_day_hour.parquet")
+            parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
         norm = colors.PowerNorm(gamma=0.7, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
