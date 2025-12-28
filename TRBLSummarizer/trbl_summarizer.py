@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import matplotlib.lines as mlines
+import matplotlib.dates as mdates
 from matplotlib import colors
 from pathlib import Path
 import os
@@ -29,21 +30,19 @@ from PIL.Image import Image
 from PIL import ImageDraw, ImageFont
 from datetime import datetime as dt
 import glob
-from datetime import timedelta
+
 
 #Crap that I needed to fix pylance errors
 from typing import cast
 from collections.abc import Sequence
-
-
 
 #to force garbage collection and reduce memory use
 import gc
  
 
 #Set to true before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
-SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we don't want this for the graphs for the reports
+BEING_DEPLOYED_TO_STREAMLIT = False
+SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = True
 
 
@@ -200,15 +199,6 @@ GRAPH_PM = 'Pattern Matching Analysis'
 GRAPH_WEATHER = 'Weather'
 GRAPH_TYPES = [GRAPH_SUMMARY, GRAPH_PM, GRAPH_MANUAL, GRAPH_MINIMAN,  GRAPH_EDGE, GRAPH_WEATHER]
 LEGEND_NAME = 'legend.png'
-# legend_text = {GRAPH_SUMMARY: ["Settlement", "Incubation", "Brooding", "Fledgling"],
-#                GRAPH_MANUAL: ["Male Song", "Female Chatter", "Hatchling/Nestling"],
-
-#                GRAPH_MINIMAN: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling"],
-#                GRAPH_EDGE: ["Male Chorus", "Hatchling Call"],
-#                GRAPH_PM: ["Male Song", "Male Chorus", "Female Chatter", "Hatchling/Nestling", "Fledgling", 
-#                           "Insect 30", "Insect 31", "Insect 32", "Insect 33", "Pacific Tree Frog", "Red-legged Frog", "Bull Frog"]
-# }
-
 
 #default color map
 CMAP = {data_col[MALE_SONG]:'Greens', 
@@ -217,7 +207,6 @@ CMAP = {data_col[MALE_SONG]:'Greens',
         data_col[ALTSONG1]:'Blues', 
         "Fledgling":"Blues"
 }
-
 
 CMAP_NAMES = {data_col[MALE_SONG]:"Male Song",
               data_col[COURT_SONG]:"Male Chorus",
@@ -239,6 +228,9 @@ CMAP_PM = {"Male Song":         "Greens",
            "Pacific Tree Frog": "YlGn",	
            "Red-legged Frog":   "YlGn",
            "Bull Frog":         "YlGn"}
+
+NO_DATA_COLOR = "#f0f0f0"
+HATCH_PATTERN = "///"
 
 
 #Files, paths, etc.
@@ -1354,17 +1346,13 @@ LEGEND_FONT_SIZE = 8
 # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     #https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
-    line_color = 'gray'
-    line_width = '0.75'
+    line_color = 'black'
+    line_width = '1.5'
     custom_params = {'figure.dpi':DPI, 
                      'font.family':GRAPH_FONT,                      
-                     'font.family':'sans serif', 
-                     'font.size':'12',
+                     'font.size':AXIS_FONT_SIZE,
                      'font.stretch':'normal',
                      'font.weight':'light',
-                     'xtick.labelsize':'medium',
-                     'xtick.major.size':'12',
-                     'xtick.color':line_color,
                      'xtick.bottom':'False',
                      'xtick.labelbottom':'False',
                      'ytick.left':'False',
@@ -1394,11 +1382,11 @@ def output_cmap():
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight', pad_inches=0)    
 
 
-def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
+def old_draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
     gradient = np.linspace(0, 1, 32)
     gradient = np.vstack((gradient, gradient))
 
-    n = len(CMAP_NAMES)
+    n = len(CMAP_NAMES) 
     # Create one axis per legend item
     fig, axs = plt.subplots(nrows=1, ncols=n, figsize=(FIG_W*0.8, FIG_H*0.15))
 
@@ -1430,25 +1418,144 @@ def draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
 
     return
 
+# NEW VERSION, OLD VERSION JUST ABOVE
 
-def month_days_between_dates(start_date, end_date):
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-    start_of_month = pd.Timestamp(start_date) - pd.DateOffset(days=pd.Timestamp(start_date).day - 1)
+def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
+    # --- Geometry (all in ax.transAxes units) ---
+    BAR_X = 0.00
+    BAR_Y = 0.10
+    BAR_W = 0.4
+    BAR_H = 0.80
 
-    result = {}
-    for month_start in pd.date_range(start=start_of_month, end=end_date, freq='MS'):
-        month_name = month_start.strftime('%B')
-        days_in_month = (date_range >= month_start) & (date_range < (month_start + pd.DateOffset(months=1)))
-        result[month_name] = days_in_month.sum()
-    
-    return result
+    LABEL_PAD = 0.02
+    LABEL_X = BAR_X + BAR_W + LABEL_PAD
+    LABEL_Y = 0.50
+
+    # For swatch-only items (no gradient bar)
+    SW_W = 0.18
+    SW_H = 0.70
+    SW_X = 0.00
+    SW_Y = 0.50 - SW_H / 2.0
+
+    # Gradient image used for all gradient legend items
+    gradient = np.linspace(0, 1, 32)
+    gradient = np.vstack((gradient, gradient))
+
+    def imshow_rect(ax, img, *, x: float, y: float, w: float, h: float, **kwargs):
+        ax.imshow(
+            img,
+            extent=(x, x + w, y, y + h),
+            transform=ax.transAxes,
+            **kwargs,
+        )
+
+    def draw_gradient_item(ax, cmap_name: str, label: str):
+        imshow_rect(
+            ax,
+            gradient,
+            x=BAR_X, y=BAR_Y, w=BAR_W, h=BAR_H,
+            aspect="auto",
+            cmap=mpl.colormaps[cmap_name],
+        )
+        ax.text(
+            LABEL_X, LABEL_Y, label,
+            transform=ax.transAxes,
+            va="center", ha="left",
+            fontfamily=GRAPH_FONT,
+            fontsize=LEGEND_FONT_SIZE,
+        )
+        ax.set_axis_off()
+
+    def draw_swatch_item(ax, label: str, *, facecolor: str, hatch: str | None = None):
+        ax.add_patch(
+            Rectangle(
+                (SW_X, SW_Y),
+                SW_W, SW_H,
+                transform=ax.transAxes,
+                facecolor=facecolor,
+                edgecolor="black",
+                linewidth=0.2,
+                hatch=hatch,
+            )
+        )
+        ax.text(
+            SW_X + SW_W + LABEL_PAD, LABEL_Y, label,
+            transform=ax.transAxes,
+            va="center", ha="left",
+            fontfamily=GRAPH_FONT,
+            fontsize=LEGEND_FONT_SIZE,
+        )
+        ax.set_axis_off()
+
+    # --- Build 6 legend items in one row ---
+    # First 4 = your gradient items (order from CMAP_NAMES)
+    legend_items = []
+    for key, label in CMAP_NAMES.items():
+        label_text = label.replace(" ", "\n")
+        label_text = label_text.replace("/", "\n")
+        legend_items.append(("gradient", key, label_text))
+
+    # Add the 2 new items at the end (or move them earlier if you prefer)
+    legend_items.append(("swatch", "No data", None))
+    legend_items.append(("hatch", "Missing days", None))
+
+    # Relative column widths (tweakable)
+    width_ratios = [
+        1.0,  # Male Song
+        1.0,  # Male Chorus
+        1.0,  # Female Chatter
+        1.4,  # Hatchling / Nestling / Fledgling (wider)
+        0.7,  # No data (narrow)
+        0.9,  # Missing days
+    ]
+
+    ncols = len(legend_items)
+    fig, axs = plt.subplots(
+        nrows=1,
+        ncols=ncols,
+        figsize=(FIG_W * 0.8, FIG_H * 0.15),
+        gridspec_kw={"width_ratios": width_ratios},
+        squeeze=False,
+    )
+    axs = axs.flatten()
+
+    for ax, item in zip(axs, legend_items):
+        kind = item[0]
+
+        if kind == "gradient":
+            _, key, label = item
+            cmap_name = cmap[key] if isinstance(cmap, dict) else cmap
+            draw_gradient_item(ax, cmap_name, label)
+
+        elif kind == "swatch":
+            _, label, _ = item
+            draw_swatch_item(ax, label, facecolor=NO_DATA_COLOR, hatch=None)
+
+        elif kind == "hatch":
+            _, label, _ = item
+            # White face so hatch reads clearly; NaN / missing gets the hatch signal
+            draw_swatch_item(ax, label, facecolor="white", hatch=HATCH_PATTERN)
+
+        else:
+            ax.set_axis_off()
+
+    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0, hspace=0)
+
+    if not make_all_graphs:
+        st.pyplot(fig)
+
+    if save_files:
+        output_cmap()
+
+    return
+
+
 
 def get_days_per_month(date_list:list) -> dict:
     # Make a list of all the values, but only use the month name. Then, count how many of each 
     # month names there are to get the number of days/month
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
-
 
 #Take the list of month length counts we got from the function above, and draw lines at those positions. 
 #Skip the last one so we don't draw over the border
@@ -1476,273 +1583,19 @@ def draw_axis_labels(fig: Figure,
             )
         x += month_lengths[month] * day_width
         # draw vertical line in figure coords
-        line = mlines.Line2D([x, x], [bottom+0.01, top-0.01],
+        line = mlines.Line2D([x, x], [bottom+0.005, top-0.005],
                             transform=fig.transFigure,
                             color = "black", linewidth=1, alpha=0.4,
         )
         fig.add_artist(line)
     
 
-
-
 # For ensuring the title in the graph looks the same between weather and data graphs.
-# note that if the fontsize is too big, then the title will become the largest thing 
-# in the figure which causes the graph to shrink!
 def plot_title(fig:Figure, title:str, y:float=1.0):
     fig.suptitle(' ' + title, x=0, y=y,
                  fontsize=TITLE_FONT_SIZE, fontfamily=GRAPH_FONT,
                  horizontalalignment="left", verticalalignment="top")
 
-# Mar 2024, this is unused so I'm going to comment it out for now, but keeping it just in case...
-# def add_watermark(title:str):
-#     # Function that adds additional text to the right of the existing suptitle
-#     title = ' '+title
-#     # Find the suptitle in the figure
-#     suptitle = [t for t in plt.gcf().texts if t.get_text() == title][0]
-
-#     # Get the figure coordinates of the suptitle without changing its position
-#     suptitle_extent = suptitle.get_window_extent(renderer=plt.gcf().canvas.get_renderer())
-
-#     # Convert suptitle extent to figure coordinates
-#     fig_position = suptitle_extent.transformed(plt.gcf().transFigure.inverted())
-
-#     # Add additional red text to the right of the suptitle
-#     additional_text = dt.now().strftime("%Y-%m-%d %H:%M:%S")
-#     figtext_x = fig_position.x1 + 0.02  # Adjust the value to position the text
-#     figtext_y = fig_position.y0 + (fig_position.y1 - fig_position.y0) / 2  # Center vertically
-#     plt.figtext(figtext_x, figtext_y, additional_text, ha='left', va='center', color='gray', fontsize=8)
-    
-
-#
-# Custom graphing code to make the summary... this is the "inferred timing of breeding stages" graph that we're not using today
-#
-# def create_summary_graph(pulse_data:dict, date_range:dict, make_all_graphs:bool) -> plt.figure:
-#     pc = pulse_data[PULSE_COUNT]
-#     #Rows_for_labels allows 1 row for the labels, and 1 row for the legend
-#     #rows_for_labels = 2
-
-#     rows_for_labels = 1 #TEMPORARILY GETTING RID OF DATE
-#     legend_row = -1  # means it's the last row
-#     label_row = -2   # means it's the second-to-last row
-#     total_rows = pc + rows_for_labels    
-
-#     #This number is the percentage of the height, starting from the botom of the chart that we're going to reserve
-#     #for the charts themselves. 
-#     gap_for_title = 0.6 + (pc * 0.1)  #TEMPORARILY was 0.72, 0.04
-# #    gap_for_title = 0.88 #Good for 4 rows
-# #    gap_for_title = 0.76 #Good for 1 row
-
-#     chart_height = 0.5  # In inches
-#     figsize = (FIG_W, (pc + rows_for_labels) * chart_height) 
-
-#     #create a chart that has pc+rows_for_labels rows, and 1 column
-#     fig, axs = plt.subplots(nrows = total_rows, ncols=1, 
-#                             figsize=figsize, sharex=True, sharey=True, 
-#                             gridspec_kw={'height_ratios': np.repeat(1,total_rows), 
-#                                          'left':0, 'right':1, 'bottom':0, 'top':gap_for_title,
-#                                          'hspace':0},  #hspace is row spacing (gap between rows)
-#     ) 
-#     # normalize axs to 1D to prevent lots of Pylance errors
-#     if isinstance(axs, np.ndarray):
-#         axs = axs.ravel()
-#     else:
-#         axs = np.array([axs], dtype=object)
-        
-#     plot_title("Inferred Timing of Breeding Stages")
-#     plt.subplots_adjust(left=0.0)
-
-#     # Color options here: https://matplotlib.org/stable/gallery/color/named_colors.html
-#     phase_color = {
-#         PHASE_MALE_CHORUS : "seagreen",
-#         PHASE_INC : "mediumpurple",
-#         PHASE_BROOD : "steelblue",
-#         PHASE_FLDG : "black",
-#         ABANDONED : "red"
-#     }
-#     background_color = "red"
-    
-#     nesting_start_date = pulse_data[SUMMARY_FIRST_REC]
-#     nesting_end_date = pulse_data[SUMMARY_LAST_REC]
-
-#     days_per_month = month_days_between_dates(date_range[START], date_range[END])
-#     start_date = pd.Timestamp(date_range[START])
-#     end_date = pd.Timestamp(date_range[END])
-#     for ax in axs:
-#         ax.set_xlim(start_date, end_date + timedelta(days=1))
-    
-#     #Add patch covering the background of the entire nesting phase, except for the date row
-#     rect_height = 1
-#     for row in range(len(axs)+label_row):
-#        rect = Rectangle((nesting_start_date, 0), nesting_end_date - nesting_start_date +timedelta(days=1), 
-#                      rect_height, color=background_color, alpha=1, zorder=1)
-#        axs[row].add_patch(rect)
-
-#     #Draw all our boxes
-#     pulses_graphed = {}
-#     #As of now, she wants all phases in the legend, not just the ones that actually occurred. If she changes her mind, 
-#     #then uncomment the line below plus the rest as appropriate
-#     #legend_elements = {}  
-#     row_count = 0
-#     abandoned_dict = {}
-#     for i, (p, data) in enumerate(pulse_data.items()):
-#         graphed_something = False
-#         if p in PULSES:
-#             for phase in pulse_phases:
-#                 if is_valid_date_pair(pulse_data[p][phase]):
-#                     #Given that the x axis starts at start_date, we need to calculate everything as an offset from there
-#                     phase_start = pulse_data[p][phase][START]
-#                     phase_end = pulse_data[p][phase][END]
-#                     width = phase_end - phase_start + timedelta(days=1)
-#                     color = phase_color[phase]
-#                     #Note width is a Timedelta, so use .days to get the int value, but phase_start is a Timestamp, so use .day instead 
-#                     axs[row_count].barh(y=0, height=1,
-#                                         left=phase_start, width=width.days,  
-#                                         label=phase, color=color, align="edge", alpha=1)
-#                     graphed_something = True
-
-#                     if p not in pulses_graphed:
-#                         pulses_graphed[p] = row_count   # save the pulse name plus the axis that it went into
-
-#                     # if phase not in legend_elements:
-#                     #      legend_elements[phase] = color
-
-#             #Apply the marker for abandonded colony on top of the data after we've drawn the row
-#             if ABANDONED in pulse_data[p]:
-#                 abandoned_dict[p] = pulse_data[p][ABANDONED]
-#                 start_point = (pulse_data[p][ABANDONED],0)
-#                 width = timedelta(days=1)
-#                 height = 1
-#                 rect = Rectangle(start_point, width, height, 
-#                             color=phase_color[ABANDONED], alpha=1, zorder=5,
-#                             label="Abandonded")
-#                 axs[row_count].add_patch(rect)
-#                 graphed_something = True
-
-#                 # if abandoned not in legend_elements:
-#                 #     legend_elements[abandoned] = 'red'
-
-#             #Not all pulses will have graphable data, so we only want to change axis if there was something to graph
-#             if graphed_something:
-#                 row_count += 1
-
-#     # Legendary!
-#     # box_height = 0.6 #axis coordinates
-#     # box_buffer = (1 - box_height)/2
-#     # box_width = 0.06
-#     # text_width = 0.135
-#     # gap = 0.005
-#     # width = box_width + gap + text_width #Comes to 0.2, or 20% of width, as we are doing up to 5 labels
-#     # total_legend_width = len(phase_color)*width
-#     # xpos = (1 - total_legend_width)/2 + 0.03 #Give it a little push to the right
-#     # for i, (caption, color) in enumerate(phase_color.items()):
-#     #     legend_box = Rectangle(xy=(xpos,box_buffer), width=box_width, height=box_height, facecolor=color, transform=ax.transAxes)
-#     #     axs[legend_row].add_patch(legend_box)
-#     #     axs[legend_row].text(xpos+box_width+gap, y=0.5, s=caption, transform=ax.transAxes, 
-#     #                          fontsize=6, color="black", verticalalignment="center")
-#     #     xpos += width
-
-#     # Add the vertical lines and month names
-#     draw_axis_labels(days_per_month, axs, summary_graph=True, skip_month_names=True)
-
-#     # Draw the labels for each pulse
-#     for p in pulses_graphed:
-#         axs[pulses_graphed[p]].text(x=start_date + timedelta(days=0.5), y=0.5, s=p, 
-#                                     horizontalalignment='left', verticalalignment='center', color='black', fontsize=6)
-
-#     #Get the count of rows we ended up making and add spines to each except the last
-#     ax_count = len(axs)
-#     #If need to adjust anything else about all the charts, do it here. Right now, we're just making sure there
-#     #is one border drawn around the outside of everything
-#     for row in range(ax_count):
-#         if row == 0:
-#             left=True
-#             right=True
-#             top=True
-#             bottom=False
-#         elif row > 0 and row < ax_count+label_row:
-#             left=True
-#             right=True
-#             top=False
-#             bottom=False
-#         elif row == ax_count+legend_row:
-#             left=False
-#             right=False
-#             top=True
-#             bottom=False
-#         else:
-#             left=False
-#             right=False
-#             top=True
-#             bottom=False
-#             pass #ERROR!!!
-        
-#         axs[row].spines['left'].set_visible(left)
-#         axs[row].spines['right'].set_visible(right)
-#         axs[row].spines['top'].set_visible(top)
-#         axs[row].spines['bottom'].set_visible(bottom)
-
-#         for spine in axs[row].spines.values():
-#             spine.set_linewidth(0.4)
-
-#     # Adjust vertical spacing between subplots
-#     plt.subplots_adjust(hspace=0)
-
-#     debugging = False
-#     if debugging:
-#         #To help with Debugging, draw lines on the graph for each day
-#         for row in range(ax_count-label_row):
-#             for day in pd.date_range(start=start_date,
-#                                 end=end_date,
-#                                 freq='D'):
-#                 axs[row].axvline(x=day, color='gray', linestyle='--', linewidth=0.5)
-#         #Draw ticks only on the bottom one
-#         axs[ax_count-1].set_facecolor('none') #make the bottom graph transparent so we can see the ticks from above 
-#         bottom_chart = ax_count - 2
-#         day_numbers = pd.date_range(start=start_date, end=end_date, freq='3D')
-#         axs[bottom_chart].set_xticks(day_numbers)
-#         axs[bottom_chart].set_xticklabels([day.strftime('%m-%d') for day in day_numbers], fontsize=5, rotation=90, ha='center')
-#         axs[bottom_chart].tick_params(axis='x', direction='inout', pad=0)
-#         axs[bottom_chart].tick_params(labelbottom=True, bottom=True)
-
-#     # Output the data as text if we're doing one graph at a time
-#     if not make_all_graphs:
-#         st.write(f"First recording: {start_date.strftime('%m-%d')}, Last recording: {end_date.strftime('%m-%d')}")
-#         report = ""
-#         found_valid_dates=0
-#         for p in PULSES:
-#             empty_pulse = 1
-#             for phase in pulse_phases:
-#                 if is_valid_date_pair(pulse_data[p][phase]):
-#                     #First time only per pulse, add the title
-#                     if empty_pulse:
-#                         empty_pulse = 0
-#                         report += f"-----Pulse {p}-----<br>"
-
-#                     phase_start = pulse_data[p][phase][START].strftime("%m-%d")
-#                     phase_end = pulse_data[p][phase][END].strftime("%m-%d")
-#                     report += f"{phase} start: {phase_start}, end: {phase_end}<br>"
-#                     found_valid_dates+=1
-
-#         if found_valid_dates or len(abandoned_dict):
-#             # with st.expander("Show pulse dates"):
-#             #     st.write("<b>Automatically derived dates:</b>", unsafe_allow_html=True)
-#             #     pretty_print_table(summarize_pm(pt_pm), body_alignment="left")
-#             with st.expander("Show manually derived dates:"):
-#                 st.write("<br><b>Manually derived dates:</b>", unsafe_allow_html=True)
-#                 st.write(report, unsafe_allow_html=True)
-#                 if len(abandoned_dict):
-#                     report = "Abandoned:<br>"
-#                     for a in abandoned_dict:
-#                         report += f"{a}: {abandoned_dict[a].strftime('%m-%d')}"
-#                     st.write(report, unsafe_allow_html=True)
-
-#     return fig
-
-
-
-from matplotlib.patches import Rectangle
-import matplotlib.dates as mdates
-import pandas as pd
 
 def draw_missing_day_boxes(
     fig,
@@ -1790,7 +1643,7 @@ def draw_missing_day_boxes(
                 edgecolor=None,
                 alpha=alpha,
                 zorder=5,
-                hatch="///"
+                hatch=HATCH_PATTERN,
             )
 
             fig.add_artist(rect)
@@ -1989,18 +1842,14 @@ def create_graph(site: str,
         df_to_graph = df_clean.loc[row].to_frame().transpose()
 
         cmap_final = sns.color_palette(cmap[row] if len(cmap)>1 else cmap[0], as_cmap=True)
-        if graph_type == GRAPH_MINIMAN:
-            # Zero → white (force the lowest color to white)
-            cmap_final.set_under("white")
+        # Zero → white (force the lowest color to white)
+        cmap_final.set_under("white")
+        # No data (NaN / masked) → gray
+        cmap_final.set_bad(NO_DATA_COLOR)   # light gray representing the days where analysis was not done 
 
-            # No data (NaN / masked) → gray
-            cmap_final.set_bad("#e3e3e3")   # light gray 
-        elif graph_type == GRAPH_PM:
-            # Zero → white (force the lowest color to white)
-            cmap_final.set_under("white")
-
+        if graph_type == GRAPH_PM:
             # No data (NaN / masked) → white 
-            cmap_final.set_bad("white") 
+            cmap_final.set_bad("white")  # for PM graphs, we want no data to be white, not gray
 
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 3  #3 recordings per day
@@ -2010,14 +1859,16 @@ def create_graph(site: str,
             parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
-        gamma = float(st.session_state.get("gamma", 1.0))  # default if slider not created yet
-        norm = colors.PowerNorm(gamma=gamma, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
+        # gamma < 1 brightens lows, closer to 0 is more extreme
+        gamma = float(st.session_state.get("gamma", 1.0))  # 1=default if slider not created yet
+        norm = colors.PowerNorm(gamma = gamma, 
+                                vmin=0.0001, #slightly above 0 so that 0 values get the 'under' color 
+                                vmax=1) #as we're normalizing the data, the ranges will all be 0-1 
         sns.heatmap(
             data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
             norm = norm,
-            vmin = 0.001, vmax = 1, #Max is 1 because everything is normalized by recordings per day
             cbar = False,
             xticklabels = tick_spacing,
             yticklabels = False
@@ -2948,28 +2799,6 @@ def make_final_pt(site_pt: pd.DataFrame, columns: list, friendly_names: dict) ->
     pt.rename(columns=col_map, inplace=True)
     return pt
 
-# Clean up a pivottable so we can display it as a table
-def make_final_pt_old(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
-    pt = pd.DataFrame()
-    pt_temp = site_pt.transpose()
-    #Build the column name mapping (<ugly-tag-name> to 'My tag')
-    #While we're at it, copy the columns into a temp DF in the
-    #correct order (i.e. same order as the songs).
-    col_map = {}
-    for col in columns:
-        if col in pt_temp:
-            col_map[col] = friendly_names[col]
-            if col == "E-P1C":
-                pt_temp[col] = pt_temp[col].astype(str)
-            pt = pd.concat([pt, pt_temp[col]], axis=1)
-
-    pt_display = pt_temp.apply(
-        lambda s: s.map(lambda v: "" if pd.isna(v) else int(v))
-    )
-    #rename the columns
-    pt_display.rename(columns=col_map, inplace=True)
-    return pt_display
-
 
 #Calculate the first and last dates for each song type
 def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
@@ -2997,275 +2826,6 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     return output
 
 
-
-
-
-
-# Function to draw hatching manually
-def liang_barsky_clip(x1, y1, x2, y2, rx, ry, rwidth, rheight):
-    """
-    Liang–Barsky line clipping algorithm
-    Clips the line segment (x1,y1)-(x2,y2) against the rectangle defined by
-    rx, ry, rwidth, rheight.
-    Returns (Xc1, Yc1, Xc2, Yc2) for the clipped line or None if fully outside.
-    """
-    dx = x2 - x1
-    dy = y2 - y1
-    t0, t1 = 0.0, 1.0
-    x_min, y_min = rx, ry
-    x_max, y_max = rx + rwidth, ry + rheight
-
-    def clip(p, q):
-        nonlocal t0, t1
-        if p == 0:
-            if q < 0:
-                return False
-            # else no update
-        else:
-            r = q/p
-            if p < 0:
-                if r > t1:
-                    return False
-                elif r > t0:
-                    t0 = r
-            else: # p > 0
-                if r < t0:
-                    return False
-                elif r < t1:
-                    t1 = r
-        return True
-
-    # Left boundary
-    if not clip(-dx, x1 - x_min):
-        return None
-    # Right boundary
-    if not clip(dx, x_max - x1):
-        return None
-    # Bottom boundary
-    if not clip(-dy, y1 - y_min):
-        return None
-    # Top boundary
-    if not clip(dy, y_max - y1): 
-        return None
-
-    if t1 < t0:
-        return None
-
-    Xc1, Yc1 = x1 + t0*dx, y1 + t0*dy
-    Xc2, Yc2 = x1 + t1*dx, y1 + t1*dy
-    return (Xc1, Yc1, Xc2, Yc2)
-
-def transform_points(xs, ys, angle, aspect_ratio):
-    theta = math.radians(angle)
-    Xs = xs
-    Ys = ys * aspect_ratio
-    cos_t = math.cos(-theta)
-    sin_t = math.sin(-theta)
-    Xr = Xs*cos_t - Ys*sin_t
-    Yr = Xs*sin_t + Ys*cos_t
-    return Xr, Yr
-
-def inverse_transform_points(Xr, Yr, angle, aspect_ratio):
-    theta = math.radians(angle)
-    cos_t = math.cos(theta)
-    sin_t = math.sin(theta)
-    Xs = Xr*cos_t - Yr*sin_t
-    Ys = Xr*sin_t + Yr*cos_t
-    Xo = Xs
-    Yo = Ys / aspect_ratio
-    return Xo, Yo
-
-def create_local_grid(spacing, width, height):
-    # Create lines with (0,0) at upper-left corner
-    lines = []
-    max_dim = max(width, height) + spacing*10
-    x_min, x_max = -max_dim, max_dim
-    y_min, y_max = -max_dim, max_dim
-
-    # # Vertical lines
-    # xv_start = math.floor(x_min/spacing)*spacing
-    # xv_end = math.ceil(x_max/spacing)*spacing
-    # for xv in np.arange(xv_start, xv_end+spacing, spacing):
-    #     lines.append(((xv, y_min), (xv, y_max)))
-
-    # Horizontal lines
-    yv_start = math.floor(y_min/spacing)*spacing
-    yv_end = math.ceil(y_max/spacing)*spacing
-    for yv in np.arange(yv_start, yv_end+spacing, spacing):
-        lines.append(((x_min, yv), (x_max, yv)))
-
-    return lines
-
-def add_pattern(ax, x, y, width, height, spacing, angle_h=0, angle_v=90, aspect_ratio=1.0, color="black", linewidth=1.0):
-    # xlim = ax.get_xlim()
-    # ylim = ax.get_ylim()
-    # aspect_ratio = (ylim[1]-ylim[0])/(xlim[1]-xlim[0])
-
-    # Upper-left corner of cell
-    cell_ul_x, cell_ul_y = x, y+height
-    local_lines = create_local_grid(spacing, width, height)
-
-    def generate_lines_for_angle(angle):
-        transformed_lines = []
-        theta = math.radians(angle)
-        cos_t = math.cos(theta)
-        sin_t = math.sin(theta)
-
-        for (Xl1, Yl1), (Xl2, Yl2) in local_lines:
-            # Translate local coords (UL corner as origin)
-            # Upper-left corner = (0,0)
-            # Rotate around UL corner by angle
-            Xr1 = Xl1*cos_t - Yl1*sin_t
-            Yr1 = Xl1*sin_t + Yl1*cos_t
-            Xr2 = Xl2*cos_t - Yl2*sin_t
-            Yr2 = Xl2*sin_t + Yl2*cos_t
-
-            # Translate back
-            Xf1 = cell_ul_x + Xr1
-            Yf1 = cell_ul_y + Yr1
-            Xf2 = cell_ul_x + Xr2
-            Yf2 = cell_ul_y + Yr2
-
-            clipped = liang_barsky_clip(Xf1, Yf1, Xf2, Yf2, x, y, width, height)
-            if clipped:
-                Xc1, Yc1, Xc2, Yc2 = clipped
-                transformed_lines.append(Line2D([Xc1, Xc2],[Yc1, Yc2], color=color, linewidth=linewidth, zorder=2))
-        return transformed_lines
-
-    lines_h = generate_lines_for_angle(angle_h)
-    lines_v = []#generate_lines_for_angle(angle_v)
-
-    # Add lines to the axis
-    for ln in lines_h + lines_v:
-        ax.add_line(ln)
-
-
-def make_one_row_pm_summary(df: pd.DataFrame):
-    #Trial of new graphing approach
-
-    phases = ["Male", "Female", "Hatch", "Fledge"]
-    phase_colors = {
-        phases[0] : "#ED7D31",
-        phases[1] : "#7030A0",
-        phases[2] : "#58A1CF",
-        phases[3] : "#08519C"
-    }
-
-    male = df.loc["Male Chorus"]
-    female = df.loc["Female"]
-    hatch = df.loc[["Hatchling", "Nestling"]].sum()
-    fledge = df.loc["Fledgling"]
-
-    data = pd.DataFrame({
-        phases[0] : male,
-        phases[1] : female,
-        phases[2] : hatch,
-        phases[3] : fledge
-    }).T
-
-    #Use the default width and double the height since we're graphing so much data
-    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H/2))
-    aspect_ratio = FIG_W / (FIG_H/2)
-
-    for date_idx, date in enumerate(data):
-        min_value = 2
-        total_phases = sum(data[date] > min_value)
-        if total_phases > 0:
-            # Compute rectangle width (split evenly based on total phases for the day)
-            width_per_phase = 1 / total_phases
-            x_start = date_idx
-
-            angle_counter=0
-            # Loop through phases
-            for phase_idx, phase in enumerate(phases):
-                value = data[date][phase]
-                if value > min_value: #If there is something worth graphing
-                    if total_phases == 1 or (total_phases > 1 and angle_counter==0):
-                        # If there's just one phase or there's more than 1 phase, we draw a solid rect
-                        ax.add_patch(Rectangle(
-                            (date_idx, 0),       # Bottom-left corner
-                            1,                   # Full width
-    #                        (x_start, 0),       # Bottom-left corner
-    #                        width_per_phase,    # Width
-                            1,                  # Full height
-                            facecolor=phase_colors[phase],
-                            linewidth=0,
-                            edgecolor="none", #phase_colors[phase],
-                            alpha=1,
-                            zorder=1,
-                        ))
-                        x_start += width_per_phase  # Increment y_start for the next phase
-                        angle_counter+=1
-                    else: #multiple phases so need to overlap them
-    #                     ax.add_patch(Rectangle(
-    #                         (date_idx, 0),       # Bottom-left corner
-    #                         1,                   # Full width
-    # #                        (x_start, 0),       # Bottom-left corner
-    # #                        width_per_phase,    # Width
-    #                         1,                  # Full height
-    #                         facecolor="none", #phase_colors[phase],
-    #                         edgecolor="none", #phase_colors[phase],
-    #                         alpha=1,
-    #                         zorder=1,
-    #                     ))
-
-                        # Draw pattern with horizontal (0°) and vertical (90°) lines
-                        if phase_idx>=1 and date_idx>=0:
-                            angles = [90,0,15,165]
-                            if angles[angle_counter] == 0: #more horizontal lines
-                                spacing = 0.1
-                            else:
-                                spacing = 0.1
-                            #In the case where we have exactly 2 phases, make the horizontals wider
-                            if total_phases == 2:
-                                width = 1.2
-                            else:
-                                width= 0.6
-                            add_pattern(ax, date_idx, 0, 1, 1, 
-                                        angle_h=angles[angle_counter], angle_v=angles[angle_counter], 
-                                        color=phase_colors[phase],
-                                        spacing=spacing, 
-                                        linewidth=width, 
-                                        aspect_ratio = aspect_ratio)
-                            angle_counter+=1
-
-                        # # Add custom hatching for this rectangle
-                        # hatch_lines = add_rotated_hatching(
-                        #     x=x_start,
-                        #     y=0,
-                        #     width=1,
-                        #     height=1,
-                        #     spacing=0.25,  # Control spacing here
-                        #     linewidth=0.5,
-                        #     angle=45*phase_idx,
-                        #     color=phase_colors[phase],
-                        #     aspect_ratio=aspect_ratio
-                        # )
-                        # for line in hatch_lines:
-                        #     ax.add_line(line)
-        #Code to add a divider line after each day
-        # ax.add_line(Line2D(
-        #             [date_idx, date_idx], # Bottom-left corner
-        #             [0, 1],             # Full height
-        #             color="black",
-        #             linewidth=0.25,
-        # ))
-    # Configure plot
-    x_axis_len = len(data.columns)
-    ax.set_xlim(0, x_axis_len)
-    ax.set_ylim(0, 1)
-    ax.set_xticks(range(x_axis_len))
-    #ax.grid(axis='x', color='black', linewidth=0.25)  # Grid lines as borders
-
-    ax.set_yticks([])
-    ax.set_title(" Phase Frequencies by Date", loc='left', fontsize=8, ha='left')
-    #exterior border
-    ax.add_patch(Rectangle((0, 0), x_axis_len, 1, edgecolor="black", facecolor="none", linewidth=0.75, zorder=99))
-    st.write(fig)
-
-    return
-
-
 def get_ratio(site):
     '''
     Read the ratios file and retrieve the value for this site
@@ -3282,6 +2842,8 @@ def get_ratio(site):
     else:
         ratio_str = "None found"
     return ratio_str
+
+
 # ===========================================================================================================
 # ===========================================================================================================
 #
@@ -3658,35 +3220,6 @@ for site in target_sites:
                      save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=pm_data_empty)
 
 
-    # Manual analyisis graph    
-    if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
-        #SEPT2025- trying to hide COURT_SONG from the list of songs
-        new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
-
-        graph, axs = create_graph(
-                            site = site,
-                            df = pt_manual, 
-                            row_names = [data_col[s] for s in new_songs], #SEPT2025
-                            cmap = CMAP, 
-                            title = GRAPH_MANUAL,
-                            graph_type=GRAPH_MANUAL,
-                            missing_days = missing_days
-        ) 
-        # add this if we want to include the site name (site + ' ' if save_files else '')
-        # Need to be able to build an image that looks like the graph labels so that it can be drawn
-        # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
-        # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
-        # to accidentally delete our list
-        if month_locs=={}:
-            cols = pd.DatetimeIndex(pt_manual.columns)
-            start = cols.min().normalize()
-            end   = cols.max().normalize()
-            month_locs = get_visible_month_day_ranges(start, end) 
-
-        output_graph(site, graph, GRAPH_MANUAL, 
-                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_manual.empty)
-
-
     # MiniManual Analysis
     if not pt_mini_manual.empty:
         graph, axs = create_graph(
@@ -3708,6 +3241,37 @@ for site in target_sites:
 
         output_graph(site, graph, GRAPH_MINIMAN, 
                      save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_mini_manual.empty)
+
+
+    # Manual analyisis graph    
+    if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
+        #SEPT2025- trying to hide COURT_SONG from the list of songs
+        new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
+
+        graph, axs = create_graph(
+                            site = site,
+                            df = pt_manual, 
+                            row_names = [data_col[s] for s in new_songs], #SEPT2025
+                            cmap = CMAP, 
+                            title = "Manual Analysis (Daily Review)",
+                            graph_type=GRAPH_MANUAL,
+                            missing_days = missing_days
+        ) 
+        # add this if we want to include the site name (site + ' ' if save_files else '')
+        # Need to be able to build an image that looks like the graph labels so that it can be drawn
+        # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
+        # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
+        # to accidentally delete our list
+        if month_locs=={}:
+            cols = pd.DatetimeIndex(pt_manual.columns)
+            start = cols.min().normalize()
+            end   = cols.max().normalize()
+            month_locs = get_visible_month_day_ranges(start, end) 
+
+        output_graph(site, graph, GRAPH_MANUAL, 
+                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_manual.empty)
+
+
 
     # Edge Analysis
     if not pt_edge.empty:
