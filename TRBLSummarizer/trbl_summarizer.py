@@ -2002,7 +2002,7 @@ def create_graph(site: str,
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 4  #4 recordings per day
         else:
-            parquet_path = r".\Data\recordings_per_day_hour.parquet"
+            parquet_path = r"TRBLSummarizer\Data\recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
         norm = colors.PowerNorm(gamma=0.7, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
@@ -2926,7 +2926,7 @@ def make_final_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> p
         if col in pt_temp:
             col_map[col] = friendly_names[col]
             if col == "E-P1C":
-                pt_temp[col] = pt_temp[col].astype('Int64')
+                pt_temp[col] = pt_temp[col].astype(str)
             pt = pd.concat([pt, pt_temp[col]], axis=1)
 
     pt_display = pt_temp.apply(
