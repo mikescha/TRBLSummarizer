@@ -1852,7 +1852,8 @@ def normalize_by_recordings_per_day(
     df_num.columns = pd.to_datetime(df_num.columns, errors="raise").normalize()
     df_num = df_num.apply(pd.to_numeric, errors="coerce")
 
-    parquet_path = Path(recordings_parquet)
+    #parquet_path = Path(recordings_parquet)
+    parquet_path = recordings_parquet
 
     # -------------------------
     # Mode B: hourly denominator
