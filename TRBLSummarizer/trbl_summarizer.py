@@ -1852,9 +1852,14 @@ def normalize_by_recordings_per_day(
     df_num.columns = pd.to_datetime(df_num.columns, errors="raise").normalize()
     df_num = df_num.apply(pd.to_numeric, errors="coerce")
 
-    #parquet_path = Path(recordings_parquet)
-    parquet_path = recordings_parquet
+    parquet_path = Path(recordings_parquet)
+    #parquet_path = recordings_parquet
 
+    st.write("CWD:", os.getcwd())
+    st.write("Exists?", parquet_path.exists())
+    st.write("Absolute:", parquet_path.resolve())
+    st.write("Parent exists?", parquet_path.parent.exists())
+    st.write("Files in parent:", list(parquet_path.parent.glob("*"))[:20])
     # -------------------------
     # Mode B: hourly denominator
     # -------------------------
@@ -2915,8 +2920,28 @@ def check_tags(df: pd.DataFrame):
     return
 
 
+def make_final_pt(site_pt: pd.DataFrame, columns: list, friendly_names: dict) -> pd.DataFrame:
+    pt_temp = site_pt.transpose()
+
+    # Build ordered dataframe with selected columns, numeric
+    out_cols = []
+    col_map = {}
+    for col in columns:
+        if col in pt_temp.columns:
+            out_cols.append(col)
+            col_map[col] = friendly_names[col]
+
+    pt = pt_temp[out_cols].copy()
+
+    # Force numeric (keeps NaN), do NOT inject ""
+    for c in pt.columns:
+        pt[c] = pd.to_numeric(pt[c], errors="coerce")
+
+    pt.rename(columns=col_map, inplace=True)
+    return pt
+
 # Clean up a pivottable so we can display it as a table
-def make_final_pt(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
+def make_final_pt_old(site_pt: pd.DataFrame, columns:list, friendly_names:dict) -> pd.DataFrame:
     pt = pd.DataFrame()
     pt_temp = site_pt.transpose()
     #Build the column name mapping (<ugly-tag-name> to 'My tag')
@@ -3755,13 +3780,26 @@ if not make_all_graphs and len(df_site):
         #a single table
         union_pt = pd.concat(overview, axis=1)
 
+        # enforce dtypes before index reset
+        for c in union_pt.columns:
+            if c == "prcp" or c == "PRCP":
+                union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce")
+            else:
+                union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce").astype("Int64")
+
         # Pop the index out so that we can format it, do this by resetting the index so each 
         # row just gets a number index
-        union_pt.reset_index(inplace=True)
-        union_pt.rename(columns={'index':'Date'}, inplace=True)
-
+        union_pt = union_pt.reset_index().rename(columns={"index": "Date"})        
+        
         #Make a copy and clean it up for display
         df_display = union_pt.copy()
+        # Keep Date readable; everything else becomes string with blanks for missing
+        for c in df_display.columns:
+            if c == "Date":
+                # optional formatting
+                df_display[c] = pd.to_datetime(df_display[c], errors="coerce").dt.strftime("%Y-%m-%d")
+            else:
+                df_display[c] = df_display[c].astype("string").fillna("")
 
         sty_union = (
             df_display
@@ -3777,6 +3815,7 @@ if not make_all_graphs and len(df_site):
                 "PRCP": st.column_config.NumberColumn(format="%.2f"),
                 # numeric columns: right alignment is the default in Streamlit’s grid for numbers
             },
+            use_container_width=True,
         )
 
 
