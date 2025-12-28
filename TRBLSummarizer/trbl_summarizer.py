@@ -2006,12 +2006,12 @@ def create_graph(site: str,
             parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
-        norm = colors.PowerNorm(gamma=0.7, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
+#        norm = colors.PowerNorm(gamma=1, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
         axs[i] = sns.heatmap(
             data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
-            norm = norm,
+#            norm = norm,
             vmin = 0, vmax = 1, #Max is 1 because everything is normalized by recordings per day
             cbar = False,
             xticklabels = tick_spacing,
