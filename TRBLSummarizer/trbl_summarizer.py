@@ -1855,11 +1855,6 @@ def normalize_by_recordings_per_day(
     parquet_path = Path(recordings_parquet)
     #parquet_path = recordings_parquet
 
-    st.write("CWD:", os.getcwd())
-    st.write("Exists?", parquet_path.exists())
-    st.write("Absolute:", parquet_path.resolve())
-    st.write("Parent exists?", parquet_path.parent.exists())
-    st.write("Files in parent:", list(parquet_path.parent.glob("*"))[:20])
     # -------------------------
     # Mode B: hourly denominator
     # -------------------------
