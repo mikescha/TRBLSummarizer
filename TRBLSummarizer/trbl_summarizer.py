@@ -156,28 +156,28 @@ song_cols = [data_col[s] for s in songs]
 all_songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1, SIMPLE_CALL2] 
 all_song_cols = [data_col[s] for s in all_songs]
 
-manual_tags = [tag_mh, tag_ws, tag_]
-mini_manual_tags = [tag_mhh, tag_mhm, tag_wsm]
+MANUAL_TAGS = [tag_mh, tag_ws, tag_]
+MINI_MANUAL_TAGS = [tag_mhh, tag_mhm, tag_wsm]
 
-edge_c_tags = [tag_p1c, tag_p2c] #male chorus
-edge_n_tags = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-edge_tags = edge_c_tags + edge_n_tags + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f]
-edge_tag_map = {
-    tag_p1n : [data_col[tag_p1f], data_col[tag_p1a]],
-    tag_p2n : [data_col[tag_p2f]]#, data_col[tag_p2a]],
-}
+EDGE_C_TAGS = [tag_p1c, tag_p2c] #male chorus
+EDGE_N_TAGS = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
+EDGE_TAGS = EDGE_C_TAGS + EDGE_N_TAGS + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f]
+# EDGE_TAG_MAP = {
+#     tag_p1n : [data_col[tag_p1f], data_col[tag_p1a]],
+#     tag_p2n : [data_col[tag_p2f]]#, data_col[tag_p2a]],
+# }
 
-all_tags = manual_tags + mini_manual_tags + edge_tags
+ALL_TAGS = MANUAL_TAGS + MINI_MANUAL_TAGS + EDGE_TAGS
 
-manual_cols = [data_col[t] for t in manual_tags]
-mini_manual_cols = [data_col[t] for t in mini_manual_tags]
-edge_c_cols = [data_col[t] for t in edge_c_tags]
-edge_n_cols = [data_col[t] for t in edge_n_tags]
+MANUAL_COLS = [data_col[t] for t in MANUAL_TAGS]
+MINI_MANUAL_COLS = [data_col[t] for t in MINI_MANUAL_TAGS]
+EDGE_C_COLS = [data_col[t] for t in EDGE_C_TAGS]
+EDGE_N_COLS = [data_col[t] for t in EDGE_N_TAGS]
 #all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
-edge_cols = edge_c_cols + edge_n_cols #make list of the right length
-edge_cols[::2] = edge_c_cols #assign C cols to the even indices (0, 2, ...)
-edge_cols[1::2] = edge_n_cols #assign N cols to the odd indices (1, 3, ...)
+EDGE_COLS = EDGE_C_COLS + EDGE_N_COLS #make list of the right length
+EDGE_COLS[::2] = EDGE_C_COLS #assign C cols to the even indices (0, 2, ...)
+EDGE_COLS[1::2] = EDGE_N_COLS #assign N cols to the odd indices (1, 3, ...)
 
 
 #Constants for the graphing, so they can be shared across weather and blackbird graphs
@@ -339,7 +339,7 @@ valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
                         }
 
 missing_data_flag = -100
-preserve_edges_flag = -99
+PRESERVE_EDGES_FLAG = -99
 
 DPI = 300
 
@@ -539,7 +539,7 @@ def find_invalid_rows(df, cols_to_filter, cols_to_check, output_file="invalid_fi
 
 def check_for_tag_errors(df: pd.DataFrame):
     #Check these cols, if any of these has a 1 then...
-    cols_to_filter = manual_cols + mini_manual_cols
+    cols_to_filter = MANUAL_COLS + MINI_MANUAL_COLS
 
     #report any rows where any of these cols has the value "---"
     cols_to_check = [data_col[ALTSONG1], data_col[ALTSONG2], data_col[MALE_SONG], data_col[COURT_SONG]]
@@ -564,7 +564,7 @@ def load_data() -> pd.DataFrame:
         usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
         for song in all_songs:
             usecols.append(data_col[song])
-        for tag in all_tags:
+        for tag in ALL_TAGS:
             usecols.append(data_col[tag])
 
         #remove any columns that are missing from the data file, so we don't ask for them as that will cause
@@ -907,7 +907,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     df_clean = df_clean.replace('---', missing_data_flag)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
-    for s in all_songs + all_tags:
+    for s in all_songs + ALL_TAGS:
         if data_col[s] in df_clean.columns:
             df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
@@ -969,7 +969,7 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
         if preserve_edges:
             # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
             # graph later, we'll use this to show where the edges of the analysis were
-            aggregate_df = aggregate_df.replace(to_replace=0, value=preserve_edges_flag)
+            aggregate_df = aggregate_df.replace(to_replace=0, value=PRESERVE_EDGES_FLAG)
 
         return normalize_pt(aggregate_df, date_range_dict)
     else:
@@ -1344,7 +1344,7 @@ else:
     GRAPH_FONT = "Franklin Gothic Book"
     GRAPH_FONT_TTF = "FRABK.TTF" #used for output to the file using PIL
 
-TITLE_FONT_SIZE = 14
+TITLE_FONT_SIZE = 13
 AXIS_FONT_SIZE = 10
 LEGEND_FONT_SIZE = 8
 
@@ -1476,7 +1476,7 @@ def draw_axis_labels(fig: Figure,
             )
         x += month_lengths[month] * day_width
         # draw vertical line in figure coords
-        line = mlines.Line2D([x, x], [bottom, top],
+        line = mlines.Line2D([x, x], [bottom+0.01, top-0.01],
                             transform=fig.transFigure,
                             color = "black", linewidth=1, alpha=0.4,
         )
@@ -1955,8 +1955,10 @@ def create_graph(site: str,
             "height_ratios": np.ones(row_count),
             "hspace": 0.0,
         },
+        squeeze=False,   #forces axs to be 2D array even if 1 row
     )
-
+    axs = axs.flatten() #normalize axs to 1D 
+    
     # Convert inches -> figure fractions for subplot rectangle
     bottom = bottom_band_in / fig_h
     top = 1.0 - (top_band_in / fig_h)
@@ -2001,18 +2003,21 @@ def create_graph(site: str,
             cmap_final.set_bad("white") 
 
         if graph_type == GRAPH_MINIMAN:
-            df_norm = df_to_graph / 4  #4 recordings per day
+            df_norm = df_to_graph / 3  #3 recordings per day
+        elif graph_type == GRAPH_MANUAL:
+            df_norm = df_to_graph / 13  # 13 recordings per day
         else:
             parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
-#        norm = colors.PowerNorm(gamma=1, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
-        axs[i] = sns.heatmap(
+        gamma = float(st.session_state.get("gamma", 1.0))  # default if slider not created yet
+        norm = colors.PowerNorm(gamma=gamma, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
+        sns.heatmap(
             data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
-#            norm = norm,
-            vmin = 0, vmax = 1, #Max is 1 because everything is normalized by recordings per day
+            norm = norm,
+            vmin = 0.001, vmax = 1, #Max is 1 because everything is normalized by recordings per day
             cbar = False,
             xticklabels = tick_spacing,
             yticklabels = False
@@ -2101,41 +2106,49 @@ def create_graph(site: str,
 
             if len(df_col_nonzero):
                 c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.85)
-                if row in edge_c_cols: #these tags get a box around the whole block
+                if row in EDGE_C_COLS: #these tags get a box around the whole block
                     first = df_col_nonzero.index[0]
                     last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
                     axs[i].add_patch(Rectangle((first,0), last-first, 0.99, 
                                      ec=c, fc=c, fill=False))
                     
                 else: #n tags get boxes around each consecutive block
-                    borders = []
-                    borders.append(df_col_nonzero.index[0]) #block always starts with the first point
-                    # Get the non-contiguous blocks
-                    for x,y in pairwise(df_col_nonzero.index):
-                        if y-x != 1:
-                            borders.append(x)
-                            borders.append(y)
-                    borders.append(df_col_nonzero.index[len(df_col_nonzero)-1]+1) #always ends with the last one
-                    #debug code -- show the dates
-                    #for x in range(0,len(borders),2):
-                    #    d1 = borders[x]
-                    #    d2 = borders[x+1] if borders[x+1] < df_col_nonzero.index[len(df_col_nonzero)-1] else borders[x+1]-1
-                    #    st.error("Blue: " + str(df_col_nonzero.loc[d1].values[0].date()) + "->" + str(df_col_nonzero.loc[d2].values[0].date()))                    
+                    idx = df_col_nonzero[row].dropna().index.to_numpy()
+                    if len(idx) == 0:
+                        borders: list[tuple[int, int]] = []
+                    elif len(idx) == 1:
+                        i = int(idx[0])
+                        borders = [(i,i)]
+                    else:
+                        # Find boundaries where contiguity breaks
+                        breaks = np.where(np.diff(idx) > 1)[0]
+
+                        starts = np.r_[idx[0], idx[breaks + 1]]
+                        ends   = np.r_[idx[breaks], idx[-1]]
+                        borders = [(int(a), int(b)) for a, b in zip(starts, ends)]
 
                     # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
-                    for x in range(0,len(borders),2):
-                        extra = 1 if x != ((len(borders)/2)-1)*2 else 0
-                        axs[i].add_patch(Rectangle((borders[x],0), borders[x+1]-borders[x] + extra, 0.99, ec=c, fc=c, fill=False))
+                    for start, end in borders:
+                        left = start
+                        width = (end-start) + 1
+                        gap_inside_outer_border = 0.03
+                        axs[i].add_patch(Rectangle((left,gap_inside_outer_border), width, 1-2*gap_inside_outer_border, 
+                                                   ec=c, fc=c, lw=0.5, fill=False))
                     # For each pair of rects, draw a line between them.
-                    for x in range(1,len(borders)-1,2):
-                        # The +1/-1 are because we don't want to draw on top of the days, just between the days
-                        axs[i].add_patch(Rectangle((borders[x]+1,0.48), borders[x+1]-borders[x]-1, 0.04, ec=c, fc=c, fill=True)) 
+                    gaps = [(end1 + 1, start2 - 1) for (start1, end1), (start2, end2) in zip(borders, borders[1:])]
+                    for start_gap, end_gap in gaps:
+                        left = start_gap
+                        right = end_gap+1
+                        y_start_pos = 0.49
+                        line_width = 0.5 - y_start_pos
+                        axs[i].add_patch(Rectangle((left,y_start_pos), right-left, line_width, 
+                                                   ec=c, fc=c, lw=0.5, fill=True)) 
         i += 1
         
     # For mini-manual: Add a rect around each day that has some data
     if graph_type == GRAPH_MINIMAN and len(raw_data)>0 and False:
         if draw_vert_rects :
-            tagged_rows = filter_df_by_tags(raw_data, mini_manual_cols)
+            tagged_rows = filter_df_by_tags(raw_data, MINI_MANUAL_COLS)
             if len(tagged_rows):
                 date_list = tagged_rows.index.unique()
                 #I'm using df.columns[0] because it represents the date of the first day in the date range.
@@ -2893,12 +2906,12 @@ def check_tags(df: pd.DataFrame):
                             filter_df_by_tags(non_zero_rows, song_cols, f'=={missing_data_flag}')])
 
     #P1C, P2C throws an error if it's missing courtsong song
-    non_zero_rows = filter_df_by_tags(df, edge_c_cols)
+    non_zero_rows = filter_df_by_tags(df, EDGE_C_COLS)
     bad_rows = pd.concat([bad_rows,
                             filter_df_by_tags(non_zero_rows, [data_col[COURT_SONG]], f"=={missing_data_flag}")])
 
     #P1N, P2N throws an error if it's missing alternative song
-    non_zero_rows = filter_df_by_tags(df, edge_n_cols)
+    non_zero_rows = filter_df_by_tags(df, EDGE_N_COLS)
     bad_rows = pd.concat([bad_rows, 
                             filter_df_by_tags(non_zero_rows, [data_col[ALTSONG1]], f"=={missing_data_flag}")])       
 
@@ -3154,7 +3167,6 @@ def make_one_row_pm_summary(df: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H/2))
     aspect_ratio = FIG_W / (FIG_H/2)
 
-    #We're not using this so commenting it out now
     for date_idx, date in enumerate(data):
         min_value = 2
         total_phases = sum(data[date] > min_value)
@@ -3286,6 +3298,14 @@ container_mid = st.sidebar.container(border=True)
 container_bottom = st.sidebar.container(border=True)
 
 with container_mid:
+    gamma = st.slider(
+        "Heatmap contrast",
+        min_value=0.1,
+        max_value=1.0,
+        value=0.6,
+        step=0.05,
+        key="gamma",
+    )
     show_station_info_checkbox = st.checkbox('Show station info', value=True)
     show_weather_checkbox = st.checkbox('Show station weather', value=True)
     show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
@@ -3398,7 +3418,7 @@ for site in target_sites:
         #       The number of recordings from that set that have AltSong2 >= 1
         #       The number of recordings from that set that have AltSong >= 1 
         #     
-        df_manual = filter_df_by_tags(df_site, manual_cols)
+        df_manual = filter_df_by_tags(df_site, MANUAL_COLS)
         pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
 
         # MINI-MANUAL ANALYSIS
@@ -3406,7 +3426,7 @@ for site in target_sites:
         #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
         # 2. Make a pivot table as above
         #   
-        df_mini_manual = filter_df_by_tags(df_site, mini_manual_cols)
+        df_mini_manual = filter_df_by_tags(df_site, MINI_MANUAL_COLS)
         pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
 
         # EDGE ANALYSIS
@@ -3459,10 +3479,10 @@ for site in target_sites:
         #                                [  P2C  ]                   
         #                                           [P2N attaches to either P2A | P2F] 
         # 
-        for tag in edge_cols: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
+        for tag in EDGE_COLS: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
             tag_dict = {}
 
-            if tag in edge_c_cols: #P1C, P2C, P3C
+            if tag in EDGE_C_COLS: #P1C, P2C, P3C
                 tag_dict[tag] = data_col[COURT_SONG]
 
             else: #P1N, P2N, P3N
@@ -3690,17 +3710,19 @@ for site in target_sites:
                      save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_mini_manual.empty)
 
     # Edge Analysis
-    if not pt_edge.empty and False:
-        cmap_edge = {c:'Oranges' for c in edge_c_cols} | {n:'Blues' for n in edge_n_cols} # the |" is used to merge dicts
+    if not pt_edge.empty:
+        cmap_edge = {c:'Oranges' for c in EDGE_C_COLS} | {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
+        pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
+
         graph, axs = create_graph(
                             site = site,
-                            df = pt_edge, 
-                            row_names = edge_cols,
+                            df = pt_edge_only_nestlings, #was pt_edge
+                            row_names = pt_edge_only_nestlings.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
                             cmap = cmap_edge, 
                             raw_data = df_site,
                             draw_horiz_rects = True,
-                            title = GRAPH_EDGE,
-                            graph_type="edge",
+                            title = "Manual Analysis (Hatchlings Only)", # was GRAPH_EDGE,
+                            graph_type=GRAPH_EDGE,
                             missing_days = missing_days
         )
         if month_locs=={}:
@@ -3756,7 +3778,7 @@ if not make_all_graphs and len(df_site):
                             data_col[tag_p2c]: 'E-P2C',
                             data_col[tag_p2n]: 'E-P2N',
         }
-        overview.append(make_final_pt(pt_edge, edge_cols, friendly_names))
+        overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
 
         #Pattern Matching 
         overview.append(make_final_pt(pt_pm, pm_file_types, pm_friendly_names))
