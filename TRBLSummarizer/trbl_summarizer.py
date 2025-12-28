@@ -17,7 +17,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import matplotlib.lines as mlines
-
+from matplotlib import colors
 from pathlib import Path
 import os
 import calendar
@@ -217,6 +217,7 @@ CMAP = {data_col[MALE_SONG]:'Greens',
         data_col[ALTSONG1]:'Blues', 
         "Fledgling":"Blues"
 }
+
 
 CMAP_NAMES = {data_col[MALE_SONG]:"Male Song",
               data_col[COURT_SONG]:"Male Chorus",
@@ -1983,6 +1984,7 @@ def create_graph(site: str,
         # plotting the heatmap
         # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
         df_to_graph = df_clean.loc[row].to_frame().transpose()
+
         cmap_final = sns.color_palette(cmap[row] if len(cmap)>1 else cmap[0], as_cmap=True)
         if graph_type == GRAPH_MINIMAN:
             # Zero → white (force the lowest color to white)
@@ -2000,13 +2002,15 @@ def create_graph(site: str,
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 4  #4 recordings per day
         else:
-            parquet_path = r"C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\recordings_per_day_hour.parquet"
+            parquet_path = r".\TRBLSummarizer\TRBLSummarizer\Data\recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
 
+        norm = colors.PowerNorm(gamma=0.7, vmin=0, vmax=1) # gamma < 1 brightens lows, closer to 0 is more extreme
         axs[i] = sns.heatmap(
             data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
+            norm = norm,
             vmin = 0, vmax = 1, #Max is 1 because everything is normalized by recordings per day
             cbar = False,
             xticklabels = tick_spacing,
