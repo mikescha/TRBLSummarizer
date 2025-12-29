@@ -127,6 +127,12 @@ data_col = {
     "val<sp22/Simple Call>":"val<sp22/Simple Call>"
 }
 
+tag_name_map = {
+    'val<Agelaius tricolor/Common Song>' : "Male Song",
+    'val<Agelaius tricolor/Courtship Song>' : "Male Chorus",
+    'val<Agelaius tricolor/Alternative Song 1>' : "Female Chatter",
+    'val<Agelaius tricolor/Alternative Song 2>' : "Begging Calls",
+}
 
 site_columns = {
     'id'        : 'id',
@@ -1427,7 +1433,7 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
     BAR_W = 0.4
     BAR_H = 0.80
 
-    LABEL_PAD = 0.02
+    LABEL_PAD = 0.05
     LABEL_X = BAR_X + BAR_W + LABEL_PAD
     LABEL_Y = 0.50
 
@@ -1449,16 +1455,22 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
             **kwargs,
         )
 
-    def draw_gradient_item(ax, cmap_name: str, label: str):
+    def draw_gradient_item(ax, cmap_name: str, label: str, scale = 1.0):
+        if label.startswith("Hatchling"):
+                bar_w = BAR_W * scale
+        else:
+                bar_w = BAR_W   
+
         imshow_rect(
             ax,
             gradient,
-            x=BAR_X, y=BAR_Y, w=BAR_W, h=BAR_H,
+            x=BAR_X, y=BAR_Y, w=bar_w, h=BAR_H,
             aspect="auto",
             cmap=mpl.colormaps[cmap_name],
         )
+        label_x = LABEL_X - (BAR_W - bar_w)
         ax.text(
-            LABEL_X, LABEL_Y, label,
+            label_x, LABEL_Y, label,
             transform=ax.transAxes,
             va="center", ha="left",
             fontfamily=GRAPH_FONT,
@@ -1504,8 +1516,8 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
         1.0,  # Male Song
         1.0,  # Male Chorus
         1.0,  # Female Chatter
-        1.4,  # Hatchling / Nestling / Fledgling (wider)
-        0.7,  # No data (narrow)
+        1.2,  # Hatchling / Nestling / Fledgling (wider)
+        0.9,  # No data (narrow)
         0.9,  # Missing days
     ]
 
@@ -1519,14 +1531,14 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
     )
     axs = axs.flatten()
 
-    for ax, item in zip(axs, legend_items):
+    for i, (ax, item) in enumerate(zip(axs, legend_items)):
         kind = item[0]
-
+        ratio = 1/width_ratios[i]
+        
         if kind == "gradient":
             _, key, label = item
             cmap_name = cmap[key] if isinstance(cmap, dict) else cmap
-            draw_gradient_item(ax, cmap_name, label)
-
+            draw_gradient_item(ax, cmap_name, label, scale=ratio)
         elif kind == "swatch":
             _, label, _ = item
             draw_swatch_item(ax, label, facecolor=NO_DATA_COLOR, hatch=None)
@@ -1855,6 +1867,8 @@ def create_graph(site: str,
             df_norm = df_to_graph / 3  #3 recordings per day
         elif graph_type == GRAPH_MANUAL:
             df_norm = df_to_graph / 13  # 13 recordings per day
+        elif graph_type == GRAPH_EDGE:
+            df_norm = df_to_graph / 8  # 8 recordings per day 
         else:
             parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
             df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
@@ -1886,7 +1900,8 @@ def create_graph(site: str,
             else:
                 if file_missing(site, graph_type, row):
                     label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
-                    axs[i].text(0.5,0.5,f"No data for {label}", 
+                    display_label = tag_name_map[label] if label in tag_name_map.keys() else label
+                    axs[i].text(0.5,0.5,f"No data for {display_label}", 
                                 font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
                                 color='gray', verticalalignment='center')
         elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys():
@@ -1968,8 +1983,8 @@ def create_graph(site: str,
                     if len(idx) == 0:
                         borders: list[tuple[int, int]] = []
                     elif len(idx) == 1:
-                        i = int(idx[0])
-                        borders = [(i,i)]
+                        start_and_end = int(idx[0])
+                        borders = [(start_and_end,start_and_end)]
                     else:
                         # Find boundaries where contiguity breaks
                         breaks = np.where(np.diff(idx) > 1)[0]
@@ -3274,10 +3289,9 @@ for site in target_sites:
 
 
     # Edge Analysis
-    if not pt_edge.empty:
+    pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
+    if not pt_edge_only_nestlings.empty:
         cmap_edge = {c:'Oranges' for c in EDGE_C_COLS} | {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
-        pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
-
         graph, axs = create_graph(
                             site = site,
                             df = pt_edge_only_nestlings, #was pt_edge
