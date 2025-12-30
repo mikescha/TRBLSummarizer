@@ -91,17 +91,15 @@ tag_p1a = 'tag_p1a' #used to be P1NA
 tag_p1f = 'tag_p1f'
 tag_p2c = 'tag_p2c'
 tag_p2n = 'tag_p2n'
-#tag_p2a = 'tag_p2a'  #COMMENTING THIS OUT FOR NOW BUT IT WILL BE HERE SOON
 tag_p2f = 'tag_p2f'
-#tag_p2na= 'tag_p2na' doesn't exist any more
-#tag_p3c = 'tag_p3c'  doesn't exist now, might exist in the future
-#tag_p3n = 'tag_p3n'  doesn't exist now, might exist in the future
-#tag_p3f = 'tag_p3f'  doesn't exist now, might exist in the future
-#tag_p3na= 'tag_p3na' #DOESN'T EXIST NOW
+tag_p3n = 'tag_p3n' 
+tag_p4n = 'tag_p4n' 
+
 tag_wsmc = 'tag_wsmc'
 validated = 'validated'
 tag_YNC_p2 = 'tag<YNC-p2>'
-#tag_YNC_p3 = 'tag<YNC-p3>'  doesn't exist now, might exist in the future
+tag_YNC_p3 = 'tag<YNC-p3>' 
+tag_YNC_p4 = 'tag<YNC-p4>' 
 MALE_SONG = 'malesong'
 ALTSONG2 = 'altsong2'
 ALTSONG1 = 'altsong1'
@@ -124,6 +122,8 @@ data_col = {
     HOUR     : 'hour', 
     DATE     : 'date',
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
+    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 2
+    tag_YNC_p4   : 'tag<YNC-p4>', #Young nestling call pulse 2
     tag_p1a      : 'tag<p1a>',
     tag_p1c      : 'tag<p1c>',
     tag_p1f      : 'tag<p1f>',
@@ -131,6 +131,8 @@ data_col = {
     tag_p2c      : 'tag<p2c>',
     tag_p2f      : 'tag<p2f>',
     tag_p2n      : 'tag<p2n>',
+    tag_p3n      : 'tag<p3n>',
+    tag_p4n      : 'tag<p4n>',
     tag_mhe2     : 'tag<reviewed-MH-e2>', 
     tag_mhe      : 'tag<reviewed-MH-e>',
     tag_mhh      : 'tag<reviewed-MH-h>',
@@ -186,26 +188,18 @@ all_song_cols = [data_col[s] for s in all_songs]
 MANUAL_TAGS = [tag_mh, tag_ws, tag_]
 MINI_MANUAL_TAGS = [tag_mhh, tag_mhm, tag_wsm]
 
-EDGE_C_TAGS = [tag_p1c, tag_p2c] #male chorus
-EDGE_N_TAGS = [tag_p1n, tag_p2n] #nestlings, p1 = pulse 1, p2 = pulse 2
-EDGE_TAGS = EDGE_C_TAGS + EDGE_N_TAGS + [tag_YNC_p2, tag_p1a, tag_p1f, tag_p2f]
-# EDGE_TAG_MAP = {
-#     tag_p1n : [data_col[tag_p1f], data_col[tag_p1a]],
-#     tag_p2n : [data_col[tag_p2f]]#, data_col[tag_p2a]],
-# }
-
+EDGE_N_TAGS = [tag_p1n, tag_p2n, tag_p3n, tag_p4n] #nestlings, p1 = pulse 1, p2 = pulse 2
+EDGE_YNC_TAGS = [tag_YNC_p2, tag_YNC_p3, tag_YNC_p4]
+EDGE_TAGS = EDGE_N_TAGS + EDGE_YNC_TAGS
 ALL_TAGS = MANUAL_TAGS + MINI_MANUAL_TAGS + EDGE_TAGS
 
 MANUAL_COLS = [data_col[t] for t in MANUAL_TAGS]
 MINI_MANUAL_COLS = [data_col[t] for t in MINI_MANUAL_TAGS]
-EDGE_C_COLS = [data_col[t] for t in EDGE_C_TAGS]
 EDGE_N_COLS = [data_col[t] for t in EDGE_N_TAGS]
 #all_tag_cols = manual_cols + mini_manual_cols + edge_c_cols + edge_n_cols
 
-EDGE_COLS = EDGE_C_COLS + EDGE_N_COLS #make list of the right length
-EDGE_COLS[::2] = EDGE_C_COLS #assign C cols to the even indices (0, 2, ...)
-EDGE_COLS[1::2] = EDGE_N_COLS #assign N cols to the odd indices (1, 3, ...)
-
+EDGE_COLS = EDGE_N_COLS #make list of the right length
+ALL_EDGE_COLS = EDGE_COLS + [data_col[t] for t in EDGE_YNC_TAGS]
 
 #Constants for the graphing, so they can be shared across weather and blackbird graphs
 #For setting figure width and height, values in inches
@@ -467,16 +461,17 @@ def get_target_sites() -> list:
 
     return filtered_sites
 
+#TODO Remove this, all the inputs are automatically generated
 #Used by the two functions that follow to do file format validation
 def confirm_columns(target_cols:dict, file_cols:list, file:Path) -> list:
     errors_found = []
-    if len(target_cols) != len(file_cols):
-        log_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
+#    if len(target_cols) != len(file_cols):
+#        log_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
 #        show_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
     for col in target_cols:        
         if  target_cols[col] not in file_cols:
             errors_found.append(target_cols[col])
-            show_error(f"confirm_columns: Column {target_cols[col]} missing from file {file}")
+#            show_error(f"confirm_columns: Column {target_cols[col]} missing from file {file}")
     
     return errors_found
 
@@ -499,14 +494,14 @@ def check_edge_cols_for_errors(df:pd.DataFrame) -> bool:
     #Remove any -100 (were "---" in the original file, converted to numbers in the first cleaning pass) and log it, if there are any
     fix_bad_values(df)
 
-    # For each day, there should be only either P1F or P1N, never both
-    tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
+    # # For each day, there should be only either P1F or P1N, never both
+    # tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
 
-    if len(tag_errors):
-        error_found = True
-        show_error("check_edge_cols_for_errors: Found recordings that have both P1F and P1N tags, see log")
-        for f in tag_errors[FILENAME]: 
-            log_error(f"check_edge_cols_for_errors: {f}\tRecording has both P1F and P1N tags")
+    # if len(tag_errors):
+    #     error_found = True
+    #     show_error("check_edge_cols_for_errors: Found recordings that have both P1F and P1N tags, see log")
+    #     for f in tag_errors[FILENAME]: 
+    #         log_error(f"check_edge_cols_for_errors: {f}\tRecording has both P1F and P1N tags")
 
     return error_found 
 
@@ -574,7 +569,7 @@ def load_data() -> pd.DataFrame:
     for file_name in files_to_load:
         #Validate the data file format
         headers = pd.read_csv(file_name, nrows=0).columns.tolist()
-        missing_columns = confirm_columns(data_col, headers, file_name)  
+        missing_columns = confirm_columns(data_col, headers, file_name)
 
         #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
         usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
@@ -939,20 +934,25 @@ _OPS = {
     "!=": op.ne,
 }
 def filter_df_by_tags(df: pd.DataFrame, target_tags: list[str], filter_str: str = ">0", exclude_tags: list[str] | None = None) -> pd.DataFrame:
-    exclude_tags = exclude_tags or []
+    missing = set(target_tags) - set(df.columns)
+    if missing:
+        #if the tags aren't there, then just return the whole thing?
+        return df
+    else:
+        exclude_tags = exclude_tags or []
 
-    op_token = filter_str[:2] if filter_str[:2] in _OPS else filter_str[:1]
-    val_token = filter_str[len(op_token):]
-    threshold = float(val_token)
-    cmp = _OPS[op_token]
+        op_token = filter_str[:2] if filter_str[:2] in _OPS else filter_str[:1]
+        val_token = filter_str[len(op_token):]
+        threshold = float(val_token)
+        cmp = _OPS[op_token]
 
-    target_mask = cmp(df[target_tags], threshold).any(axis=1)
+        target_mask = cmp(df[target_tags], threshold).any(axis=1)
 
-    if exclude_tags:
-        exclude_mask = cmp(df[exclude_tags], threshold).any(axis=1)
-        target_mask &= ~exclude_mask
+        if exclude_tags:
+            exclude_mask = cmp(df[exclude_tags], threshold).any(axis=1)
+            target_mask &= ~exclude_mask
 
-    return df.loc[target_mask]
+        return df.loc[target_mask]
 
 # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
 # Also, transpose to get the right shape for the graph
@@ -1007,6 +1007,10 @@ def make_pivot_table(df, date_range_dict, preserve_edges=False, labels=None, lab
     labels = labels or []
     label_dict = label_dict or {}
     if df.empty:
+        return pd.DataFrame()
+
+    if set(label_dict.keys()) - set(df.columns):
+        #some columns are missing, so get out
         return pd.DataFrame()
 
     date_colname = data_col[DATE]
@@ -1967,43 +1971,37 @@ def create_graph(site: str,
 
             if len(df_col_nonzero):
                 c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.85)
-                if row in EDGE_C_COLS: #these tags get a box around the whole block
-                    first = df_col_nonzero.index[0]
-                    last  = df_col_nonzero.index[len(df_col_nonzero)-1]+1
-                    axs[i].add_patch(Rectangle((first,0), last-first, 0.99, 
-                                     ec=c, fc=c, fill=False))
-                    
-                else: #n tags get boxes around each consecutive block
-                    idx = df_col_nonzero[row].dropna().index.to_numpy()
-                    if len(idx) == 0:
-                        borders: list[tuple[int, int]] = []
-                    elif len(idx) == 1:
-                        start_and_end = int(idx[0])
-                        borders = [(start_and_end,start_and_end)]
-                    else:
-                        # Find boundaries where contiguity breaks
-                        breaks = np.where(np.diff(idx) > 1)[0]
+                #n tags get boxes around each consecutive block
+                idx = df_col_nonzero[row].dropna().index.to_numpy()
+                if len(idx) == 0:
+                    borders: list[tuple[int, int]] = []
+                elif len(idx) == 1:
+                    start_and_end = int(idx[0])
+                    borders = [(start_and_end,start_and_end)]
+                else:
+                    # Find boundaries where contiguity breaks
+                    breaks = np.where(np.diff(idx) > 1)[0]
 
-                        starts = np.r_[idx[0], idx[breaks + 1]]
-                        ends   = np.r_[idx[breaks], idx[-1]]
-                        borders = [(int(a), int(b)) for a, b in zip(starts, ends)]
+                    starts = np.r_[idx[0], idx[breaks + 1]]
+                    ends   = np.r_[idx[breaks], idx[-1]]
+                    borders = [(int(a), int(b)) for a, b in zip(starts, ends)]
 
-                    # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
-                    for start, end in borders:
-                        left = start
-                        width = (end-start) + 1
-                        gap_inside_outer_border = 0.03
-                        axs[i].add_patch(Rectangle((left,gap_inside_outer_border), width, 1-2*gap_inside_outer_border, 
-                                                   ec=c, fc=c, lw=0.5, fill=False))
-                    # For each pair of rects, draw a line between them.
-                    gaps = [(end1 + 1, start2 - 1) for (start1, end1), (start2, end2) in zip(borders, borders[1:])]
-                    for start_gap, end_gap in gaps:
-                        left = start_gap
-                        right = end_gap+1
-                        y_start_pos = 0.49
-                        line_width = 0.5 - y_start_pos
-                        axs[i].add_patch(Rectangle((left,y_start_pos), right-left, line_width, 
-                                                   ec=c, fc=c, lw=0.5, fill=True)) 
+                # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
+                for start, end in borders:
+                    left = start
+                    width = (end-start) + 1
+                    gap_inside_outer_border = 0.03
+                    axs[i].add_patch(Rectangle((left,gap_inside_outer_border), width, 1-2*gap_inside_outer_border, 
+                                                ec=c, fc=c, lw=0.5, fill=False))
+                # For each pair of rects, draw a line between them.
+                gaps = [(end1 + 1, start2 - 1) for (start1, end1), (start2, end2) in zip(borders, borders[1:])]
+                for start_gap, end_gap in gaps:
+                    left = start_gap
+                    right = end_gap+1
+                    y_start_pos = 0.49
+                    line_width = 0.5 - y_start_pos
+                    axs[i].add_patch(Rectangle((left,y_start_pos), right-left, line_width, 
+                                                ec=c, fc=c, lw=0.5, fill=True)) 
         i += 1
         
     # For mini-manual: Add a rect around each day that has some data
@@ -2739,10 +2737,6 @@ def check_tags(df: pd.DataFrame):
     bad_rows = pd.concat([bad_rows,
                             filter_df_by_tags(non_zero_rows, song_cols, f'=={missing_data_flag}')])
 
-    #P1C, P2C throws an error if it's missing courtsong song
-    non_zero_rows = filter_df_by_tags(df, EDGE_C_COLS)
-    bad_rows = pd.concat([bad_rows,
-                            filter_df_by_tags(non_zero_rows, [data_col[COURT_SONG]], f"=={missing_data_flag}")])
 
     #P1N, P2N throws an error if it's missing alternative song
     non_zero_rows = filter_df_by_tags(df, EDGE_N_COLS)
@@ -2936,87 +2930,77 @@ def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.D
     have_edge_data = False
     has_ync = 'has_ync'
     ync_tag = 'ync_tag'
-    pf_tag = 'pf_tag'
-    abandon_tag = 'na_tag'
 
     # The dict below captures all the various tags that need to be factored into the the edge
     # analysis assocated with P_N phase:
     #   has_ync: Does this site have any YNC tags of this type?
     #   ync_tag: The name of the YNC Tag column associated with this stage (i.e. the number after P)
     #   na_tag : The name of the P_NA tag associated with this stage
-    #   pf_tag : THe name of the P_F tag associated with this stage
-    pn_tag_map = {
-        data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
-                            ync_tag : '',  #YNC_P1 tag not currently being used
-                            abandon_tag  : data_col[tag_p1a], 
-                            pf_tag  : data_col[tag_p1f],
-        },
-        data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
-                            ync_tag : data_col[tag_YNC_p2],
-                            abandon_tag  : "",#data_col[tag_p2a],
-                            pf_tag  : data_col[tag_p2f],
-        },
+    # pn_tag_map = {
+    #     data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
+    #                         ync_tag : '',  #YNC_P1 tag not currently being used
+    #     },
+    #     data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
+    #                         ync_tag : data_col[tag_YNC_p2],
+    #     },
+    #     data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
+    #                         ync_tag : data_col[tag_YNC_p3],
+    #     },
+    #     data_col[tag_p4n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p4]).empty, 
+    #                         ync_tag : data_col[tag_YNC_p4],
+    #     },
+    # }
+    new_pn_tag_map = { # map of tag_pXn to ync tag
+        data_col[tag_p1n] : data_col[ALTSONG1],
+        data_col[tag_p2n] : data_col[tag_YNC_p2],
+        data_col[tag_p3n] : data_col[tag_YNC_p3],
+        data_col[tag_p4n] : data_col[tag_YNC_p4],
+
     }
 
     check_edge_cols_for_errors(df_site)
 
-    # 
-    # [  P1C  ]
-    #            [P1N attaches to either P1A | P1F] 
-    #                                [  P2C  ]                   
-    #                                           [P2N attaches to either P2A | P2F] 
-    # 
-    for tag in EDGE_COLS: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
-        tag_dict = {}
-
-        if tag in EDGE_C_COLS: #P1C, P2C, P3C
-            tag_dict[tag] = data_col[COURT_SONG]
-
-        else: #P1N, P2N, P3N
-            # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
-            if pn_tag_map[tag][has_ync]: 
-                #Count YNC tags
-                tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
-            else:
-                #Count altsong1 
-                tag_dict[tag] = data_col[ALTSONG1]
-
-            # For p?na, count altsong1 
-            if len(pn_tag_map[tag][abandon_tag]):
-                tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[ALTSONG1]
-
-            # TODO THAT P1F ARE EXCLUDED FOR NOW  2023 OR PRINEVILLE
-            # P1F, P2F, P3F: count simplecall2
-            # tag_dict[pn_tag_map[tag][pf_tag]] = data_col[SIMPLE_CALL2]
-
-        # At this point, the dictionary "tag_dict" has a mapping of all the tags and the columns
-        # that need to be counted for them. It will either be: 
-        #       {"P_C" : "courtsong"}
-        # or
-        #       {"p_n" : "altsong1" OR "YNC",
-        #        "p_a" : "altsong1",
-        #        "P_f" : "simplecall2"} 
-        # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
-        df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
-        if DEBUG:
-            old_df_for_tag = old_filter_df_by_tags(df_site, list(tag_dict.keys()))
-            assert df_for_tag.equals(old_df_for_tag), "do_edge: New and old filter_df_by_tags results do not match"
-
+    for tag in new_pn_tag_map: 
+        df_for_tag = filter_df_by_tags(df_site, [tag])
         have_edge_data = have_edge_data or len(df_for_tag)>0
-
-        # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
-        #    and it further filters it to the columns that have a non-zero value in the target_col
-        # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-        #    had tags but no songs
-        pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+        pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = {tag:new_pn_tag_map[tag]})
         if DEBUG:
-            old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+            old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = {tag:new_pn_tag_map[tag]})
             assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
+
+        # tag_dict = {}
+        
+        # # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
+        # if pn_tag_map[tag][has_ync]: 
+        #     #Count YNC tags
+        #     tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
+        # else:
+        #     #Count altsong1 
+        #     tag_dict[tag] = data_col[ALTSONG1]
+
+        # # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
+        # df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
+        # if DEBUG:
+        #     old_df_for_tag = old_filter_df_by_tags(df_site, list(tag_dict.keys()))
+        #     assert df_for_tag.equals(old_df_for_tag), "do_edge: New and old filter_df_by_tags results do not match"
+
+        # have_edge_data = have_edge_data or len(df_for_tag)>0
+
+        # # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
+        # #    and it further filters it to the columns that have a non-zero value in the target_col
+        # # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
+        # #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        # #    had tags but no songs
+        # pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+        # if DEBUG:
+        #     old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+        #     assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
+        # pt_edge = pd.concat([pt_edge, pt_for_tag])
+
     else:
-        log_error(f"Site {site} has no manual annotations")
+        log_error(f"Site {site} has no edge tags")
 
     return pt_edge, have_edge_data
 
@@ -3335,13 +3319,12 @@ def main():
 
 
         # Edge Analysis
-        pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
-        if not pt_edge_only_nestlings.empty:
-            cmap_edge = {c:'Oranges' for c in EDGE_C_COLS} | {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
+        if not pt_edge.empty:
+            cmap_edge = {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
             graph, axs = create_graph(
                                 site = site,
-                                df = pt_edge_only_nestlings, #was pt_edge
-                                row_names = pt_edge_only_nestlings.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
+                                df = pt_edge, #was pt_edge
+                                row_names = pt_edge.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
                                 cmap = cmap_edge, 
                                 raw_data = df_site,
                                 draw_horiz_rects = True,
