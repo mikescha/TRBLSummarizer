@@ -1756,54 +1756,6 @@ def load_recordings_hourly(parquet_path: Path, site_col: str, date_col: str, hou
     return df
 
 
-def normalize_by_recordings_per_day(
-    site: str,
-    df_to_graph: pd.DataFrame,
-    rec_df: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Normalize a 1-row dataframe by #recordings per day for a given site.
-
-    New behavior:
-      - rec_df is passed in (already loaded/cached) so we do NOT read parquet here.
-    """
-    if df_to_graph.shape[0] != 1:
-        raise ValueError(f"df_to_graph must be 1-row, got shape={df_to_graph.shape}")
-
-    site = str(site)
-
-    # ---- normalize df_to_graph (fast for 1-row) ----
-    df_num = df_to_graph.copy()
-    df_num.columns = pd.to_datetime(df_num.columns, errors="raise").normalize()
-    df_num.iloc[0] = pd.to_numeric(df_num.iloc[0], errors="coerce")
-
-
-    # -------------------------
-    # Mode B: hourly denominator
-    # -------------------------
-
-    # ensure normalized date, numeric hour
-    rec_site[date_col] = pd.to_datetime(rec_site[date_col], errors="raise").dt.normalize()
-    rec_site[hour_col] = pd.to_numeric(rec_site[hour_col], errors="coerce")
-
-    # filter hours
-    if end_exclusive:
-        rec_site = rec_site.loc[(rec_site[hour_col] >= hour_start) & (rec_site[hour_col] < hour_end)]
-    else:
-        rec_site = rec_site.loc[(rec_site[hour_col] >= hour_start) & (rec_site[hour_col] <= hour_end)]
-
-    # collapse to per-day denominator
-    denom_by_day = rec_site.groupby(date_col, sort=False)[recordings_col].sum()
-
-    # align to df_num's date-columns
-    denom = denom_by_day.reindex(df_num.columns)
-
-    return df_num.div(denom, axis="columns")
-
-
-
-
-
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(site: str,
                  df: pd.DataFrame, 
@@ -2870,9 +2822,22 @@ def get_ratio(site):
             ratio_str += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}"
             if i < (len(ratio_rows) - 1):
                 ratio_str += ",  "
+
+        ratio_str2 = "Nestling-to-Female Ratios: "
+        ratio_str2 += "  \n" if len(ratio_rows) > 1 else ""
+        for i, (index, row) in enumerate(ratio_rows.iterrows()): 
+            ratio = "n/a" if pd.isna(row["Ratio"]) else f"{row["Ratio"]:.2f}"
+            ratio = ratio.replace("inf", "∞")
+            ratio_str2 += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}, " + \
+                          f"Inc days: {row["Incubation Days"]} ({row["Total Female Calls"]} calls), " + \
+                          f"Brood days: {row["Nestling Days"]} ({row["Total Nestling Calls"]} calls)" 
+            if i < (len(ratio_rows) - 1):
+                ratio_str2 += "  \n"
+
     else:
         ratio_str = "None found"
-    return ratio_str
+        ratio_str2 = "None found"
+    return ratio_str2
 
 
 
@@ -3286,6 +3251,7 @@ def main():
                 show_station_info(summary_row)
             ratio_str = get_ratio(site)
             st.success(f"{ratio_str}")
+            
 
         #list of month positions in the graphs
         month_locs = {} 
