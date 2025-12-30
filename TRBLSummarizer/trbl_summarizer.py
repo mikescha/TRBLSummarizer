@@ -1,4 +1,15 @@
 from __future__ import annotations
+
+
+#Set appropriately before I deploy
+BEING_DEPLOYED_TO_STREAMLIT = False
+SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
+INCLUDE_INSECT_AND_FROG_DATA = True
+DEBUG = False  #For testing whether the old and new functions give the same results
+MAKE_ALL_GRAPHS = False
+
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -38,12 +49,23 @@ from collections.abc import Sequence
 
 #to force garbage collection and reduce memory use
 import gc
- 
 
-#Set to true before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
-SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
-INCLUDE_INSECT_AND_FROG_DATA = True
+#For profiling
+import time
+from contextlib import contextmanager
+import cProfile
+import pstats
+
+
+@contextmanager
+def timed(label: str):
+    if not DEBUG:
+        yield
+        return
+    t0 = time.perf_counter()
+    yield
+    dt = time.perf_counter() - t0
+    print(f"[TIMER] {label}: {dt:.3f}s")
 
 
 # Constants and Globals
@@ -390,13 +412,13 @@ def init_logging():
 def log_error(msg: str):
     global error_list
     error_list += f"{msg}\n\n"
-    if not BEING_DEPLOYED_TO_STREAMLIT:
-        with ERROR_FILE.open("a") as f:
-            f.write(f"{my_time()}: {msg}\n")
+    # if not BEING_DEPLOYED_TO_STREAMLIT:
+    #     with ERROR_FILE.open("a") as f:
+    #         f.write(f"{my_time()}: {msg}\n")
 
 def show_error(msg: str):
     #Only show the error if we're doing one graph at a time, but log it
-    if not make_all_graphs:
+    if not MAKE_ALL_GRAPHS:
         st.error(msg)
     log_error(msg)
 
@@ -414,10 +436,6 @@ def count_files_in_folder(fpath):
         if item.is_file():
             i += 1
     return i
-
-# def make_date(row: pd.Series) -> np.datetime64:
-#     date_str = f"{int(row['year'])}-{int(row['month']):02d}-{int(row['day']):02d}"
-#     return np.datetime64(date_str)
 
 
 def make_date(row: pd.Series) -> pd.Timestamp:
@@ -627,32 +645,13 @@ def load_pm_data(site:str) -> pd.DataFrame:
                         + "-"
                         + df_temp["day"].astype("int64").astype(str).str.zfill(2)
                     )
-#                    df_temp[DATE] = pd.to_datetime(pd.DataFrame({"year": df_temp["year"], "month": df_temp["month"], "day": df_temp["day"]}))
                     df_temp[DATE] = pd.to_datetime(date_str, errors="coerce")
-                    df_temp[DATE + "2"] = df_temp.apply(make_date, axis=1)
+                    #BOOMdf_temp[DATE + "2"] = df_temp.apply(make_date, axis=1)
 
                 else:
                     df_temp[DATE] = []
 
-                #SEPT2025 removing the error checking, as this is all now automated
-                #missing_columns = confirm_columns(site_columns, headers, fname)
-                # if len(missing_columns) == 0: 
-                #     df_temp = pd.read_csv(full_file_name, usecols=usecols)
-                #     #make a new column that has the date in it, take into account that the table could be empty
-                #     if len(df_temp):
-                #         df_temp[DATE] = df_temp.apply(lambda row: make_date(row), axis=1)
-                #     else:
-                #         df_temp[DATE] = []
-                # else:
-                #     #columns are missing so can't do anything!
-                #     log_error(f"load_pm_data: Columns {missing_columns} are missing from pattern matching file!")
-                #     return pd.DataFrame()
             else:
-                #NOTE: Dec 2024, removing the error logging because there will be a ton of these. Consider adding back
-                #       error checking for only the blackbird songs, although that also probably isn't necessary
-                #       given that these are being downloaded automatically
-                #log_error(f"Missing or empty pattern matching file {full_file_name}")
-                #Add an empty date column so we don't have a mismatch for the concat
                 df_temp[DATE] = []
 
             #Finally, add the table that we loaded to the end of the main one
@@ -922,12 +921,38 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
 # filter_str is '>0' by default because that's what most queries involve, but if a 
 # different string is passed in then we use that instead. 
-def filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclude_tags=[]) -> pd.DataFrame:
+def old_filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclude_tags=[]) -> pd.DataFrame:
     # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
     query  =  '(' + ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags]) + ')' 
     query += ' & ~'.join([f'`{tag}`{filter_str}' for tag in exclude_tags])
     filtered_df = df.query(query)
     return filtered_df
+
+import operator as op
+
+_OPS = {
+    ">": op.gt,
+    ">=": op.ge,
+    "<": op.lt,
+    "<=": op.le,
+    "==": op.eq,
+    "!=": op.ne,
+}
+def filter_df_by_tags(df: pd.DataFrame, target_tags: list[str], filter_str: str = ">0", exclude_tags: list[str] | None = None) -> pd.DataFrame:
+    exclude_tags = exclude_tags or []
+
+    op_token = filter_str[:2] if filter_str[:2] in _OPS else filter_str[:1]
+    val_token = filter_str[len(op_token):]
+    threshold = float(val_token)
+    cmp = _OPS[op_token]
+
+    target_mask = cmp(df[target_tags], threshold).any(axis=1)
+
+    if exclude_tags:
+        exclude_mask = cmp(df[exclude_tags], threshold).any(axis=1)
+        target_mask &= ~exclude_mask
+
+    return df.loc[target_mask]
 
 # Add missing dates by creating the largest date range for our graph and then reindex to add missing entries
 # Also, transpose to get the right shape for the graph
@@ -940,7 +965,7 @@ def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     return temp
 
 # Generate the pivot table for the site
-def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=False, labels=[], label_dict={}) -> pd.DataFrame:
+def old_make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=False, labels=[], label_dict={}) -> pd.DataFrame:
     if len(df):
         if len(label_dict):
             # Assumes dict is: {"column to filter on": "column to count"}
@@ -950,6 +975,10 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
             aggregate_df = pd.DataFrame()
             for tag in label_dict:
                 temp = filter_df_by_tags(df, [tag])
+                if DEBUG:
+                    temp2 = old_filter_df_by_tags(df, [tag])
+                    assert temp.equals(temp2), "filter_df_by_tags and old_filter_df_by_tags returned different results"
+
                 # If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up 
                 # the number of times that the test 'x>=1' is true
                 temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[DATE]], 
@@ -972,6 +1001,50 @@ def make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=Fals
         return normalize_pt(aggregate_df, date_range_dict)
     else:
         return pd.DataFrame()
+
+
+def make_pivot_table(df, date_range_dict, preserve_edges=False, labels=None, label_dict=None):
+    labels = labels or []
+    label_dict = label_dict or {}
+    if df.empty:
+        return pd.DataFrame()
+
+    date_colname = data_col[DATE]
+
+    if label_dict:
+        out = {}
+        for tag_col, value_col in label_dict.items():
+            # rows where this tag is present
+            m = df[tag_col].gt(0)   # same as >0
+            if not m.any():
+                continue
+            # count occurrences where value_col >= 1
+            ser = df.loc[m, value_col].ge(1)                    
+            if df.index.name == date_colname:
+                s = ser.groupby(level=date_colname).sum()
+            else:
+                s = ser.groupby(df.loc[m, date_colname]).sum()
+                
+            out[tag_col] = s
+
+        aggregate_df = pd.DataFrame(out).fillna(0).astype(int)
+
+    else:
+        if not labels:
+            return pd.DataFrame()
+        value_cols = df[labels].select_dtypes(include="number").columns
+        date_colname = data_col[DATE]
+        if df.index.name == date_colname:
+            aggregate_df = df[labels].ge(1).groupby(level=date_colname).sum()
+        else:
+            aggregate_df = df[labels].ge(1).groupby(df[date_colname]).sum()
+
+
+    if preserve_edges:
+        aggregate_df = aggregate_df.replace(0, PRESERVE_EDGES_FLAG)
+
+    return normalize_pt(aggregate_df, date_range_dict)
+
 
 
 # Pivot table for pattern matching is a little different
@@ -1673,100 +1746,60 @@ def file_missing(site, graph_type, type):
     return True
 
 
+@st.cache_data(show_spinner=False)
+def load_recordings_hourly(parquet_path: Path, site_col: str, date_col: str, hour_col: str, recordings_col: str) -> pd.DataFrame:
+    df = pd.read_parquet(parquet_path, columns=[site_col, date_col, hour_col, recordings_col])
+    if not pd.api.types.is_string_dtype(df[site_col]):
+        df[site_col] = df[site_col].astype(str)
+    df[date_col] = pd.to_datetime(df[date_col], errors="raise").dt.normalize()
+    df[hour_col] = pd.to_numeric(df[hour_col], errors="coerce")
+    return df
+
 
 def normalize_by_recordings_per_day(
     site: str,
     df_to_graph: pd.DataFrame,
-    recordings_parquet: str | Path,
-    *,
-    # if you pass hour_start/hour_end, we assume recordings_parquet is the per-day-hour parquet
-    hour_start: int | None = None,
-    hour_end: int | None = None,
-    # interpret hour_end as exclusive (recommended): [hour_start, hour_end)
-    end_exclusive: bool = True,
-    recordings_col: str = "n_recordings",
-    site_col: str = "site",
-    date_col: str = "date",
-    hour_col: str = "hour",
+    rec_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Normalize a 1-row dataframe by #recordings per day for a given site.
 
-    Two modes:
-
-    Mode A (daily counts parquet):
-      recordings_parquet has columns: site, date, n_recordings
-      -> denominator is total recordings for that (site, date)
-
-    Mode B (hourly counts parquet):
-      recordings_parquet has columns: site, date, hour, n_recordings
-      -> if hour_start/hour_end are provided, denominator is sum of recordings in that hour range.
-
-    Parameters:
-      hour_start/hour_end:
-        - if both are None -> daily counts mode
-        - if both are ints -> hourly mode
-        Example 6am–6pm: hour_start=6, hour_end=18 (end-exclusive gives 6..17)
+    New behavior:
+      - rec_df is passed in (already loaded/cached) so we do NOT read parquet here.
     """
-
     if df_to_graph.shape[0] != 1:
         raise ValueError(f"df_to_graph must be 1-row, got shape={df_to_graph.shape}")
 
-    # Normalize df_to_graph columns to normalized Timestamps
+    site = str(site)
+
+    # ---- normalize df_to_graph (fast for 1-row) ----
     df_num = df_to_graph.copy()
     df_num.columns = pd.to_datetime(df_num.columns, errors="raise").normalize()
-    df_num = df_num.apply(pd.to_numeric, errors="coerce")
+    df_num.iloc[0] = pd.to_numeric(df_num.iloc[0], errors="coerce")
 
-    parquet_path = Path(recordings_parquet)
-    #parquet_path = recordings_parquet
 
     # -------------------------
     # Mode B: hourly denominator
     # -------------------------
-    if (hour_start is None) ^ (hour_end is None):
-        raise ValueError("Provide both hour_start and hour_end, or neither.")
 
-    if hour_start is not None and hour_end is not None:
-        if not (0 <= hour_start <= 23 and 0 <= hour_end <= 24):
-            raise ValueError("hour_start must be 0..23 and hour_end must be 0..24")
+    # ensure normalized date, numeric hour
+    rec_site[date_col] = pd.to_datetime(rec_site[date_col], errors="raise").dt.normalize()
+    rec_site[hour_col] = pd.to_numeric(rec_site[hour_col], errors="coerce")
 
-        cols = [site_col, date_col, hour_col, recordings_col]
-        rec = pd.read_parquet(parquet_path, columns=cols)
+    # filter hours
+    if end_exclusive:
+        rec_site = rec_site.loc[(rec_site[hour_col] >= hour_start) & (rec_site[hour_col] < hour_end)]
+    else:
+        rec_site = rec_site.loc[(rec_site[hour_col] >= hour_start) & (rec_site[hour_col] <= hour_end)]
 
-        # filter to site
-        rec = rec.loc[rec[site_col].astype(str) == str(site), [date_col, hour_col, recordings_col]].copy()
+    # collapse to per-day denominator
+    denom_by_day = rec_site.groupby(date_col, sort=False)[recordings_col].sum()
 
-        rec[date_col] = pd.to_datetime(rec[date_col], errors="raise").dt.normalize()
-        rec[hour_col] = pd.to_numeric(rec[hour_col], errors="coerce").astype("Int64")
-
-        # filter hours
-        if end_exclusive:
-            hour_mask = (rec[hour_col] >= hour_start) & (rec[hour_col] < hour_end)
-        else:
-            hour_mask = (rec[hour_col] >= hour_start) & (rec[hour_col] <= hour_end)
-
-        rec = rec.loc[hour_mask]
-
-        # collapse to per-day denominator
-        denom_by_day = rec.groupby(date_col, as_index=True)[recordings_col].sum()
-
-        denom = denom_by_day.reindex(df_num.columns)
-        normalized_by_day = df_num.div(denom, axis="columns")
-        return normalized_by_day
-
-    # ------------------------
-    # Mode A: daily denominator
-    # ------------------------
-    cols = [site_col, date_col, recordings_col]
-    rec = pd.read_parquet(parquet_path, columns=cols)
-
-    rec = rec.loc[rec[site_col].astype(str) == str(site), [date_col, recordings_col]].copy()
-    rec[date_col] = pd.to_datetime(rec[date_col], errors="raise").dt.normalize()
-
-    denom_by_day = rec.groupby(date_col, as_index=True)[recordings_col].sum()
+    # align to df_num's date-columns
     denom = denom_by_day.reindex(df_num.columns)
 
     return df_num.div(denom, axis="columns")
+
 
 
 
@@ -1782,7 +1815,9 @@ def create_graph(site: str,
                  graph_type="",
                  draw_connectors=False,
                  hatch_dates={},
-                 missing_days=pd.DatetimeIndex([])) -> tuple[Figure, list[Axes]]:
+                 missing_days=pd.DatetimeIndex([]),
+                 denom_by_day: pd.Series = pd.Series(),
+                 ) -> tuple[Figure, list[Axes]]:
     
     plt.close() #close any prior graph that was open
 
@@ -1850,8 +1885,8 @@ def create_graph(site: str,
     i=0
     for row in row_names:
         # plotting the heatmap
-        # pull out the one row we want. When we do this, it turns into a series, so we then need to convert it back to a DF and transpose it to be wide
-        df_to_graph = df_clean.loc[row].to_frame().transpose()
+        # pull out the one row we want and transpose it to be wide
+        df_to_graph = df_clean.loc[[row]].copy()
 
         cmap_final = sns.color_palette(cmap[row] if len(cmap)>1 else cmap[0], as_cmap=True)
         # Zero → white (force the lowest color to white)
@@ -1870,19 +1905,27 @@ def create_graph(site: str,
         elif graph_type == GRAPH_EDGE:
             df_norm = df_to_graph / 8  # 8 recordings per day 
         else:
-            parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
-            df_norm = normalize_by_recordings_per_day(site, df_to_graph, parquet_path, hour_start=5, hour_end=21, end_exclusive=True)
+            # Align denom to the same columns (dates)
+            denom = denom_by_day.reindex(df_to_graph.columns)
+            
+            # Assume that columns are normalized Timestamps to match denom_by_day index, and are numeric 
+            # otherwise we need these two lines
+            # df_to_graph.columns = pd.to_datetime(df_to_graph.columns, errors="raise").normalize()
+            # df_to_graph.iloc[0] = pd.to_numeric(df_to_graph.iloc[0], errors="coerce")
+
+            df_norm = df_to_graph.div(denom, axis="columns")  # normalize by count of recordings per day
 
         # gamma < 1 brightens lows, closer to 0 is more extreme
         gamma = float(st.session_state.get("gamma", 1.0))  # 1=default if slider not created yet
-        norm = colors.PowerNorm(gamma = gamma, 
-                                vmin=0.0001, #slightly above 0 so that 0 values get the 'under' color 
-                                vmax=1) #as we're normalizing the data, the ranges will all be 0-1 
+        vmin = 0.001 #slightly above 0 so that 0 values get the 'under' color 
+        vmax = 1 #as we're normalizing the data, the ranges will all be 0-1
+        norm = colors.PowerNorm(gamma = gamma, vmin=vmin, vmax=vmax)  
         sns.heatmap(
             data = df_norm,
             ax = axs[i],
             cmap = cmap_final,
             norm = norm,
+            vmin=vmin, vmax=vmax,
             cbar = False,
             xticklabels = tick_spacing,
             yticklabels = False
@@ -2224,33 +2267,6 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, ):
 #     return locs
 
 
-def get_visible_month_day_ranges(start: pd.Timestamp, end: pd.Timestamp) -> dict[str, list[int]]:
-    result: dict[str, list[int]] = {}
-
-    # Snap start to the first day of its month
-    first_month_start = start.replace(day=1)
-
-    # Generate all months intersecting the interval
-    month_starts = pd.date_range(
-        start=first_month_start,
-        end=end,
-        freq="MS",
-    )
-
-    for ms in month_starts:
-        me = ms + pd.offsets.MonthEnd(0)
-
-        # Clip to visible interval
-        visible_start = max(ms, start)
-        visible_end   = min(me, end)
-
-        month_name = ms.strftime("%B")  # "April"
-        result[month_name] = [visible_start.day, visible_end.day]
-
-    return result
-
-
-
 def concat_images(*images: Image, is_legend:bool = False) -> Image:
     """Generate composite of all supplied images."""
     # Get the widest width. This will be a graph, not the legend
@@ -2279,7 +2295,7 @@ def concat_images(*images: Image, is_legend:bool = False) -> Image:
 
     return composite
 
-def apply_decorations_to_composite(composite:Image, month_locs:dict) -> Image:
+def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -> Image:
     scale = DPI/300
 
     #Make a new image that's a little bigger so we can add the site name at the top
@@ -2378,7 +2394,7 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
             image_list.append(ImageModule.open(site_fig_dict[GRAPH_WEATHER]))
         composite = concat_images(*image_list)
 
-        final = apply_decorations_to_composite(composite, month_locs)
+        final = apply_decorations_to_composite(site, composite, month_locs)
         final.save(composite_path)
     return
 
@@ -2845,10 +2861,10 @@ def get_ratio(site):
     '''
     Read the ratios file and retrieve the value for this site
     '''
-    all_ratios = pd.read_csv(r"./TRBLSummarizer/female-to-nestling-ratios.csv")
+    all_ratios = pd.read_csv(r"./TRBLSummarizer/nestling-to-female-ratios.csv")
     ratio_rows = all_ratios[all_ratios["Site Name"]==site]
     if len(ratio_rows):
-        ratio_str = "Female-to-Hatchling Ratios: "
+        ratio_str = "Nestling-to-Female Ratios: "
         for i, (index, row) in enumerate(ratio_rows.iterrows()): 
             ratio = "n/a" if pd.isna(row["Ratio"]) else f"{row["Ratio"]:.2f}"
             ratio_str += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}"
@@ -2859,255 +2875,15 @@ def get_ratio(site):
     return ratio_str
 
 
-# ===========================================================================================================
-# ===========================================================================================================
-#
-#  Main
-#
-# ===========================================================================================================
-# ===========================================================================================================
-
-init_logging()
-
-# Set up the sidebar with three zones so it looks like we want
-container_top = st.sidebar.container()
-container_mid = st.sidebar.container(border=True)
-container_bottom = st.sidebar.container(border=True)
-
-with container_mid:
-    gamma = st.slider(
-        "Heatmap contrast",
-        min_value=0.1,
-        max_value=1.0,
-        value=0.6,
-        step=0.05,
-        key="gamma",
-    )
-    show_station_info_checkbox = st.checkbox('Show station info', value=True)
-    show_weather_checkbox = st.checkbox('Show station weather', value=True)
-    show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
-
-with container_bottom:
-    st.write("Contact wendy.schackwitz@gmail.com with any questions")
-    if not BEING_DEPLOYED_TO_STREAMLIT:
-        make_all_graphs = st.checkbox('Make all graphs')
-    else:
-        make_all_graphs = False
-
-container_top.title('TRBL Graphs')
 
 
-#Load all the data for most of the graphs
-df_original = load_data()
-
-#Get the list of sites that we're going to do reports for, and then remove all the other data
-site_list = get_target_sites()
-df = clean_data(df_original, site_list)
-
-# Nuke the original data, hopefully this frees up memory
-del df_original
-gc.collect()
-
-# Load all the summary data
-summary_df = load_summary_data()
-
-save_files = False
-save_composite = False
-
-# If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
-if make_all_graphs:
-    target_sites = site_list
-    #Can use this to limit sites to just a particular year
-    #target_sites = [string for string in target_sites if string.startswith("2024 ")]
-
-    # This is the file where we write all the dates we extracted from the data
-    if os.path.exists(FILES[DATES_FILE]):
-        os.remove(FILES[DATES_FILE])
-    
-    # For now, I'm not saving all the files, only the composite because it's taking up too much space. 
-    # When she needs all the files, we'll bring this back
-    # Make sure to fix it here and in the Else statement below
-    save_files = False
-    save_composite = True
-
-else:
-    target_sites = [get_site_to_analyze(site_list, container_top)]
-    if not BEING_DEPLOYED_TO_STREAMLIT:
-        save_composite = container_top.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
-        save_files = save_composite
-    
-    #debug: to get a specific site, put the name of the site below and uncomment
-    #target_sites = ["2018 Rush Ranch"]
-
-# Set format shared by all graphs
-set_global_theme()
-
-df_site = pd.DataFrame()
-site_counter = 0
-pt_manual = pd.DataFrame()
-pt_mini_manual = pd.DataFrame()
-pt_edge = pd.DataFrame()
-pt_pm = pd.DataFrame()
-df_mini_manual = pd.DataFrame()
-df_manual = pd.DataFrame()  
-df_edge = pd.DataFrame()
-weather_by_type = {}
-
-
-for site in target_sites:
-    error_msgs = []
-    site_counter += 1
-    # Select the site matching the one of interest
-    df_site = df[df[data_col[SITE]] == site]
-    date_range_dict = {}
-    pt_manual = pd.DataFrame()
-    pt_mini_manual = pd.DataFrame()
-    pt_edge = pd.DataFrame()
-    pt_pm = pd.DataFrame()
-    df_mini_manual = pd.DataFrame()
-    df_manual = pd.DataFrame()  
-    df_edge = pd.DataFrame()
-    missing_days = pd.DatetimeIndex([])
-
-    if not df_site.empty:
-        #Using the site of interest, get the first & last dates and give the user the option to customize the range
-        date_range_dict = get_date_range(df_site, make_all_graphs, container_top)
-
-        #Get this list of days without data, for later graphing
-        df_temp = df_site.copy()
-        df_temp.index = pd.to_datetime(df_temp.index)
-
-        start = df_temp.index.min()
-        end   = df_temp.index.max()
-        all_days = pd.date_range(start, end, freq="D")
-        idx = pd.DatetimeIndex(df_temp.index).normalize().unique()
-        missing_days = all_days.difference(idx)
-        #
-        # Data Analysis
-        # -------------
-        # 
-        # MANUAL ANALYSIS
-        #   1. Select all rows where one of the following tags
-        #       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
-        #   2. Make a pivot table with the following columns:
-        #       The number of recordings from that set that have Common Song >= 1
-        #       The number of recordings from that set that have Courtship Song >= 1
-        #       The number of recordings from that set that have AltSong2 >= 1
-        #       The number of recordings from that set that have AltSong >= 1 
-        #     
-        df_manual = filter_df_by_tags(df_site, MANUAL_COLS)
-        pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
-
-        # MINI-MANUAL ANALYSIS
-        # 1. Select all rows with one of the following tags:
-        #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
-        # 2. Make a pivot table as above
-        #   
-        df_mini_manual = filter_df_by_tags(df_site, MINI_MANUAL_COLS)
-        pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
-
-        # EDGE ANALYSIS
-        # Goal: 
-        #   1. Draw a rectangle around the outside of all the P_C tags from the first day that has 
-        #      at least 1 recording to the last (orange)
-        #           1. if the data is null, then the rectangles are going to be drawn as connecting lines
-        #   2. Draw a rectangle starting at the first P_N that has at least one recording, and ending
-        #      at the latest date that has either a P_A or P_F
-        #           1. if there is a YNC_P2 then only count recordings that have YNC_P2, do not count the actual P_N
-        #   
-        # Steps:
-        #   1. Select all rows where one of the following tags
-        #       P1C, P1N, P2C, P2N [later: , P3C, P3N]
-        #   2. For tags that end in C, make a pivot table with the number of recordings that have CourtshipSong
-        #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
-        #   4. Merge all the tables together so we get one block of heatmaps
-
-        have_edge_data = False
-        has_ync = 'has_ync'
-        ync_tag = 'ync_tag'
-        pf_tag = 'pf_tag'
-        abandon_tag = 'na_tag'
-        sc_tag = 'sc_tag'
-
-        # The dict below captures all the various tags that need to be factored into the the edge
-        # analysis assocated with P_N phase:
-        #   has_ync: Does this site have any YNC tags of this type?
-        #   ync_tag: The name of the YNC Tag column associated with this stage (i.e. the number after P)
-        #   na_tag : The name of the P_NA tag associated with this stage
-        #   pf_tag : THe name of the P_F tag associated with this stage
-        pn_tag_map = {
-            data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
-                                ync_tag : '',  #YNC_P1 tag not currently being used
-                                abandon_tag  : data_col[tag_p1a], 
-                                pf_tag  : data_col[tag_p1f],
-            },
-            data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
-                                ync_tag : data_col[tag_YNC_p2],
-                                abandon_tag  : "",#data_col[tag_p2a],
-                                pf_tag  : data_col[tag_p2f],
-            },
-        }
-
-        check_edge_cols_for_errors(df_site)
-
-        # 
-        # [  P1C  ]
-        #            [P1N attaches to either P1A | P1F] 
-        #                                [  P2C  ]                   
-        #                                           [P2N attaches to either P2A | P2F] 
-        # 
-        for tag in EDGE_COLS: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
-            tag_dict = {}
-
-            if tag in EDGE_C_COLS: #P1C, P2C, P3C
-                tag_dict[tag] = data_col[COURT_SONG]
-
-            else: #P1N, P2N, P3N
-                # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
-                if pn_tag_map[tag][has_ync]: 
-                    #Count YNC tags
-                    tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
-                else:
-                    #Count altsong1 
-                    tag_dict[tag] = data_col[ALTSONG1]
-
-                # For p?na, count altsong1 
-                if len(pn_tag_map[tag][abandon_tag]):
-                    tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[ALTSONG1]
-
-                # P1F, P2F, P3F: count simplecall2
-                tag_dict[pn_tag_map[tag][pf_tag]] = data_col[SIMPLE_CALL2]
-    
-            # At this point, the dictionary "tag_dict" has a mapping of all the tags and the columns
-            # that need to be counted for them. It will either be: 
-            #       {"P_C" : "courtsong"}
-            # or
-            #       {"p_n" : "altsong1" OR "YNC",
-            #        "p_a" : "altsong1",
-            #        "P_f" : "simplecall2"} 
-            # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
-            df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
-            have_edge_data = have_edge_data or len(df_for_tag)>0
-
-            # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
-            #    and it further filters it to the columns that have a non-zero value in the target_col
-            # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-            #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-            #    had tags but no songs
-            pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
-            pt_edge = pd.concat([pt_edge, pt_for_tag])
-
-    else:
-        error_msgs.append("Site has no manual annotations")
-
-
+def do_pattern_matching(site:str, date_range_dict:dict, container_top) -> tuple[pd.DataFrame, dict, bool]:
     #
     # PATTERN MATCHING ANALYSIS
     #
     #Load all the PM files, any errors will return an empty table. For later graphing purposes, 
     df_pattern_match = load_pm_data(site)
     df_pattern_match = clean_data(df_pattern_match, [site]) #THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
-    pm_data_empty = False
     pt_pm = pd.DataFrame()
     pm_date_range_dict = {}
 
@@ -3116,318 +2892,638 @@ for site in target_sites:
         if date_range_dict:
             pm_date_range_dict = date_range_dict  
         else:
-            pm_date_range_dict = get_date_range(df_pattern_match, make_all_graphs, container_top)
+            pm_date_range_dict = get_date_range(df_pattern_match, MAKE_ALL_GRAPHS, container_top)
 
         if len(df_pattern_match):
             for t in pm_file_types: 
                 #For each file type, get the filtered range of just that type
                 df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
-                pm_data_empty = bool(pm_data_empty or len(df_for_file_type))
                 #Build the pivot table for it
                 pt_for_file_type = make_pattern_match_pt(df_for_file_type, t, pm_date_range_dict)
                 #Concat as above
                 pt_pm = pd.concat([pt_pm, pt_for_file_type])    
 
-    else: #TODO Should just graph what we get unless the data is completely missing
-        error_msgs.append(f"{site}: All pattern matching data not available, missing some or all files")
+    else:
+        log_error(f"{site}: All pattern matching data not available, missing some or all files")
 
+    return pt_pm, pm_date_range_dict, not df_pattern_match.empty
+
+def assert_df_equal(old_df: pd.DataFrame, new_df: pd.DataFrame, context:str):
+    return pd.testing.assert_frame_equal(
+        old_df.sort_index().sort_index(axis=1),
+        new_df.sort_index().sort_index(axis=1),
+        check_like=True,   # allows column order differences
+    ), f"{context}: New and old pivot table results do not match"
+
+def do_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.DataFrame, bool]:
+    #
+    # Data Analysis
+    # -------------
+    # 
+    # MANUAL ANALYSIS
+    #   1. Select all rows where one of the following tags
+    #       tag<reviewed-MH>, tag<reviewed-WS>, tag<reviewed>
+    #   2. Make a pivot table with the following columns:
+    #       The number of recordings from that set that have Common Song >= 1
+    #       The number of recordings from that set that have Courtship Song >= 1
+    #       The number of recordings from that set that have AltSong2 >= 1
+    #       The number of recordings from that set that have AltSong >= 1 
+    #     
+    df_manual = filter_df_by_tags(df_site, MANUAL_COLS)
+    pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
+    if DEBUG:
+        pt_manual_old = old_make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
+        assert_df_equal(pt_manual_old, pt_manual, "do_manual")
+
+    return pt_manual, not df_manual.empty
+
+def do_mini_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.DataFrame, bool]:
+    # 1. Select all rows with one of the following tags:
+    #       tag<reviewed-MH-h>, tag<reviewed-MH-m>, tag<reviewed-WS-h>, tag<reviewed-WS-m>
+    # 2. Make a pivot table as above
+    #   
+    df_mini_manual = filter_df_by_tags(df_site, MINI_MANUAL_COLS)
+    pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
+    if DEBUG:
+        pt_mini_manual_old = old_make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
+        assert_df_equal(pt_mini_manual_old, pt_mini_manual, "do_mini_manual")
+
+    return pt_mini_manual, not df_mini_manual.empty
+
+
+def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.DataFrame, bool]:
+    # Goal: 
+    #   1. Draw a rectangle around the outside of all the P_C tags from the first day that has 
+    #      at least 1 recording to the last (orange)
+    #           1. if the data is null, then the rectangles are going to be drawn as connecting lines
+    #   2. Draw a rectangle starting at the first P_N that has at least one recording, and ending
+    #      at the latest date that has either a P_A or P_F
+    #           1. if there is a YNC_P2 then only count recordings that have YNC_P2, do not count the actual P_N
+    #   
+    # Steps:
+    #   1. Select all rows where one of the following tags
+    #       P1C, P1N, P2C, P2N [later: , P3C, P3N]
+    #   2. For tags that end in C, make a pivot table with the number of recordings that have CourtshipSong
+    #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
+    #   4. Merge all the tables together so we get one block of heatmaps
+
+    pt_edge = pd.DataFrame()    
+    have_edge_data = False
+    has_ync = 'has_ync'
+    ync_tag = 'ync_tag'
+    pf_tag = 'pf_tag'
+    abandon_tag = 'na_tag'
+
+    # The dict below captures all the various tags that need to be factored into the the edge
+    # analysis assocated with P_N phase:
+    #   has_ync: Does this site have any YNC tags of this type?
+    #   ync_tag: The name of the YNC Tag column associated with this stage (i.e. the number after P)
+    #   na_tag : The name of the P_NA tag associated with this stage
+    #   pf_tag : THe name of the P_F tag associated with this stage
+    pn_tag_map = {
+        data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
+                            ync_tag : '',  #YNC_P1 tag not currently being used
+                            abandon_tag  : data_col[tag_p1a], 
+                            pf_tag  : data_col[tag_p1f],
+        },
+        data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
+                            ync_tag : data_col[tag_YNC_p2],
+                            abandon_tag  : "",#data_col[tag_p2a],
+                            pf_tag  : data_col[tag_p2f],
+        },
+    }
+
+    check_edge_cols_for_errors(df_site)
 
     # 
-    #    Summary data
-    #
-    # What we want to do is break this into a dictionary, with one entry for each pulse. 
-    # Each pulse should have a dictionary mapping any valid dates in the pulse to its column name, 
-    # e.g. {"P1": {"P1 Inc Start":Timestamp('2023-05-01')}}
+    # [  P1C  ]
+    #            [P1N attaches to either P1A | P1F] 
+    #                                [  P2C  ]                   
+    #                                           [P2N attaches to either P2A | P2F] 
+    # 
+    for tag in EDGE_COLS: # tag_p1c, tag_p1n, tag_p2c, tag_p2n, tag_p3c, tag_p3n
+        tag_dict = {}
 
-    #iloc[:,1] selects all the rows but only column 1 (which is the second column, as it's zero indexed)
-    #== site selects the row that matches the site
-    #Mar 2025: this actually creates a pd dataframe, not a dict, but if everything else works, don't change now!
-    summary_row = summary_df[summary_df.iloc[:, 1] == site]
+        if tag in EDGE_C_COLS: #P1C, P2C, P3C
+            tag_dict[tag] = data_col[COURT_SONG]
 
-    # Process the summary data, i.e. figure out if it's correctly structured, adjust for 
-    # "abandoned" and so on, and convert all dates to a date format so it's easy to graph later. 
-    # The graphing should just be executing the plan, not figuring out if there are errors.
-    # 11/2024 - the graph could be empty, so need to handle that
-    if len(summary_row):
-        site_summary_dict = process_site_summary_data(summary_row)
+        else: #P1N, P2N, P3N
+            # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
+            if pn_tag_map[tag][has_ync]: 
+                #Count YNC tags
+                tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
+            else:
+                #Count altsong1 
+                tag_dict[tag] = data_col[ALTSONG1]
+
+            # For p?na, count altsong1 
+            if len(pn_tag_map[tag][abandon_tag]):
+                tag_dict[pn_tag_map[tag][abandon_tag]] = data_col[ALTSONG1]
+
+            # TODO THAT P1F ARE EXCLUDED FOR NOW  2023 OR PRINEVILLE
+            # P1F, P2F, P3F: count simplecall2
+            # tag_dict[pn_tag_map[tag][pf_tag]] = data_col[SIMPLE_CALL2]
+
+        # At this point, the dictionary "tag_dict" has a mapping of all the tags and the columns
+        # that need to be counted for them. It will either be: 
+        #       {"P_C" : "courtsong"}
+        # or
+        #       {"p_n" : "altsong1" OR "YNC",
+        #        "p_a" : "altsong1",
+        #        "P_f" : "simplecall2"} 
+        # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
+        df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
+        if DEBUG:
+            old_df_for_tag = old_filter_df_by_tags(df_site, list(tag_dict.keys()))
+            assert df_for_tag.equals(old_df_for_tag), "do_edge: New and old filter_df_by_tags results do not match"
+
+        have_edge_data = have_edge_data or len(df_for_tag)>0
+
+        # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
+        #    and it further filters it to the columns that have a non-zero value in the target_col
+        # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
+        #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
+        #    had tags but no songs
+        pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+        if DEBUG:
+            old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
+            assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
+        pt_edge = pd.concat([pt_edge, pt_for_tag])
+
     else:
-        site_summary_dict = {}
+        log_error(f"Site {site} has no manual annotations")
+
+    return pt_edge, have_edge_data
 
 
-    # ------------------------------------------------------------------------------------------------
-    # DISPLAY
-    if make_all_graphs:
-        st.subheader(f"{site} [{str(site_counter)} of {str(len(target_sites))}]")
-    else: 
-        st.subheader(site)
-    
-    if not pd.isna(summary_row["Comment for Skip Site"].item()):
-        st.write(f":red-background[Duplicate site: {summary_row["Comment for Skip Site"].item()}]")
+def get_missing_days(df_site: pd.DataFrame) -> pd.DatetimeIndex:
+    # returns the set of days between start and end that don't have any recordings, i.e. are missing from the dataset
+    df_temp = df_site.copy()
+    df_temp.index = pd.to_datetime(df_temp.index)
+    start = df_temp.index.min()
+    end   = df_temp.index.max()
+    all_days = pd.date_range(start, end, freq="D")
+    idx = pd.DatetimeIndex(df_temp.index).normalize().unique()
+    missing_days = all_days.difference(idx)
+    return missing_days
 
-    if len(error_msgs):
-        for error_msg in error_msgs:
-            st.write(f":red-background[{error_msg}]")
+def get_month_locs(cols: pd.Index) -> dict[str, list[int]]:
+    def get_visible_month_day_ranges(start: pd.Timestamp, end: pd.Timestamp) -> dict[str, list[int]]:
+        result: dict[str, list[int]] = {}
 
-    if not make_all_graphs:
-        if show_station_info_checkbox:
-            show_station_info(summary_row)
-        ratio_str = get_ratio(site)
-        st.success(f"{ratio_str}")
+        # Snap start to the first day of its month
+        first_month_start = start.replace(day=1)
 
-    #list of month positions in the graphs
-    month_locs = {} 
+        # Generate all months intersecting the interval
+        month_starts = pd.date_range(
+            start=first_month_start,
+            end=end,
+            freq="MS",
+        )
 
-    #Summary graph, this is the "inferred timing" that we're not using now
-    # include_summary_graph = True
-    # if (include_summary_graph and 
-    #     len(site_summary_dict) and 
-    #     pd.notna(site_summary_dict[SUMMARY_FIRST_REC]) and 
-    #     pd.notna(site_summary_dict[SUMMARY_LAST_REC])):
-    #     target_date_range_dict = {START:site_summary_dict[SUMMARY_FIRST_REC].strftime('%m-%d-%Y'),
-    #                               END:  site_summary_dict[SUMMARY_LAST_REC].strftime('%m-%d-%Y')}
-    #     graph = create_summary_graph(pulse_data=site_summary_dict, date_range=target_date_range_dict, make_all_graphs=make_all_graphs)
-    #     output_graph(site, GRAPH_SUMMARY, save_files, make_all_graphs, data_to_graph=not (site_summary_dict=={}))
-    # else:
-    #     pass
-    #     #was:   log_error(f"{site} didn't have any site summary data")
+        for ms in month_starts:
+            me = ms + pd.offsets.MonthEnd(0)
+
+            # Clip to visible interval
+            visible_start = max(ms, start)
+            visible_end   = min(me, end)
+
+            month_name = ms.strftime("%B")  # "April"
+            result[month_name] = [visible_start.day, visible_end.day]
+
+        return result
+
+    if not isinstance(cols, pd.DatetimeIndex):
+        raise TypeError("get_month_locs requires a DatetimeIndex")
+    start = cols.min().normalize()
+    end   = cols.max().normalize()
+    month_locs = get_visible_month_day_ranges(start, end) 
+    return month_locs
 
 
-    # Pattern Matching Analysis
-    if True: #not pt_pm.empty:
-        hatch_dates = {}
-        for p in PULSES:
-            if p in site_summary_dict:
-                hatch_date = site_summary_dict[p]["Brooding"]["start"]
-                if pd.notna(hatch_date):
-                    hatch_dates[p] = hatch_date
+# ===========================================================================================================
+# ===========================================================================================================
+#
+#  Main
+#
+# ===========================================================================================================
+# ===========================================================================================================
 
-        graph, axs = create_graph(
-                            site = site,
-                            df = pt_pm, 
-                            row_names = pm_file_types, 
-                            cmap = CMAP_PM, 
-                            title = GRAPH_PM,
-                            graph_type = GRAPH_PM,
-                            hatch_dates = hatch_dates,
-                            missing_days = missing_days
-        ) 
+def main():
+    global MAKE_ALL_GRAPHS
+    init_logging()
+
+    # Set up the sidebar with three zones so it looks like we want
+    container_top = st.sidebar.container()
+    container_mid = st.sidebar.container(border=True)
+    container_bottom = st.sidebar.container(border=True)
+    container_top.title('TRBL Graphs')
+
+    with container_mid:
+        gamma = st.slider(
+            "Heatmap contrast",
+            min_value=0.1,
+            max_value=1.0,
+            value=0.6,
+            step=0.05,
+            key="gamma",
+        )
+        show_station_info_checkbox = st.checkbox('Show station info', value=True)
+        show_weather_checkbox = st.checkbox('Show station weather', value=True)
+        show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
+
+    with container_bottom:
+        st.write("Contact wendy.schackwitz@gmail.com with any questions")
+        if not BEING_DEPLOYED_TO_STREAMLIT:
+            MAKE_ALL_GRAPHS = st.checkbox('Make all graphs')
+        else:
+            MAKE_ALL_GRAPHS = False
+
+    #Load all the data for most of the graphs
+    with timed("Load all tag data"):
+        df_original = load_data()
+
+    #Load the hourly groupings for the PM graphs
+    parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
+    recordings_df = load_recordings_hourly(parquet_path, "site", "date", "hour", "n_recordings")
+
+    #Get the list of sites that we're going to do reports for, and then remove all the other data
+    with timed("Clean data"):
+        site_list = get_target_sites()
+        df = clean_data(df_original, site_list)
+
+    with timed("Free memory"):
+        # Nuke the original data, hopefully this frees up memory
+        del df_original
+        gc.collect()
+
+    with timed("Load summary data"):
+        # Load all the summary data
+        summary_df = load_summary_data()
+
+    save_files = False
+    save_composite = False
+
+    # If we're doing all the graphs, then set our target to the entire list, else use the UI to pick
+    if MAKE_ALL_GRAPHS:
+        target_sites = site_list
+        #Can use this to limit sites to just a particular year
+        #target_sites = [string for string in target_sites if string.startswith("2024 ")]
+
+        # This is the file where we write all the dates we extracted from the data
+        if os.path.exists(FILES[DATES_FILE]):
+            os.remove(FILES[DATES_FILE])
         
-        if month_locs=={}:
-            cols = pd.DatetimeIndex(pt_pm.columns)
-            start = cols.min().normalize()
-            end   = cols.max().normalize()
-            month_locs = get_visible_month_day_ranges(start, end) 
- 
-        #TODO need to change this to pull the breeding dates     
-        # with st.expander("Show pulse dates "):
-        #     if len(pt_pm):
-        #         summarized_data, raw_pm_dates = summarize_pm(pt_pm)
-        #         if show_PM_dates:
-        #             add_pulse_overlays(graph, raw_pm_dates, pm_date_range_dict)
-        #         if make_all_graphs:
-        #             append_to_csv(summarized_data, site, FILES[DATES_FILE])
-        #         else:
-        #             pretty_print_table(summarized_data, body_alignment="left")
-        #     else:
-        #         st.write("No pattern matching data available")
+        # For now, I'm not saving all the files, only the composite because it's taking up too much space. 
+        # When she needs all the files, we'll bring this back
+        # Make sure to fix it here and in the Else statement below
+        save_files = False
+        save_composite = True
+    else:
+        target_sites = [get_site_to_analyze(site_list, container_top)]
+        if not BEING_DEPLOYED_TO_STREAMLIT:
+            save_composite = container_top.checkbox('Save as picture', value=False) #user decides to save the graphs as pics or not
+            save_files = save_composite
+        
+        #debug: to get a specific site, put the name of the site below and uncomment
+        #target_sites = ["2018 Rush Ranch"]
 
-        output_graph(site, graph, GRAPH_PM,
-                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=pm_data_empty)
+    # Set format shared by all graphs
+    set_global_theme()
 
-
-    # MiniManual Analysis
-    if not pt_mini_manual.empty:
-        graph, axs = create_graph(
-                            site = site,
-                            df = pt_mini_manual, 
-                            row_names = song_cols, 
-                            cmap = CMAP, 
-                            raw_data = df_site,
-                            draw_vert_rects = True,
-                            title = "Manual Analysis (Periodic)",
-                            graph_type = GRAPH_MINIMAN,
-                            missing_days = missing_days
-        )
-        if month_locs=={}:
-            cols = pd.DatetimeIndex(pt_mini_manual.columns)
-            start = cols.min().normalize()
-            end   = cols.max().normalize()
-            month_locs = get_visible_month_day_ranges(start, end) 
-
-        output_graph(site, graph, GRAPH_MINIMAN, 
-                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_mini_manual.empty)
-
-
-    # Manual analyisis graph    
-    if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
-        #SEPT2025- trying to hide COURT_SONG from the list of songs
-        new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
-
-        graph, axs = create_graph(
-                            site = site,
-                            df = pt_manual, 
-                            row_names = [data_col[s] for s in new_songs], #SEPT2025
-                            cmap = CMAP, 
-                            title = "Manual Analysis (Daily Review)",
-                            graph_type=GRAPH_MANUAL,
-                            missing_days = missing_days
-        ) 
-        # add this if we want to include the site name (site + ' ' if save_files else '')
-        # Need to be able to build an image that looks like the graph labels so that it can be drawn
-        # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
-        # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
-        # to accidentally delete our list
-        if month_locs=={}:
-            cols = pd.DatetimeIndex(pt_manual.columns)
-            start = cols.min().normalize()
-            end   = cols.max().normalize()
-            month_locs = get_visible_month_day_ranges(start, end) 
-
-        output_graph(site, graph, GRAPH_MANUAL, 
-                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=not df_manual.empty)
-
-
-
-    # Edge Analysis
-    pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
-    if not pt_edge_only_nestlings.empty:
-        cmap_edge = {c:'Oranges' for c in EDGE_C_COLS} | {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
-        graph, axs = create_graph(
-                            site = site,
-                            df = pt_edge_only_nestlings, #was pt_edge
-                            row_names = pt_edge_only_nestlings.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
-                            cmap = cmap_edge, 
-                            raw_data = df_site,
-                            draw_horiz_rects = True,
-                            title = "Manual Analysis (Hatchlings Only)", # was GRAPH_EDGE,
-                            graph_type=GRAPH_EDGE,
-                            missing_days = missing_days
-        )
-        if month_locs=={}:
-            cols = pd.DatetimeIndex(pt_edge.columns)
-            start = cols.min().normalize()
-            end   = cols.max().normalize()
-            month_locs = get_visible_month_day_ranges(start, end) 
-        output_graph(site, graph, GRAPH_EDGE, 
-                     save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=have_edge_data)
-    
-    #Draw the single legend for the rest of the charts and save to a file if needed
-    draw_legend(CMAP, make_all_graphs, save_composite)
-
-    #Show weather, as needed and if available
+    df_site = pd.DataFrame()
+    site_counter = 0
+    pt_manual = pd.DataFrame()
+    pt_mini_manual = pd.DataFrame()
+    pt_edge = pd.DataFrame()
+    pt_pm = pd.DataFrame()
     weather_by_type = {}
-    if show_weather_checkbox:
-        # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's 
-        # possible that there is only one of them. 
-        if pm_date_range_dict or date_range_dict:
-            date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
-            # Load and parse weather data
-            weather_by_type = get_weather_data(site, date_to_use)
-            if weather_by_type:
-                graph, axs = create_weather_graph(weather_by_type, site)
-                output_graph(site, graph, GRAPH_WEATHER, 
-                             save_files=save_files, make_all_graphs=make_all_graphs, data_to_graph=True)
-    
-    if not BEING_DEPLOYED_TO_STREAMLIT and (make_all_graphs or save_composite):
-        combine_images(site, month_locs, show_weather_checkbox)
 
-#If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
-if not make_all_graphs and len(df_site):
-    # Show the table with all the raw data
-    with st.expander("See raw data"):
-        #Used for making the overview pivot table
-        friendly_names = {data_col[MALE_SONG] : 'M-Male', 
-                          data_col[COURT_SONG]: 'M-Chorus',
-                          data_col[ALTSONG2] : 'M-Female', 
-                          data_col[ALTSONG1] : 'M-Nestling'
-        }
-        overview = []
-        overview.append(make_final_pt(pt_manual, song_cols, friendly_names))
+    for site in target_sites:
+        error_msgs = []
+        site_counter += 1
+        # Select the site matching the one of interest
+        df_site = df[df[data_col[SITE]] == site]
+        date_range_dict = {}
+        pm_date_range_dict = {}
+        missing_days = pd.DatetimeIndex([])
+        have_pm_data = False
+        have_mini_manual_data = False
+        have_manual_data = False
+        have_edge_data = False
+        rec_norm = pd.Series(dtype=int)
+
+        if not df_site.empty:
+            #Get the data that we're going to graph
+            rec_df_site = recordings_df.loc[recordings_df["site"] == site]
+            mask = (rec_df_site["hour"] >= 5) & (rec_df_site["hour"] < 21)  # 05:00–20:59 
+            rec_norm = (
+                rec_df_site.loc[mask]
+                .groupby("date")["n_recordings"]
+                .sum()
+            )
+
+            #Using the site of interest, get the first & last dates and give the user the option to customize the range
+            date_range_dict = get_date_range(df_site, MAKE_ALL_GRAPHS, container_top)
+
+            #Get this list of days without data, for later graphing
+            missing_days = get_missing_days(df_site)
+
+            # MANUAL ANALYSIS
+            with timed("Manual analysis"):
+                pt_manual, have_manual_data = do_manual(df_site, date_range_dict)
+
+            # MINI-MANUAL ANALYSIS
+            with timed("Mini-manual analysis"):
+                pt_mini_manual, have_mini_manual_data = do_mini_manual(df_site, date_range_dict)
+
+            # EDGE ANALYSIS
+            with timed("Edge analysis"):
+                pt_edge, have_edge_data = do_edge(df_site, date_range_dict, site)
+
+            # PATTERN MATCHING ANALYSIS
+            with timed("Pattern matching analysis"):
+                pt_pm, pm_date_range_dict, have_pm_data = do_pattern_matching(site, date_range_dict, container_top)
+
+
+        # 
+        #    Summary data
+        #
+        # What we want to do is break this into a dictionary, with one entry for each pulse. 
+        # Each pulse should have a dictionary mapping any valid dates in the pulse to its column name, 
+        # e.g. {"P1": {"P1 Inc Start":Timestamp('2023-05-01')}}
+
+        #iloc[:,1] selects all the rows but only column 1 (which is the second column, as it's zero indexed)
+        #== site selects the row that matches the site
+        #Mar 2025: this actually creates a pd dataframe, not a dict, but if everything else works, don't change now!
+        summary_row = summary_df[summary_df.iloc[:, 1] == site]
+
+        # Process the summary data, i.e. figure out if it's correctly structured, adjust for 
+        # "abandoned" and so on, and convert all dates to a date format so it's easy to graph later. 
+
+        if len(summary_row):
+            site_summary_dict = process_site_summary_data(summary_row)
+        else:
+            site_summary_dict = {}
+
+
+        # ------------------------------------------------------------------------------------------------
+        # DISPLAY
+        if MAKE_ALL_GRAPHS:
+            st.subheader(f"{site} [{str(site_counter)} of {str(len(target_sites))}]")
+        else: 
+            st.subheader(site)
         
-        friendly_names = {data_col[MALE_SONG] : 'MM-Male', 
-                          data_col[COURT_SONG]: 'MM-Chorus',
-                          data_col[ALTSONG2] : 'MM-Female', 
-                          data_col[ALTSONG1] : 'MM-Nestling'
-        }
-        overview.append(make_final_pt(pt_mini_manual, song_cols, friendly_names))
+        if not pd.isna(summary_row["Comment for Skip Site"].item()):
+            st.write(f":red-background[Duplicate site: {summary_row["Comment for Skip Site"].item()}]")
 
-        friendly_names =   {data_col[tag_p1c]: 'E-P1C',
-                            data_col[tag_p1n]: 'E-P1N',
-                            data_col[tag_p2c]: 'E-P2C',
-                            data_col[tag_p2n]: 'E-P2N',
-        }
-        overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
+        if len(error_msgs):
+            for error_msg in error_msgs:
+                st.write(f":red-background[{error_msg}]")
 
-        #Pattern Matching 
-        overview.append(make_final_pt(pt_pm, pm_file_types, pm_friendly_names))
+        if not MAKE_ALL_GRAPHS:
+            if show_station_info_checkbox:
+                show_station_info(summary_row)
+            ratio_str = get_ratio(site)
+            st.success(f"{ratio_str}")
 
-        #Add weather at the end
-        if len(weather_by_type):
-            weather_data = pd.DataFrame()
-            for t in WEATHER_COLS:
-                weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
-                weather_data.rename(columns={'value':t}, inplace=True)
-                if t != WEATHER_PRCP:
-                    weather_data[t] = weather_data[t].fillna(0).astype(int)
-            overview.append(weather_data)
+        #list of month positions in the graphs
+        month_locs = {} 
 
-        # The variable overview is a list of each dataframe. Now, take all the data and concat it into 
-        #a single table
-        union_pt = pd.concat(overview, axis=1)
+        # Pattern Matching Analysis
+        if True: #not pt_pm.empty:
+            hatch_dates = {}
+            for p in PULSES:
+                if p in site_summary_dict:
+                    hatch_date = site_summary_dict[p]["Brooding"]["start"]
+                    if pd.notna(hatch_date):
+                        hatch_dates[p] = hatch_date
+            with timed("Pattern matching graph"):
+                graph, axs = create_graph(
+                                    site = site,
+                                    df = pt_pm, 
+                                    row_names = pm_file_types, 
+                                    cmap = CMAP_PM, 
+                                    title = GRAPH_PM,
+                                    graph_type = GRAPH_PM,
+                                    hatch_dates = hatch_dates,
+                                    missing_days = missing_days,
+                                    denom_by_day = rec_norm,
+                ) 
 
-        # enforce dtypes before index reset
-        for c in union_pt.columns:
-            if c == "prcp" or c == "PRCP":
-                union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce")
-            else:
-                union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce").astype("Int64")
+            # add this if we want to include the site name (site + ' ' if save_files else '')
+            # Need to be able to build an image that looks like the graph labels so that it can be drawn
+            # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
+            # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
+            # to accidentally delete our list
 
-        # Pop the index out so that we can format it, do this by resetting the index so each 
-        # row just gets a number index
-        union_pt = union_pt.reset_index().rename(columns={"index": "Date"})        
+            if month_locs=={}:
+                month_locs = get_month_locs(pt_pm.columns)
+    
+            output_graph(site, graph, GRAPH_PM,
+                        save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_pm_data)
+
+
+        # MiniManual Analysis
+        if not pt_mini_manual.empty:
+            with timed("Mini manual graph"):
+                graph, axs = create_graph(
+                                site = site,
+                                df = pt_mini_manual, 
+                                row_names = song_cols, 
+                                cmap = CMAP, 
+                                raw_data = df_site,
+                                draw_vert_rects = True,
+                                title = "Manual Analysis (Periodic)",
+                                graph_type = GRAPH_MINIMAN,
+                                missing_days = missing_days,
+            )
+            if month_locs=={}:
+                month_locs = get_month_locs(pt_mini_manual.columns)
+
+            output_graph(site, graph, GRAPH_MINIMAN, 
+                        save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_mini_manual_data)
+
+
+        # Manual analyisis graph    
+        if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
+            #SEPT2025- trying to hide COURT_SONG from the list of songs
+            new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
+
+            with timed("Manual graph"): 
+                graph, axs = create_graph(
+                                    site = site,
+                                    df = pt_manual, 
+                                    row_names = [data_col[s] for s in new_songs], #SEPT2025
+                                    cmap = CMAP, 
+                                    title = "Manual Analysis (Daily Review)",
+                                    graph_type=GRAPH_MANUAL,
+                                    missing_days = missing_days
+                ) 
+            if month_locs=={}:
+                month_locs = get_month_locs(pt_manual.columns)
+
+            output_graph(site, graph, GRAPH_MANUAL, 
+                        save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_manual_data)
+
+
+
+        # Edge Analysis
+        pt_edge_only_nestlings = pt_edge.drop(index=EDGE_C_COLS, errors='ignore')
+        if not pt_edge_only_nestlings.empty:
+            cmap_edge = {c:'Oranges' for c in EDGE_C_COLS} | {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
+            graph, axs = create_graph(
+                                site = site,
+                                df = pt_edge_only_nestlings, #was pt_edge
+                                row_names = pt_edge_only_nestlings.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
+                                cmap = cmap_edge, 
+                                raw_data = df_site,
+                                draw_horiz_rects = True,
+                                title = "Manual Analysis (Hatchlings Only)", # was GRAPH_EDGE,
+                                graph_type=GRAPH_EDGE,
+                                missing_days = missing_days
+            )
+            if month_locs=={}:
+                month_locs = get_month_locs(pt_edge.columns)
+
+            output_graph(site, graph, GRAPH_EDGE, 
+                        save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_edge_data)
         
-        #Make a copy and clean it up for display
-        df_display = union_pt.copy()
-        # Keep Date readable; everything else becomes string with blanks for missing
-        for c in df_display.columns:
-            if c == "Date":
-                # optional formatting
-                df_display[c] = pd.to_datetime(df_display[c], errors="coerce").dt.strftime("%Y-%m-%d")
-            else:
-                df_display[c] = df_display[c].astype("string").fillna("")
+        #Draw the single legend for the rest of the charts and save to a file if needed
+        draw_legend(CMAP, MAKE_ALL_GRAPHS, save_composite)
 
-        sty_union = (
-            df_display
-            .style
-            .map(style_cells)
-            .set_properties(**{"text-align": "center"})
-        )
-    
-        st.dataframe(
-            sty_union,
-            column_config={
-                "Date": st.column_config.DateColumn(format="MM-DD-YY"),
-                "PRCP": st.column_config.NumberColumn(format="%.2f"),
-                # numeric columns: right alignment is the default in Streamlit’s grid for numbers
-            },
-            use_container_width=True,
-        )
+        #Show weather, as needed and if available
+        weather_by_type = {}
+        if show_weather_checkbox:
+            # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's 
+            # possible that there is only one of them. 
+            if pm_date_range_dict or date_range_dict:
+                date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
+                # Load and parse weather data
+                weather_by_type = get_weather_data(site, date_to_use)
+                if weather_by_type:
+                    graph, axs = create_weather_graph(weather_by_type, site)
+                    output_graph(site, graph, GRAPH_WEATHER, 
+                                save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=True)
+        
+        if not BEING_DEPLOYED_TO_STREAMLIT and (MAKE_ALL_GRAPHS or save_composite):
+            combine_images(site, month_locs, show_weather_checkbox)
+
+    #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
+    if not MAKE_ALL_GRAPHS and len(df_site):
+        # Show the table with all the raw data
+        with st.expander("See raw data"):
+            #Used for making the overview pivot table
+            friendly_names = {data_col[MALE_SONG] : 'M-Male', 
+                            data_col[COURT_SONG]: 'M-Chorus',
+                            data_col[ALTSONG2] : 'M-Female', 
+                            data_col[ALTSONG1] : 'M-Nestling'
+            }
+            overview = []
+            overview.append(make_final_pt(pt_manual, song_cols, friendly_names))
+            
+            friendly_names = {data_col[MALE_SONG] : 'MM-Male', 
+                            data_col[COURT_SONG]: 'MM-Chorus',
+                            data_col[ALTSONG2] : 'MM-Female', 
+                            data_col[ALTSONG1] : 'MM-Nestling'
+            }
+            overview.append(make_final_pt(pt_mini_manual, song_cols, friendly_names))
+
+            friendly_names =   {data_col[tag_p1c]: 'E-P1C',
+                                data_col[tag_p1n]: 'E-P1N',
+                                data_col[tag_p2c]: 'E-P2C',
+                                data_col[tag_p2n]: 'E-P2N',
+            }
+            overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
+
+            #Pattern Matching 
+            overview.append(make_final_pt(pt_pm, pm_file_types, pm_friendly_names))
+
+            #Add weather at the end
+            if len(weather_by_type):
+                weather_data = pd.DataFrame()
+                for t in WEATHER_COLS:
+                    weather_data = pd.concat([weather_data, weather_by_type[t]['value']], axis=1)
+                    weather_data.rename(columns={'value':t}, inplace=True)
+                    if t != WEATHER_PRCP:
+                        weather_data[t] = weather_data[t].fillna(0).astype(int)
+                overview.append(weather_data)
+
+            # The variable overview is a list of each dataframe. Now, take all the data and concat it into 
+            #a single table
+            union_pt = pd.concat(overview, axis=1)
+
+            # enforce dtypes before index reset
+            for c in union_pt.columns:
+                if c == "prcp" or c == "PRCP":
+                    union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce")
+                else:
+                    union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce").astype("Int64")
+
+            # Pop the index out so that we can format it, do this by resetting the index so each 
+            # row just gets a number index
+            union_pt = union_pt.reset_index().rename(columns={"index": "Date"})        
+            
+            #Make a copy and clean it up for display
+            df_display = union_pt.copy()
+            # Keep Date readable; everything else becomes string with blanks for missing
+            for c in df_display.columns:
+                if c == "Date":
+                    # optional formatting
+                    df_display[c] = pd.to_datetime(df_display[c], errors="coerce").dt.strftime("%Y-%m-%d")
+                else:
+                    df_display[c] = df_display[c].astype("string").fillna("")
+
+            sty_union = (
+                df_display
+                .style
+                .map(style_cells)
+                .set_properties(**{"text-align": "center"})
+            )
+        
+            st.dataframe(
+                sty_union,
+                column_config={
+                    "Date": st.column_config.DateColumn(format="MM-DD-YY"),
+                    "PRCP": st.column_config.NumberColumn(format="%.2f"),
+                    # numeric columns: right alignment is the default in Streamlit’s grid for numbers
+                },
+                use_container_width=True,
+            )
+
+        # Put a box with first and last dates for the Song columns, with counts on that date
+        with st.expander("See overview of dates"): 
+            st.write("Currently hiding this, let me know if you want it")
+            # output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
+            # pretty_print_table(pd.DataFrame.from_dict(output))
+
+        # Scan the list of tags and flag any where there is "---" for the value.
+        if container_mid.checkbox('Show errors', value=True): 
+            check_tags(df_site)
+
+        if st.button('Clear cache'):
+            get_target_sites().clear()
+            clean_data.clear()
+            load_data.clear()
+            load_weather_data_from_file.clear()
+        
+        plt.close("all")
+    return
+
+def profile_main():
+    prof = cProfile.Profile()
+    prof.enable()
+    main()  # or whatever generates your graphs
+    prof.disable()
+
+    out = Path("profile_main.prof")
+    prof.dump_stats(out)
+
+    stats = pstats.Stats(prof).sort_stats("cumtime")
+    stats.print_stats(40)  # top 40 by cumulative time
 
 
-    # Put a box with first and last dates for the Song columns, with counts on that date
-    with st.expander("See overview of dates"): 
-        st.write("Currently hiding this, let me know if you want it")
-        # output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
-        # pretty_print_table(pd.DataFrame.from_dict(output))
-
-    # Scan the list of tags and flag any where there is "---" for the value.
-    if container_mid.checkbox('Show errors', value=True): 
-        check_tags(df_site)
-
-    if st.button('Clear cache'):
-        get_target_sites().clear()
-        clean_data.clear()
-        load_data.clear()
-        load_weather_data_from_file.clear()
-    
-    plt.close("all")
+if __name__ == "__main__":
+    main()
+    #For profiling:
+    #profile_main()

@@ -1,8 +1,1 @@
-Logging started 29-Dec-25 10:58:39
-29-Dec-25 10:58:52: check_tags: HLam-2020-05-02_10-40.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-05-31_10-00.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-06-01_12-00.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-06-02_10-00.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-06-02_11-00.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-06-04_07-00.flac missing song tag
-29-Dec-25 10:58:52: check_tags: HLam-2020-06-06_12-00.flac missing song tag
+Logging started 30-Dec-25 09:57:17
