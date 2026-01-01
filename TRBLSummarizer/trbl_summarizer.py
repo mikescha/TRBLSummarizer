@@ -2,10 +2,11 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
-INCLUDE_INSECT_AND_FROG_DATA = True
+INCLUDE_INSECT_AND_FROG_DATA = False
 DEBUG = False  #For testing whether the old and new functions give the same results
+PROFILING = False
 MAKE_ALL_GRAPHS = False
 
 
@@ -13,7 +14,6 @@ MAKE_ALL_GRAPHS = False
 import streamlit as st
 import pandas as pd
 import numpy as np
-import math
 import seaborn as sns
 
 import matplotlib as mpl
@@ -59,7 +59,7 @@ import pstats
 
 @contextmanager
 def timed(label: str):
-    if not DEBUG:
+    if not PROFILING:
         yield
         return
     t0 = time.perf_counter()
@@ -251,9 +251,16 @@ CMAP_PM = {"Male Song":         "Greens",
            "Red-legged Frog":   "YlGn",
            "Bull Frog":         "YlGn"}
 
-NO_DATA_COLOR = "#f0f0f0"
-HATCH_PATTERN = "///"
-
+NO_DATA_COLOR = "lightgray"
+HATCH_PATTERN = "////////"
+HATCH_BG_COLOR = "mintcream"
+HATCH_DARK_COLOR = "silver"
+BORDER_WIDTH = 0.25             #for the vertical month dividers and the exterior edges
+TEMP_LINES = 0.5                #for the red lines on the weather graph
+LABEL_OFFSET = 0.125            #gap between bottom of the graph and the months 
+EDGE_GRAPH_BORDER_WIDTH = 0.5   
+EDGE_GRAPH_BORDER_INSET = 0.02
+EDGE_GRAPH_COLOR_SCALE = 0.6    #Bigger is darker
 
 #Files, paths, etc.
 DATA_FOLDER = 'Data/'
@@ -352,7 +359,7 @@ valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
                         pm_song_types[5]:0, #Nestling to Nestling is zero, here to make math easy
                         }
 
-missing_data_flag = -100
+MISSING_DATA_FLAG = -100
 PRESERVE_EDGES_FLAG = -99
 
 DPI = 300
@@ -443,17 +450,25 @@ def make_date(row: pd.Series) -> pd.Timestamp:
 #File handling and setup
 #
 #
-@st.cache_resource
+@st.cache_data
+def load_all_file():
+    return pd.read_csv(
+        FILES[ALL_FILE],
+        skiprows=SHEET_HEADER_SIZE
+    )
+
+
 def get_target_sites() -> list:
     #Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    all_sites = pd.read_csv(FILES[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
-
+    #all_sites = pd.read_csv(FILES[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
+    all_sites_and_cols = load_all_file()
+    all_sites = all_sites_and_cols[["Name", "Skip Site", "Comment for Skip Site"]]
     #Clean it up. Only keep names that start with a 4-digit number and are not to be skipped. 
     filtered_sites = all_sites.loc[
         (all_sites["Skip Site"] != "Y") & (all_sites["Name"].str.startswith("20")),
         "Name"
     ].tolist()
-         
+
     if len(filtered_sites):
         filtered_sites.sort()
     else:
@@ -562,7 +577,7 @@ def check_for_tag_errors(df: pd.DataFrame):
 
 
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
-@st.cache_resource
+@st.cache_data
 def load_data() -> pd.DataFrame:
     files_to_load = [DATA_DIR / f"data {year}.csv" for year in range(2017, 2025)]
     combined_df = pd.DataFrame()
@@ -663,16 +678,10 @@ def load_pm_data(site:str) -> pd.DataFrame:
 
 
 
-@st.cache_resource
+@st.cache_data
 def load_summary_data() -> pd.DataFrame:
     #Load the summary data and prep it for graphing. 
-    #This assumes that all validation (e.g. column names, values, etc.) is done in the script that downloads the csv file
-    data_csv = Path(__file__).parents[0] / FILES[ALL_FILE]
-
-    #Load up the file 
-    #Skiprows is because the All file has junk at the top we want to ignore
-    df = pd.read_csv(data_csv, skiprows=SHEET_HEADER_SIZE)
-
+    df = load_all_file()
     #If needed, can convert to date values as below, but it doesn't seem necessary
     #df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
 
@@ -844,14 +853,17 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     return summary_dict 
 
 
-
+def get_pretty_name_for_site(site:str) -> str:
+        name_column = "Pretty Site Name"
+        name_dict = get_site_info(site, [name_column])
+        return name_dict[name_column]
 
 
 #Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
 #   - Exclude any data where the year of the data doesn't match the target year
 #   - Exclude any data where there aren't recordings on consecutive days  ##SEP2025 no longer doing this
-@st.cache_resource
+@st.cache_data
 def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
     df_clean = pd.DataFrame()
@@ -896,7 +908,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # integers for later processing. So, we'll replace the hyphens with a special value and then just 
     # realize that we can't do math on this column any more without excluding it. Picked -100 (missing_data_flag) because 
     # if we do do math then the answer will be obviously wrong!
-    df_clean = df_clean.replace('---', missing_data_flag)
+    df_clean = df_clean.replace('---', MISSING_DATA_FLAG)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
     for s in all_songs + ALL_TAGS:
@@ -1009,9 +1021,10 @@ def make_pivot_table(df, date_range_dict, preserve_edges=False, labels=None, lab
     if df.empty:
         return pd.DataFrame()
 
-    if set(label_dict.keys()) - set(df.columns):
+    if (set(label_dict.keys()) | set(label_dict.values())) - set(df.columns):
         #some columns are missing, so get out
         return pd.DataFrame()
+    
 
     date_colname = data_col[DATE]
 
@@ -1364,28 +1377,27 @@ def parse_date(date_str):
 # Assume that the data cleaning code has removed any extraneous dates, such as if data 
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
 def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
-
-    date_range_dict_from_sheet = get_site_info(df["site"].iloc[0], ["First Recording", "Last Recording"])
-    date_range_dict_from_sheet[START] = date_range_dict_from_sheet.pop("First Recording")
-    date_range_dict_from_sheet[END] = date_range_dict_from_sheet.pop("Last Recording")
+    date_range_dict_from_sheet = {}
+    dates_from_sheet = get_site_info(df["site"].iloc[0], ["First Recording", "Last Recording"])
+    date_range_dict_from_sheet[START] = dates_from_sheet["First Recording"]
+    date_range_dict_from_sheet[END] = dates_from_sheet["Last Recording"]
     
     if df.index.name == "date":
-        date_range_dict = {START : df.index.min().strftime("%m-%d-%Y"), 
-                             END : df.index.max().strftime("%m-%d-%Y")}
+        date_range_dict_from_file = {START : df.index.min().strftime("%m-%d-%Y"), 
+                                     END : df.index.max().strftime("%m-%d-%Y")}
     else:
-        date_range_dict = {START : df["date"].min().strftime("%m-%d-%Y"), 
+        date_range_dict_from_file = {START : df["date"].min().strftime("%m-%d-%Y"), 
                              END : df["date"].max().strftime("%m-%d-%Y")}
 
     #Normalize the dates and then confirm that they are the same
     normalized_from_sheet = {k: parse_date(v) for k, v in date_range_dict_from_sheet.items()}
-    normalized_from_data = {k: parse_date(v) for k, v in date_range_dict.items()}
+    normalized_from_data = {k: parse_date(v) for k, v in date_range_dict_from_file.items()}
 
     if normalized_from_sheet != normalized_from_data:
         #it's OK for the very first recording to have a different date, but we should log it
         #if the second one is also different. 
         if df.index[1].date() != normalized_from_sheet["start"]:
             log_error(f"Date for {df["site"].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}")
-        pass
 
     #For now, use the sheet data
     date_range_dict = date_range_dict_from_sheet
@@ -1420,7 +1432,7 @@ else:
     GRAPH_FONT_TTF = "FRABK.TTF" #used for output to the file using PIL
 
 TITLE_FONT_SIZE = 13
-AXIS_FONT_SIZE = 10
+AXIS_FONT_SIZE = 8
 LEGEND_FONT_SIZE = 8
 
 # Set up base theme
@@ -1464,44 +1476,6 @@ def output_cmap():
         os.remove(figure_path)
     plt.savefig(figure_path, dpi='figure', bbox_inches='tight', pad_inches=0)    
 
-
-def old_draw_legend(cmap:dict, make_all_graphs:bool, save_files:bool):
-    gradient = np.linspace(0, 1, 32)
-    gradient = np.vstack((gradient, gradient))
-
-    n = len(CMAP_NAMES) 
-    # Create one axis per legend item
-    fig, axs = plt.subplots(nrows=1, ncols=n, figsize=(FIG_W*0.8, FIG_H*0.15))
-
-    for ax, (key, label) in zip(axs, CMAP_NAMES.items()):
-        # Set the axis coordinate system to [0,1] in both directions
-        # Draw the color block: we reserve x from 0 to 0.35 for the block.
-        ax.imshow(gradient, extent=[0, 0.35, 0.1, 0.9], aspect="auto", cmap=mpl.colormaps[cmap[key]], transform=ax.transAxes)
-        # Draw a border around the color block
-        #ax.add_patch(Rectangle((0, 0), 0.35, 1, transform=ax.transAxes,
-        #                       edgecolor="black", linewidth=0.5, fill=False))
-        
-        # Add the label text immediately to the right of the color block.
-        # Here, x=0.37 places the text just to the right of the block.
-        ax.text(0.37, 0.5, label, transform=ax.transAxes, 
-                va="center", ha="left",
-                fontfamily=GRAPH_FONT, 
-                fontsize=LEGEND_FONT_SIZE)
-        
-        # Remove the axis visuals
-        ax.set_axis_off()
- 
-    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0, hspace=0)
-
-    if not make_all_graphs:
-        st.pyplot(fig)
-
-    if save_files:
-        output_cmap()
-
-    return
-
-# NEW VERSION, OLD VERSION JUST ABOVE
 
 def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
     # --- Geometry (all in ax.transAxes units) ---
@@ -1555,14 +1529,16 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
         )
         ax.set_axis_off()
 
-    def draw_swatch_item(ax, label: str, *, facecolor: str, hatch: str | None = None):
+    def draw_swatch_item(ax, label: str, *, facecolor: str, 
+                         hatch: str | None = None, 
+                         hatch_edge_color: str | None = None):
         ax.add_patch(
             Rectangle(
                 (SW_X, SW_Y),
                 SW_W, SW_H,
                 transform=ax.transAxes,
                 facecolor=facecolor,
-                edgecolor="black",
+                edgecolor="black" if hatch_edge_color is None else hatch_edge_color,
                 linewidth=0.2,
                 hatch=hatch,
             )
@@ -1585,8 +1561,8 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
         legend_items.append(("gradient", key, label_text))
 
     # Add the 2 new items at the end (or move them earlier if you prefer)
-    legend_items.append(("swatch", "No data", None))
-    legend_items.append(("hatch", "Missing days", None))
+    legend_items.append(("swatch", "No analysis\ndone", None))
+    legend_items.append(("hatch", "Missing\nrecordings", None))
 
     # Relative column widths (tweakable)
     width_ratios = [
@@ -1623,7 +1599,10 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
         elif kind == "hatch":
             _, label, _ = item
             # White face so hatch reads clearly; NaN / missing gets the hatch signal
-            draw_swatch_item(ax, label, facecolor="white", hatch=HATCH_PATTERN)
+            draw_swatch_item(ax, label, 
+                             facecolor=HATCH_BG_COLOR, 
+                             hatch=HATCH_PATTERN,
+                             hatch_edge_color=HATCH_DARK_COLOR)
 
         else:
             ax.set_axis_off()
@@ -1653,28 +1632,98 @@ def draw_axis_labels(fig: Figure,
                      skip_month_names=False,
                      y: float=0, bottom:float=0, top:float=0 ):
     
-    ax = fig.get_axes()[0]
+    def draw_month_label_if_fits(
+        ax,
+        fig,
+        text: str,
+        x_start: float,
+        x_end: float,
+        y: float,
+        *,
+        fontsize=AXIS_FONT_SIZE,
+        fontfamily=GRAPH_FONT,
+        pad_px=4,
+        **text_kwargs,
+    ):
+        """
+        Draw `text` centered between x_start and x_end only if it fits
+        in pixel space.
+        """
+        # Ensure we have a renderer
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+
+        # 1) Measure available pixel width
+        x0_disp, _ = ax.transData.transform((x_start, y))
+        x1_disp, _ = ax.transData.transform((x_end, y))
+        available_px = abs(x1_disp - x0_disp)
+
+        # 2) Create a temporary text object to measure
+        tmp = ax.text(
+            (x_start + x_end) / 2,
+            y,
+            text,
+            ha="center",
+            va="center",
+            fontsize=fontsize,
+            fontfamily=fontfamily,
+            alpha=0,          # invisible
+            **text_kwargs,
+        )
+
+        bbox = tmp.get_window_extent(renderer=renderer)
+        text_px = bbox.width
+
+        tmp.remove()
+
+        # 3) Decide whether to draw
+        if text_px + pad_px <= available_px:
+            ax.text(
+                (x_start + x_end) / 2,
+                y,
+                text,
+                ha="center",
+                va="bottom",
+                transform=ax.get_xaxis_transform(),
+                fontsize=fontsize,
+                fontfamily=fontfamily,
+                **text_kwargs,
+            )
+
+    mpl.rcParams["figure.raise_window"] = True
+
+    ax_count = len(fig.get_axes())
+    ax = fig.get_axes()[ax_count - 1]
     x_min, x_max = ax.get_xlim()
     day_width = 1/(x_max-x_min)
     x = 0
+    x_days = 0
     for month in month_lengths:
         # Center the label on the middle of the month, which is the #-days-in-the-month/2
         center_pt = int((month_lengths[month])/2)
         mid = x + (center_pt * day_width)
         if not skip_month_names:
-            fig.text(
-                x = mid,
-                y = y,
-                s = month,
-                fontsize=AXIS_FONT_SIZE, fontfamily=GRAPH_FONT,
-                ha="center", va="bottom",
-                transform=fig.transFigure,  # THIS MUST BE HERE to get the units right
+            draw_month_label_if_fits(
+                ax, fig,
+                month, # name of the month
+                x_days, x_days+month_lengths[month],
+                y,
             )
+#            fig.text(
+            #     x = mid,
+            #     y = y,
+            #     s = month,
+            #     fontsize=AXIS_FONT_SIZE, fontfamily=GRAPH_FONT,
+            #     transform=fig.transFigure,  # THIS MUST BE HERE to get the units right
+            # )
+        x_days += month_lengths[month] 
         x += month_lengths[month] * day_width
         # draw vertical line in figure coords
-        line = mlines.Line2D([x, x], [bottom+0.005, top-0.005],
-                            transform=fig.transFigure,
-                            color = "black", linewidth=1, alpha=0.4,
+        line = mlines.Line2D([x, x], [bottom+(BORDER_WIDTH/200), top-(BORDER_WIDTH/200)],
+                             transform=fig.transFigure,
+                             color = "black",
+                             linewidth=BORDER_WIDTH,
+                             alpha=1,
         )
         fig.add_artist(line)
     
@@ -1694,7 +1743,7 @@ def draw_missing_day_boxes(
     top: float,
     start_day: pd.Timestamp,   # first day of the heatmap
     last_day: pd.Timestamp,    # last day of the heatmap
-    color="black",
+    color="white",
     alpha=0.5,
 ):
     """
@@ -1728,14 +1777,42 @@ def draw_missing_day_boxes(
                 x1_fig - x0_fig,
                 top - bottom,
                 transform=fig.transFigure,
-                facecolor=color,
-                edgecolor=None,
+                facecolor=HATCH_BG_COLOR,
+                edgecolor=HATCH_DARK_COLOR,
                 alpha=alpha,
-                zorder=5,
+                zorder=10,
                 hatch=HATCH_PATTERN,
             )
 
             fig.add_artist(rect)
+
+def overlay_missing_days_hatch(
+    axs,
+    missing_days,
+    start_day,
+    last_day,
+    *,
+    hatch=HATCH_PATTERN,
+    color=HATCH_DARK_COLOR,
+    facecolor=HATCH_BG_COLOR,
+    zorder=10,
+):
+    for ax in axs:
+        for d in missing_days:
+            if start_day <= d <= last_day:
+                i = (d - start_day).days
+                ax.axvspan(
+                    i,
+                    i + 1,
+                    ymin=0,
+                    ymax=1,
+                    facecolor=HATCH_BG_COLOR,
+                    edgecolor=HATCH_DARK_COLOR,
+                    hatch=HATCH_PATTERN,
+                    linewidth=0,
+                    zorder=10,
+                    
+                )
 
 
 def file_missing(site, graph_type, type):
@@ -1773,16 +1850,19 @@ def create_graph(site: str,
                  hatch_dates={},
                  missing_days=pd.DatetimeIndex([]),
                  denom_by_day: pd.Series = pd.Series(),
-                 ) -> tuple[Figure, list[Axes]]:
+                 ) -> tuple[Figure, Axes]:
     
     plt.close() #close any prior graph that was open
 
     if len(df) == 0:
         #return an empty plot if nothing to graph
         fig, axs = plt.subplots(nrows=1, ncols=1)
-        return fig, [axs]
+        return fig, axs
 
-    row_count = len(row_names)
+    if graph_type == GRAPH_EDGE:
+        row_count = 1 #All data should be drawn on the same axis for edge
+    else:
+        row_count = len(row_names)
     graph_drawn = []
     
     # --- inches-based spec ---
@@ -1830,30 +1910,25 @@ def create_graph(site: str,
         if row not in df.index:
             df.loc[row]=pd.Series(data=np.nan,index=df.columns)
 
-    # Set a mask ("NaN" since the value isn't specified) on the zero values so that we can force them 
-    # to display as white. Keep the original data as we need it for drawing later. Use '<=0' because negative
-    # numbers are used to differentiate no data from data with zero value
-    #df_clean = df.mask(df <= 0)
     df_clean = df.copy()
 
-    #tick_spacing is how many days apart the tick marks are. If set to 0 then it turns off all ticks and labels except for month name
-    tick_spacing = 0
     i=0
     for row in row_names:
         # plotting the heatmap
         # pull out the one row we want and transpose it to be wide
-        df_to_graph = df_clean.loc[[row]].copy()
+        if graph_type == GRAPH_EDGE:
+            df_sel = df.loc[row_names].replace(-100, np.nan)   # keep all rows in df, select subset here
+            df_to_graph = df_sel.bfill(axis=0).iloc[[0]]          # 1-row DataFrame
+        else:
+            df_to_graph = df_clean.loc[[row]].copy()
 
+        #Adjust color maps to force the lowest value to white and gray for NaN data, except use white for NaN in PM graphs
         cmap_final = sns.color_palette(cmap[row] if len(cmap)>1 else cmap[0], as_cmap=True)
-        # Zero → white (force the lowest color to white)
         cmap_final.set_under("white")
-        # No data (NaN / masked) → gray
-        cmap_final.set_bad(NO_DATA_COLOR)   # light gray representing the days where analysis was not done 
+        no_data_color = "white" if graph_type==GRAPH_PM else NO_DATA_COLOR
+        cmap_final.set_bad(no_data_color)   # light gray representing the days where analysis was not done 
 
-        if graph_type == GRAPH_PM:
-            # No data (NaN / masked) → white 
-            cmap_final.set_bad("white")  # for PM graphs, we want no data to be white, not gray
-
+        #Normalize all the data by the number of recordings that were used per day
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 3  #3 recordings per day
         elif graph_type == GRAPH_MANUAL:
@@ -1868,46 +1943,56 @@ def create_graph(site: str,
             # otherwise we need these two lines
             # df_to_graph.columns = pd.to_datetime(df_to_graph.columns, errors="raise").normalize()
             # df_to_graph.iloc[0] = pd.to_numeric(df_to_graph.iloc[0], errors="coerce")
-
             df_norm = df_to_graph.div(denom, axis="columns")  # normalize by count of recordings per day
 
+        # Adjust colors so that lighter values are more visible
         # gamma < 1 brightens lows, closer to 0 is more extreme
         gamma = float(st.session_state.get("gamma", 1.0))  # 1=default if slider not created yet
         vmin = 0.001 #slightly above 0 so that 0 values get the 'under' color 
         vmax = 1 #as we're normalizing the data, the ranges will all be 0-1
         norm = colors.PowerNorm(gamma = gamma, vmin=vmin, vmax=vmax)  
-        sns.heatmap(
-            data = df_norm,
-            ax = axs[i],
-            cmap = cmap_final,
-            norm = norm,
-            vmin=vmin, vmax=vmax,
-            cbar = False,
-            xticklabels = tick_spacing,
-            yticklabels = False
+
+        arr = np.ma.masked_invalid(df_norm.to_numpy(dtype=float))
+        n_rows, n_cols = arr.shape
+
+        ax = axs[i]
+        ax.imshow(
+            arr,
+            cmap=cmap_final,
+            norm=norm,
+            aspect="auto",
+            interpolation="nearest",
+            origin="upper",
+            extent=(0, n_cols, 1, 0),  # forces the axis settings to be like the old seaborn one
+            zorder=1, 
         )
-        
+
         # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
         # and not that it's just hard to read!
         if df_clean.loc[row].sum() == 0:
             #The conundrum: at least for edge, it's possible that a row we drew is blank, but the actual
-            #row is going to get some boxes and lines. In this case, there will be -99s in the data, 
+            #row is going to get some boxes and lines. In this case, there will be -100s in the data, 
             #and if we find those, we should NOT draw the text that says there is no data 
             #THIS IS NOT WORKING?
             if graph_type == GRAPH_EDGE and df.loc[row].lt(0).any():
                 pass
             else:
-                if file_missing(site, graph_type, row):
-                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
-                    display_label = tag_name_map[label] if label in tag_name_map.keys() else label
-                    axs[i].text(0.5,0.5,f"No data for {display_label}", 
-                                font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-                                color='gray', verticalalignment='center')
+                pass
+                # if file_missing(site, graph_type, row):
+                #     label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
+                #     display_label = tag_name_map[label] if label in tag_name_map.keys() else label
+                #     axs[i].text(0.5,0.5,f"No data for {display_label}", 
+                #                 font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
+                #                 color='gray', verticalalignment='center')
         elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys():
-                axs[i].text(0.5,0.5,f"{PM_OTHER_TYPES[row]}", 
-                            font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-                            color='black', verticalalignment='center')
-
+            ax.text(0.5,0.5,f"{PM_OTHER_TYPES[row]}", 
+                        font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
+                        color='black', verticalalignment='center')
+        elif graph_type == GRAPH_EDGE:
+            pass
+            # ax.text(0.5,0.5,f"{row}", 
+            #             font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
+            #             color='black', verticalalignment='center')
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
@@ -1920,7 +2005,7 @@ def create_graph(site: str,
                     hatch_date = hatch_dates[pulse]
                     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
                         hatch_index = 0  #Always drawing this on the first cell
-                        arrow = axs[i].plot(hatch_index, 0.5, 
+                        arrow = ax.plot(hatch_index, 0.5, 
                                     marker='<',
                                     markerfacecolor='black',
                                     markeredgecolor='white',
@@ -1928,7 +2013,7 @@ def create_graph(site: str,
                                     #color='black', 
                                     #mew=0.5,
                                     markersize=marker_size, 
-                                    transform=axs[i].get_xaxis_transform(),
+                                    transform=ax.get_xaxis_transform(),
                                     clip_on=False)
                         for a in arrow:
                             a.set_in_layout(False)
@@ -1936,7 +2021,7 @@ def create_graph(site: str,
                     elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
                         hatch_index = df_to_graph.columns.get_loc(hatch_date)
                         # Plot the "arrow" centered in the cell
-                        axs[i].plot(hatch_index+0.7, 0.5, 
+                        ax.plot(hatch_index+0.7, 0.5, 
                                     marker='>', 
                                     markerfacecolor='black',
                                     markeredgecolor='white',
@@ -1944,7 +2029,7 @@ def create_graph(site: str,
                                     #color='black', 
                                     #mew=0.5,
                                     markersize=marker_size,
-                                    transform=axs[i].get_xaxis_transform())
+                                    transform=ax.get_xaxis_transform())
                     else:
                         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
                         
@@ -1952,12 +2037,12 @@ def create_graph(site: str,
             if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
                 #Want to add a line above these two rows to separate them
                 # Get the top y-limit
-                top_y = axs[i].get_ylim()[1]
-                xmin = axs[i].get_xlim()[0]
-                xmax = axs[i].get_xlim()[1]
+                top_y = ax.get_ylim()[1]
+                xmin = ax.get_xlim()[0]
+                xmax = ax.get_xlim()[1]
 
                 # Draw a horizontal line at the top of the axis
-                line = axs[i].hlines(y=top_y, xmin=xmin, xmax=xmax, colors='red',  linewidth=0.5)
+                line = ax.hlines(y=top_y, xmin=xmin, xmax=xmax, colors='red',  linewidth=0.5)
                 dashes = (0, (18, 2)) # 10 points on, 5 points off
                 line.set_dashes(dashes)  # Apply the custom dash pattern
 
@@ -1970,7 +2055,8 @@ def create_graph(site: str,
             df_col_nonzero = df_col_nonzero[df_col_nonzero[row] != 0]
 
             if len(df_col_nonzero):
-                c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.85)
+                #Scale the color maps so we get the same color but a little lighter
+                c = mpl.colormaps[(cmap[row] if len(cmap) > 1 else cmap[0])](0.5)
                 #n tags get boxes around each consecutive block
                 idx = df_col_nonzero[row].dropna().index.to_numpy()
                 if len(idx) == 0:
@@ -1985,24 +2071,34 @@ def create_graph(site: str,
                     starts = np.r_[idx[0], idx[breaks + 1]]
                     ends   = np.r_[idx[breaks], idx[-1]]
                     borders = [(int(a), int(b)) for a, b in zip(starts, ends)]
-
                 # We now have a list of pairs of coordinates where we need a rect. For each pair, draw one.
                 for start, end in borders:
                     left = start
                     width = (end-start) + 1
-                    gap_inside_outer_border = 0.03
-                    axs[i].add_patch(Rectangle((left,gap_inside_outer_border), width, 1-2*gap_inside_outer_border, 
-                                                ec=c, fc=c, lw=0.5, fill=False))
+                    ax.add_patch(Rectangle((left,EDGE_GRAPH_BORDER_INSET), width, 1-2*EDGE_GRAPH_BORDER_INSET, 
+                                           ec=c, fc=c, 
+                                           lw=EDGE_GRAPH_BORDER_WIDTH,
+                                           alpha=1, 
+                                           fill=False))
                 # For each pair of rects, draw a line between them.
                 gaps = [(end1 + 1, start2 - 1) for (start1, end1), (start2, end2) in zip(borders, borders[1:])]
                 for start_gap, end_gap in gaps:
                     left = start_gap
                     right = end_gap+1
-                    y_start_pos = 0.49
-                    line_width = 0.5 - y_start_pos
-                    axs[i].add_patch(Rectangle((left,y_start_pos), right-left, line_width, 
-                                                ec=c, fc=c, lw=0.5, fill=True)) 
-        i += 1
+                    line_distance = right - left
+                    line_height = EDGE_GRAPH_BORDER_WIDTH/10
+                    y_start_pos = 0.5
+                    ax.add_patch(Rectangle((left, y_start_pos), line_distance, line_height, 
+                                           ec=c, fc=c, 
+                                           lw=0, 
+                                           alpha=1,
+                                           fill=True)) 
+
+        #For edge, all data is drawn on the same axis so don't increment the counter here and just get out of the loop
+        if graph_type == GRAPH_EDGE:
+            break
+        else:
+            i += 1
         
     # For mini-manual: Add a rect around each day that has some data
     if graph_type == GRAPH_MINIMAN and len(raw_data)>0 and False:
@@ -2024,29 +2120,33 @@ def create_graph(site: str,
                     fig.add_artist(rect)
        
     # Add the vertical lines and month names
-    text_offset_in = 0.18
+    text_offset_in = LABEL_OFFSET
     text_y = bottom - (text_offset_in / fig_h)
+    text_y = -0.65
     draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top)
 
     #Draw a black box over every missing date
-    ax0 = fig.get_axes()[0]
+    #ax0 = fig.get_axes()[0]
     start_day = pd.Timestamp(df.columns.min()).normalize()
     last_day = pd.Timestamp(df.columns.max()).normalize()
-    draw_missing_day_boxes(
-        fig,
-        ax0,
+    # draw_missing_day_boxes(
+    #     fig,
+    #     ax0,
+    #     missing_days,
+    #     bottom=bottom,
+    #     top=top,
+    #     color="black",
+    #     alpha=0.1,
+    #     start_day=start_day,
+    #     last_day=last_day,
+    # )
+
+    overlay_missing_days_hatch(
+        axs,
         missing_days,
-        bottom=bottom,
-        top=top,
-        color="black",
-        alpha=0.1,
         start_day=start_day,
         last_day=last_day,
     )
-
-    #Hide the ticks as we don't want them, we're just using them
-    for i in graph_drawn:
-        axs[i].tick_params(labelbottom=False, bottom=False)
 
     # Draw a bounding rectangle around everything except the caption
     border = Rectangle(
@@ -2054,10 +2154,9 @@ def create_graph(site: str,
         1.0,            # width (full figure width)
         top - bottom,   # height = plot area only
         transform=fig.transFigure,
-        linewidth = 0.5, edgecolor="black",
+        linewidth = BORDER_WIDTH, edgecolor="black",
         fill=False, 
-        zorder=10,)
-    
+        zorder=20,)    
     fig.add_artist(border)
 
     #if we want to add anything on top of the images, the time to do it is at the end
@@ -2147,45 +2246,45 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, ):
     cleaned_figure_path = FIGURE_DIR / cleaned_image_filename
     remove_file(cleaned_figure_path)
     if not delete_only:
-        MONTH_NAMES = {
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
-        }
-        for text in graph.texts[:]:
-            if text.get_text() in MONTH_NAMES:
-                text.remove()
-        bbox_inches = None
+        # MONTH_NAMES = {
+        #     "January", "February", "March", "April", "May", "June",
+        #     "July", "August", "September", "October", "November", "December"
+        # }
+        # for text in graph.texts[:]:
+        #     if text.get_text() in MONTH_NAMES:
+        #         text.remove()
+        # bbox_inches = None
 
-        # We no longer have labels, so need to move up the legend if appropriate
-        if graph_type == GRAPH_WEATHER:
-            ax = graph.get_axes()[0]
+        # # We no longer have labels, so need to move up the legend if appropriate
+        # if graph_type == GRAPH_WEATHER:
+        #     ax = graph.get_axes()[0]
 
-            # Get the legend and it's coordinates 
-            legend = ax.get_legend()
-            bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+        #     # Get the legend and it's coordinates 
+        #     legend = ax.get_legend()
+        #     bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
 
-            # Shift the coords
-            yOffset = 0.1
-            new_bb = Bbox.from_bounds(
-                bb.x0,
-                bb.y0 + yOffset,
-                bb.width,
-                bb.height,
-            )
-            legend.set_bbox_to_anchor(new_bb, transform = ax.transAxes)
+        #     # Shift the coords
+        #     yOffset = 0.1
+        #     new_bb = Bbox.from_bounds(
+        #         bb.x0,
+        #         bb.y0 + yOffset,
+        #         bb.width,
+        #         bb.height,
+        #     )
+        #     legend.set_bbox_to_anchor(new_bb, transform = ax.transAxes)
 
         #Now, need to trim off the bottom of the image that we don't need any more
         fig_w, fig_h = graph.get_size_inches()
-
+        fig_w += 1/DPI  #Round up to prevent clipping on the right
         # Crop from the bottom
-        trim_amount_in = 0.5 if graph_type == GRAPH_WEATHER else 0.2
+        trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1 #0.5 if graph_type == GRAPH_WEATHER else 0.2
         bbox_inches = Bbox.from_bounds(
             0,                  # x0 (left)
             trim_amount_in,     # y0 (bottom trim in inches)
             fig_w,              # width
             fig_h - trim_amount_in,  # height
             )
-        plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches=bbox_inches, pad_inches=0.1)    
+        plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches=bbox_inches)    
 
     else:
         #TODO If there is no data, what to do? The line below saves an empty image.
@@ -2194,42 +2293,20 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, ):
 
     plt.close()
 
-# def get_month_locs_from_graph() -> dict:
-#     locs = {}
-#     months = []
-#     #This only works for the data graphs, not the weather graph. But if all we have is a weather 
-#     #graph then we don't care what the composite looks like.
-#     ax = plt.gca() 
-#     for t in ax.texts:
-#         if 'data' not in t.get_text():
-#             # This pulls out the month string for the key of the dict
-#             months.append(t.get_text())
-#     x = 0
-#     m = 0 
-#     for line in ax.get_lines():
-#         xdata = np.asarray(line.get_xdata())
-#         first_x = float(xdata[0])
-#         locs[months[m]] = (x, first_x)
-#         x = first_x
-#         m+=1
-#     if x>0:
-#         locs['max']=x    
-#     return locs
-
 
 def concat_images(*images: Image, is_legend:bool = False) -> Image:
     """Generate composite of all supplied images."""
     # Get the widest width. This will be a graph, not the legend
     width = max(image.width for image in images)
     # Add a little padding, so the border has space
-    x_padding = 6
+    x_padding = 0
     width += x_padding
 
     # Add up all the heights.
     height = sum(image.height for image in images)
 
     #put some space between each graph
-    y_padding = 30
+    y_padding = 25
     height += y_padding * len(images)
 
     composite = ImageModule.new('RGB', (width, height), color='white')
@@ -2245,16 +2322,24 @@ def concat_images(*images: Image, is_legend:bool = False) -> Image:
 
     return composite
 
+
 def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -> Image:
     scale = DPI/300
 
     #Make a new image that's a little bigger so we can add the site name at the top
     width, height = composite.size
     title_height = 100 * scale
-    month_row_height = 80 * scale
-    border_width = 3 * scale
+    month_row_height = 0
+    border_width = 0
     border_height = border_width * 2  * scale
     margin_bottom = 20 * scale
+    margin_left = 0 + 0 * scale
+    margin_right = width - 0 * scale
+
+    months_at_top = False
+    if months_at_top:
+        month_row_height = 80 * scale
+
     new_height = int(height + title_height + month_row_height + border_height + margin_bottom)
 
     title_font_size = 72 * scale
@@ -2268,31 +2353,28 @@ def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -
 
     #Add the title
     draw = ImageDraw.Draw(final)
-    if BEING_DEPLOYED_TO_STREAMLIT:
-        font = ImageFont.load_default(size=title_font_size)
-    else:
-        font = ImageFont.truetype(font_path, size=title_font_size)
-    draw.text((width/2,title_height-fudge), site, fill='black', anchor='ms', font=font)
+    font = ImageFont.truetype(font_path, size=title_font_size)
+    graph_title = get_pretty_name_for_site(site)
+    draw.text((width/2,title_height-fudge), graph_title, fill='black', anchor='ms', font=font)
 
     #Add the months
-    margin_left = 27 * scale
-    margin_right = 1982 * scale
-    if BEING_DEPLOYED_TO_STREAMLIT:
-        font = ImageFont.load_default(size=month_font_size)
-    else:
-        font = ImageFont.truetype(font_path, size=month_font_size)
-    v_pos = title_height + month_row_height - fudge
-    month_row_width = margin_right - margin_left
-    
-    total_days = sum(end - start + 1 for start, end in month_locs.values())
-    day_width = month_row_width / total_days
-    h_pos = margin_left
-    for month in month_locs:
-        days_in_month = month_locs[month][1] - month_locs[month][0] + 1
-        m_center = days_in_month / 2
-        text_pos = h_pos + (m_center * day_width)
-        draw.text((text_pos, v_pos), month, fill='black', font=font, anchor='ms')
-        h_pos += days_in_month * day_width
+    if months_at_top:
+        if BEING_DEPLOYED_TO_STREAMLIT:
+            font = ImageFont.load_default(size=month_font_size)
+        else:
+            font = ImageFont.truetype(font_path, size=month_font_size)
+        v_pos = title_height + month_row_height - fudge
+        month_row_width = margin_right - margin_left
+        
+        total_days = sum(end - start + 1 for start, end in month_locs.values())
+        day_width = month_row_width / total_days
+        h_pos = margin_left
+        for month in month_locs:
+            days_in_month = month_locs[month][1] - month_locs[month][0] + 1
+            m_center = days_in_month / 2
+            text_pos = h_pos + (m_center * day_width)
+            draw.text((text_pos, v_pos), month, fill='black', font=font, anchor='ms')
+            h_pos += days_in_month * day_width
 
     #Paste in the composite
     max_height = int(title_height + month_row_height + border_width)
@@ -2301,7 +2383,7 @@ def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -
     #Add the border
     border_top = title_height + month_row_height
     border_left = 0
-    border_right = margin_right - border_width*9
+    border_right = margin_right - border_width*2
     draw.rectangle([(border_left,border_top),(border_right,new_height-margin_bottom)], 
                     outline='black', width=int(border_width))
 
@@ -2387,7 +2469,7 @@ def output_text(text:str, make_all_graphs:bool):
 #
 
 #Load weather data from file
-#@st.cache_resource
+@st.cache_data
 def load_weather_data_from_file() -> pd.DataFrame:
     df = pd.read_csv(FILES[WEATHER_FILE])
 
@@ -2455,9 +2537,6 @@ def add_weather_graph_ticks(ax1:Axes, ax2:Axes, ax3:Axes, wg_colors:dict, x_rang
     ax1.set_xlim(x_min, x_max)
     ax2.set_xlim(x_min, x_max)
 
-    # line marking 100F
-    ax2.hlines([100], x_min, x_max, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=1)        
-    
     # doing our own labels so we can customize positions
     tick1y = 100
     tick2y = temp_min+8
@@ -2469,20 +2548,23 @@ def add_weather_graph_ticks(ax1:Axes, ax2:Axes, ax3:Axes, wg_colors:dict, x_rang
     #https://matplotlib.org/stable/tutorials/advanced/transforms_tutorial.html
     trans = transforms.blended_transform_factory(ax2.transAxes, ax2.transData)
 
+    # line marking 100F
+    ax2.hlines([100], x_min, x_max, color=wg_colors['high'], linewidth=0.5, linestyle='dotted', zorder=2)        
+    
     #blank out part of the 100F line so the label is readable
     rect = Rectangle((1-0.005,tick1y-6), -0.03, 12, facecolor='white', 
-                    fill=True, edgecolor='none', zorder=2, transform=trans)
+                    fill=True, edgecolor='none', zorder=3, transform=trans)
     ax2.add_patch(rect)
 
     #add tick label and ticks
     x_pos = 1 - tick_width  #in axis coordinates, where 0 is far left and 1 is far right
     ax2.text(x_pos, tick1y+label_yoffset, "100F", 
-            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=3,
+            fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center', zorder=4,
             transform=trans)
     ax2.text(x_pos, tick2y+label_yoffset, f"{temp_min+8}F", 
             fontsize=6, color=wg_colors['high'], horizontalalignment='right', verticalalignment='center',
             transform=trans)
-    ax2.hlines([tick1y, tick2y], 1-tick_width, 1, colors=wg_colors['high'], linewidth=0.5,
+    ax2.hlines([tick1y, tick2y], 1-tick_width, 1, colors=wg_colors['high'], linewidth=BORDER_WIDTH,
             transform=trans)
     
     #drawing this on the temp axis because drawing on the prcp axis blew up, so have to convert to that scale
@@ -2494,7 +2576,7 @@ def add_weather_graph_ticks(ax1:Axes, ax2:Axes, ax3:Axes, wg_colors:dict, x_rang
     ax2.text(0+tick_width, prcp_label_pos2, '1.5"',
             fontsize=6, color=wg_colors['prcp'], horizontalalignment='left', verticalalignment='center',
             transform=trans)
-    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=0.5,
+    ax2.hlines([prcp_label_pos1, prcp_label_pos2], 0, tick_width, colors=wg_colors['prcp'], linewidth=BORDER_WIDTH,
             transform=trans)
     # To turn off all default y ticks
     ax1.tick_params(
@@ -2528,110 +2610,116 @@ def min_above_zero(s:pd.Series):
 
 
 def create_weather_graph(weather_by_type:dict, site_name:str) -> tuple[Figure, list[Axes]]:
-    if len(weather_by_type) > 0:
-        # --- inches-based spec ---
-        top_pad_in = 0.10       # Whitespace at the top
-        title_band_in = 0.2    # Gap for the label
-        top_band_in = top_pad_in + title_band_in
-
-        # Height in inches of the actual graph
-        plot_in = 1.5           
-        
-        label_height_in = 0.25  # Axis labels
-        legend_height_in = 0.50 # Legend
-        bottom_pad_in = 0.10    # Whitespace at the bottom
-        bottom_band_in = legend_height_in + label_height_in + bottom_pad_in
-
-        fig_w = FIG_W           # keep your width in inches
-        fig_h = top_band_in + plot_in + bottom_band_in
-
-        fig, ax1 = plt.subplots(figsize=(fig_w, fig_h))
-
-        # Fractions for the plot rectangle
-        bottom = bottom_band_in / fig_h
-        top = 1.0 - (top_band_in / fig_h)
-        fig.subplots_adjust(left=0, right=1, bottom=bottom, top=top)
-
-        # Place title at the top of the title band
-        title_y = 1.0 - (top_pad_in / fig_h)
-        plot_title(fig, GRAPH_WEATHER, y=title_y)
-
-        ax2 = ax1.twinx() # makes a second y axis on the same x axis 
-        ax3 = ax1.twinx() # makes a third y axis on the same x axis for wind
-        axes = [ax1, ax2, ax3]
-
-        # Plot the data in the proper format on the correct axis.
-        wg_colors = {'high':'#ff0000', 'low':'#ff8080', 'prcp':'blue', 'wspd':'gray'}
-        for wt in WEATHER_COLS:
-            w = weather_by_type[wt]
-            if wt == WEATHER_PRCP:
-                ax1.bar(w.index.values, w['value'], color = wg_colors['prcp'], linewidth=0)
-            elif wt == WEATHER_TMAX:
-                ax2.plot(w.index.values, w['value'], color = wg_colors['high'], marker='.', markersize=2)
-            elif wt == WEATHER_TMIN: 
-                ax2.plot(w.index.values, w['value'], color = wg_colors['low'], marker='.', markersize=2)
-            elif wt == WEATHER_WIND:
-#                ax3.plot(w.index.values, w['value'], color = wg_colors['wspd'], marker='.', markersize=2)
-#                ax3.tick_params(axis='y', colors=wg_colors['wspd'])
-                wspd = w['value']
-                ax3.bar(
-                    w.index.values,
-                    wspd,
-                    width=0.8,                 # narrow daily bars
-                    color=wg_colors['wspd'],
-                    alpha=0.4,                  # light
-                    linewidth=0,
-                    zorder=1                    # behind temps
-                )
-                # Make wind bars occupy just the lower part of that axis
-                max_wind = 15 #wspd.max() for just the max for this site, but 15 is the fastest speed across all sites so we have a fixed scale and the data can be visually compared 
-                ax3.set_ylim(0, max_wind * 1.2)  # nice headroom
-            else: 
-                log_error(f"create_weather_graph: Unknown weather type {wt}")
-
-        w=weather_by_type[WEATHER_PRCP]
-        x_range = (mdates.date2num(w.index.min()), mdates.date2num(w.index.max()))
-        add_weather_graph_ticks(ax1, ax2, ax3, wg_colors, x_range)
-
-        # HORIZONTAL TICKS AND LABLING 
-        text_offset_in = 0.18
-        text_y = bottom - (text_offset_in / fig_h)
-        draw_axis_labels(fig, get_days_per_month(weather_by_type[WEATHER_TMAX].index.values), y=text_y, bottom=bottom, top=top)
-        
-        #Turn on the graph borders, these are off by default for other charts
-        ax1.spines[:].set_linewidth(0.5)
-        ax1.spines[:].set_visible(True)
-
-        # Add a legend for the figure
-        # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
-        tmax_label = f"High temp\n({min_above_zero(weather_by_type[WEATHER_TMAX]['value']):.0f}-"\
-                     f"{weather_by_type[WEATHER_TMAX]['value'].max():.0f}\u00B0F)"
-        tmin_label = f"Low temp\n({min_above_zero(weather_by_type[WEATHER_TMIN]['value']):.0f}-"\
-                     f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
-        prcp_label = f"Precipitation\n(0-"\
-                     f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
-        wind_label = f"Avg Daily Wind Speed\n(0-"\
-                     f"{weather_by_type[WEATHER_WIND]['value'].max():.2f} m/s)"
-        
-        legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=3, label=tmax_label),
-                           Line2D([0], [0], color=wg_colors['low'], lw=3, label=tmin_label),
-                           Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label),
-                           Line2D([0], [0], color=wg_colors['wspd'], lw=3, label=wind_label)]
-        
-        #draw the legend below the chart
-        #calculations for the bbox
-        legend_height_frac = legend_height_in / plot_in #Percentage of the plot occupied by the legend
-        legend_y_frac = -(legend_height_in + bottom_pad_in) / plot_in #negative to position it below the graph
-        ax1.legend(handles=legend_elements, 
-                   loc='upper center', 
-                   bbox_to_anchor=(0.12, legend_y_frac, 0.8, legend_height_frac),  
-                   mode='expand',
-                   ncol=4,
-                   prop={'family': GRAPH_FONT, 'size': LEGEND_FONT_SIZE},
-                   frameon=False)
-    else:
+    if len(weather_by_type) == 0:
         fig, axs = plt.subplots(nrows=1, ncols=1)
         axes = [axs] #make a list because we have to return this as a list type
+        return fig, axes
+
+    # --- inches-based spec ---
+    top_pad_in = 0.10       # Whitespace at the top
+    title_band_in = 0.2    # Gap for the label
+    top_band_in = top_pad_in + title_band_in
+
+    # Height in inches of the actual graph
+    plot_in = 1.5           
+    
+    label_height_in = 0.25  # Axis labels
+    legend_height_in = 0.55 # Legend
+    bottom_pad_in = 0    # Whitespace at the bottom
+    bottom_band_in = legend_height_in + label_height_in + bottom_pad_in
+
+    fig_w = FIG_W           # keep your width in inches
+    fig_h = top_band_in + plot_in + bottom_band_in
+
+    fig, ax1 = plt.subplots(figsize=(fig_w, fig_h))
+
+    # Fractions for the plot rectangle
+    bottom = bottom_band_in / fig_h
+    top = 1.0 - (top_band_in / fig_h)
+    fig.subplots_adjust(left=0, right=1, bottom=bottom, top=top)
+
+    # Place title at the top of the title band
+    title_y = 1.0 - (top_pad_in / fig_h)
+    plot_title(fig, GRAPH_WEATHER, y=title_y)
+
+    ax2 = ax1.twinx() # makes a second y axis on the same x axis 
+    ax3 = ax1.twinx() # makes a third y axis on the same x axis for wind
+    axes = [ax1, ax2, ax3]
+
+    # Plot the data in the proper format on the correct axis.
+    wg_colors = {'high':'#ff0000', 'low':'#ff8080', 'prcp':'blue', 'wspd':'gray'}
+    line_width = TEMP_LINES  #For how thick the red lines are
+    marker_size = 0   #For whether a little dot shows on the graph or not
+    marker = ''       #If we want a marker, a "." gives a point
+    for wt in WEATHER_COLS:
+        w = weather_by_type[wt]
+        x = (w.index.normalize()-w.index[0]).days #Convert our dates to a series
+        if wt == WEATHER_PRCP:
+            ax1.bar(x, w["value"].to_numpy(), color = wg_colors['prcp'], lw=0)
+        elif wt == WEATHER_TMAX:
+            ax2.plot(x, w["value"].to_numpy(), color = wg_colors['high'], lw=line_width)
+        elif wt == WEATHER_TMIN: 
+            ax2.plot(x, w["value"].to_numpy(), color = wg_colors['low'], lw=line_width)
+        elif wt == WEATHER_WIND:
+            wspd = w['value']
+            ax3.bar(
+                x,
+                wspd.to_numpy(),
+                width=0.8,                 # narrow daily bars
+                color=wg_colors['wspd'],
+                alpha=0.5,                  # light
+                linewidth=0,
+                zorder=1                    # behind temps
+            )
+            # Make wind bars occupy just the lower part of that axis
+            max_wind = 15 #wspd.max() for just the max for this site, but 15 is the fastest speed across all sites so we have a fixed scale and the data can be visually compared 
+            ax3.set_ylim(0, max_wind * 1.2)  # nice headroom
+        else: 
+            log_error(f"create_weather_graph: Unknown weather type {wt}")
+
+    w=weather_by_type[WEATHER_PRCP]
+    x = (w.index.normalize()-w.index[0]).days #Convert our dates to a series
+    x_range = (x.min(), x.max())
+    add_weather_graph_ticks(ax1, ax2, ax3, wg_colors, x_range)
+
+    # HORIZONTAL TICKS AND LABLING 
+    text_offset_in = LABEL_OFFSET
+    text_y = bottom - (text_offset_in / fig_h)
+    text_y = -0.09
+    draw_axis_labels(fig, get_days_per_month(weather_by_type[WEATHER_TMAX].index.values), y=text_y, bottom=bottom, top=top)
+    
+    #Turn on the graph borders, these are off by default for other charts
+    ax1.spines[:].set_linewidth(BORDER_WIDTH)
+    ax1.spines[:].set_visible(True)
+
+    # Add a legend for the figure
+    # For more legend tips see here: https://matplotlib.org/stable/gallery/text_labels_and_annotations/custom_legends.html
+    tmax_label = f"High temp\n({min_above_zero(weather_by_type[WEATHER_TMAX]['value']):.0f}-"\
+                    f"{weather_by_type[WEATHER_TMAX]['value'].max():.0f}\u00B0F)"
+    tmin_label = f"Low temp\n({min_above_zero(weather_by_type[WEATHER_TMIN]['value']):.0f}-"\
+                    f"{weather_by_type[WEATHER_TMIN]['value'].max():.0f}\u00B0F)"
+    prcp_label = f"Precipitation\n(0-"\
+                    f"{weather_by_type[WEATHER_PRCP]['value'].max():.2f}\042)"
+    wind_label = f"Avg Daily Wind Speed\n(0-"\
+                    f"{weather_by_type[WEATHER_WIND]['value'].max():.2f} m/s)"
+    
+    legend_elements = [Line2D([0], [0], color=wg_colors['high'], lw=3, label=tmax_label),
+                        Line2D([0], [0], color=wg_colors['low'], lw=3, label=tmin_label),
+                        Line2D([0], [0], color=wg_colors['prcp'], lw=3, label=prcp_label),
+                        Line2D([0], [0], color=wg_colors['wspd'], lw=3, label=wind_label)]
+    
+    #draw the legend below the chart
+    #calculations for the bbox
+    legend_height_frac = legend_height_in / plot_in #Percentage of the plot occupied by the legend
+    legend_y_frac = -(legend_height_in + 0.2*legend_height_in + bottom_pad_in) / plot_in #negative to position it below the graph
+    ax1.legend(handles=legend_elements, 
+        loc='upper center', 
+        bbox_to_anchor=(0.12, legend_y_frac, 0.8, legend_height_frac),  
+        mode='expand',
+        ncol=4,
+        prop={'family': GRAPH_FONT, 'size': LEGEND_FONT_SIZE},
+        frameon=False
+    )
 
     return fig, axes
 
@@ -2706,7 +2794,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
 
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
-    df = pd.read_csv(FILES[ALL_FILE], skiprows=SHEET_HEADER_SIZE)
+    df = load_all_file()
 
     #Make a dictionary, where the keys are in site_info_fields and the values are the values from the 
     #site info file in the columns that match site_info_fields, for the site==site_name
@@ -2735,13 +2823,13 @@ def check_tags(df: pd.DataFrame):
     non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
                                             data_col[tag_wsm]])
     bad_rows = pd.concat([bad_rows,
-                            filter_df_by_tags(non_zero_rows, song_cols, f'=={missing_data_flag}')])
+                            filter_df_by_tags(non_zero_rows, song_cols, f'=={MISSING_DATA_FLAG}')])
 
 
     #P1N, P2N throws an error if it's missing alternative song
     non_zero_rows = filter_df_by_tags(df, EDGE_N_COLS)
     bad_rows = pd.concat([bad_rows, 
-                            filter_df_by_tags(non_zero_rows, [data_col[ALTSONG1]], f"=={missing_data_flag}")])       
+                            filter_df_by_tags(non_zero_rows, [data_col[ALTSONG1]], f"=={MISSING_DATA_FLAG}")])       
 
     if len(bad_rows):
         for r in bad_rows[FILENAME]:
@@ -2911,51 +2999,15 @@ def do_mini_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.Data
 
 
 def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.DataFrame, bool]:
-    # Goal: 
-    #   1. Draw a rectangle around the outside of all the P_C tags from the first day that has 
-    #      at least 1 recording to the last (orange)
-    #           1. if the data is null, then the rectangles are going to be drawn as connecting lines
-    #   2. Draw a rectangle starting at the first P_N that has at least one recording, and ending
-    #      at the latest date that has either a P_A or P_F
-    #           1. if there is a YNC_P2 then only count recordings that have YNC_P2, do not count the actual P_N
-    #   
-    # Steps:
-    #   1. Select all rows where one of the following tags
-    #       P1C, P1N, P2C, P2N [later: , P3C, P3N]
-    #   2. For tags that end in C, make a pivot table with the number of recordings that have CourtshipSong
-    #   3. For tags that end in N, make a pivot table that follows more complicated logic, described below
-    #   4. Merge all the tables together so we get one block of heatmaps
 
     pt_edge = pd.DataFrame()    
     have_edge_data = False
-    has_ync = 'has_ync'
-    ync_tag = 'ync_tag'
 
-    # The dict below captures all the various tags that need to be factored into the the edge
-    # analysis assocated with P_N phase:
-    #   has_ync: Does this site have any YNC tags of this type?
-    #   ync_tag: The name of the YNC Tag column associated with this stage (i.e. the number after P)
-    #   na_tag : The name of the P_NA tag associated with this stage
-    # pn_tag_map = {
-    #     data_col[tag_p1n] : {has_ync : False,  #YNC_P1 tag not currently being used
-    #                         ync_tag : '',  #YNC_P1 tag not currently being used
-    #     },
-    #     data_col[tag_p2n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p2]).empty, 
-    #                         ync_tag : data_col[tag_YNC_p2],
-    #     },
-    #     data_col[tag_p3n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p3]).empty, 
-    #                         ync_tag : data_col[tag_YNC_p3],
-    #     },
-    #     data_col[tag_p4n] : {has_ync : not filter_df_by_tags(df_site, [tag_YNC_p4]).empty, 
-    #                         ync_tag : data_col[tag_YNC_p4],
-    #     },
-    # }
     new_pn_tag_map = { # map of tag_pXn to ync tag
         data_col[tag_p1n] : data_col[ALTSONG1],
         data_col[tag_p2n] : data_col[tag_YNC_p2],
         data_col[tag_p3n] : data_col[tag_YNC_p3],
         data_col[tag_p4n] : data_col[tag_YNC_p4],
-
     }
 
     check_edge_cols_for_errors(df_site)
@@ -3073,7 +3125,7 @@ def main():
             "Heatmap contrast",
             min_value=0.1,
             max_value=1.0,
-            value=0.6,
+            value=0.65,
             step=0.05,
             key="gamma",
         )
@@ -3148,7 +3200,11 @@ def main():
     pt_pm = pd.DataFrame()
     weather_by_type = {}
 
-    for site in target_sites:
+    
+    for idx, site in enumerate(target_sites):
+        if PROFILING:
+            if idx > 5: 
+                break
         error_msgs = []
         site_counter += 1
         # Select the site matching the one of interest
@@ -3218,12 +3274,13 @@ def main():
 
         # ------------------------------------------------------------------------------------------------
         # DISPLAY
+        pretty_site_name = get_pretty_name_for_site(site)
         if MAKE_ALL_GRAPHS:
-            st.subheader(f"{site} [{str(site_counter)} of {str(len(target_sites))}]")
+            st.subheader(f"{pretty_site_name} [{str(site_counter)} of {str(len(target_sites))}]")
         else: 
-            st.subheader(site)
+            st.subheader(f"{pretty_site_name}")
         
-        if not pd.isna(summary_row["Comment for Skip Site"].item()):
+        if not pd.isna(summary_row["Skip Site"].item()):
             st.write(f":red-background[Duplicate site: {summary_row["Comment for Skip Site"].item()}]")
 
         if len(error_msgs):
@@ -3473,6 +3530,8 @@ def profile_main():
 
 
 if __name__ == "__main__":
-    main()
-    #For profiling:
-    #profile_main()
+    if PROFILING:
+        profile_main()
+    else:
+        main()
+    
