@@ -3021,36 +3021,6 @@ def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.D
             assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
-
-        # tag_dict = {}
-        
-        # # For p?n, if there's a YNC_p? then count YNC_p? tags, else count altsong1 
-        # if pn_tag_map[tag][has_ync]: 
-        #     #Count YNC tags
-        #     tag_dict[tag] = pn_tag_map[tag][ync_tag]  #will be tag<YNC-p2> for p2n, tag<YNC-p3> for p3n
-        # else:
-        #     #Count altsong1 
-        #     tag_dict[tag] = data_col[ALTSONG1]
-
-        # # We need to get all the rows that have at least one of those keys, and then count the appropriate song 
-        # df_for_tag = filter_df_by_tags(df_site, list(tag_dict.keys()))
-        # if DEBUG:
-        #     old_df_for_tag = old_filter_df_by_tags(df_site, list(tag_dict.keys()))
-        #     assert df_for_tag.equals(old_df_for_tag), "do_edge: New and old filter_df_by_tags results do not match"
-
-        # have_edge_data = have_edge_data or len(df_for_tag)>0
-
-        # # Make_pivot_table takes the dataframe that we've already filtered to the correct tag,
-        # #    and it further filters it to the columns that have a non-zero value in the target_col
-        # # "preserve_edges" causes the zero values in the data we pass in to be replaced with -1 
-        # #    this way, in the graph, we can tell the difference between a day that had no tags vs. one that 
-        # #    had tags but no songs
-        # pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
-        # if DEBUG:
-        #     old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = tag_dict)
-        #     assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
-        # pt_edge = pd.concat([pt_edge, pt_for_tag])
-
     else:
         log_error(f"Site {site} has no edge tags")
 
