@@ -1,15 +1,26 @@
 from __future__ import annotations
 
 
+#TODO next steps with the composite graph
+# Make the graph narrower, it's too wide now
+# For the composite...
+#   For each year
+#       Load all the sites from that year
+#       Sort by latitude
+#       Load the graphics for that site
+#       Make the composite with the site name on the left and the graphic on the right
+
+
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 DEBUG = False  #For testing whether the old and new functions give the same results
 PROFILING = False
 MAKE_ALL_GRAPHS = False
-
-
+ALIGN_DATES = False
+STANDARD_START  = "03/15"
+STANDARD_END    = "07/30"
 
 import streamlit as st
 import pandas as pd
@@ -1376,11 +1387,17 @@ def parse_date(date_str):
 # and if the user wants a specific range then update our range to reflect that.
 # Assume that the data cleaning code has removed any extraneous dates, such as if data 
 # is mistagged (i.e. data from 2019 shows up in the 2020 site)
-def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, my_sidebar) -> dict:
+def get_date_range(df:pd.DataFrame, graphing_all_sites:bool, standardize_dates:bool, my_sidebar) -> dict:
+    date_range_dict = {}
     date_range_dict_from_sheet = {}
     dates_from_sheet = get_site_info(df["site"].iloc[0], ["First Recording", "Last Recording"])
     date_range_dict_from_sheet[START] = dates_from_sheet["First Recording"]
     date_range_dict_from_sheet[END] = dates_from_sheet["Last Recording"]
+
+    if graphing_all_sites and standardize_dates:
+        date_range_dict[START] = f"{STANDARD_START}/{date_range_dict_from_sheet[START][-4:]}"
+        date_range_dict[END] = f"{STANDARD_END}/{date_range_dict_from_sheet[END][-4:]}"
+        return date_range_dict
     
     if df.index.name == "date":
         date_range_dict_from_file = {START : df.index.min().strftime("%m-%d-%Y"), 
@@ -1630,7 +1647,9 @@ def get_days_per_month(date_list:list) -> dict:
 def draw_axis_labels(fig: Figure, 
                      month_lengths:dict, 
                      skip_month_names=False,
-                     y: float=0, bottom:float=0, top:float=0 ):
+                     y: float=0, bottom:float=0, top:float=0,
+                     do_aligned_dates:bool = False,
+):
     
     def draw_month_label_if_fits(
         ax,
@@ -1690,6 +1709,7 @@ def draw_axis_labels(fig: Figure,
                 **text_kwargs,
             )
 
+
     mpl.rcParams["figure.raise_window"] = True
 
     ax_count = len(fig.get_axes())
@@ -1702,7 +1722,7 @@ def draw_axis_labels(fig: Figure,
         # Center the label on the middle of the month, which is the #-days-in-the-month/2
         center_pt = int((month_lengths[month])/2)
         mid = x + (center_pt * day_width)
-        if not skip_month_names:
+        if not skip_month_names and not do_aligned_dates:
             draw_month_label_if_fits(
                 ax, fig,
                 month, # name of the month
@@ -1843,15 +1863,15 @@ def create_graph(site: str,
                  row_names : list, 
                  cmap : dict,  
                  raw_data = pd.DataFrame(), 
-                 draw_vert_rects = False, draw_horiz_rects = False,
+                 draw_vert_rects:bool = False, draw_horiz_rects:bool = False,
                  title="", 
                  graph_type="",
-                 draw_connectors=False,
+                 draw_connectors:bool = False,
                  hatch_dates={},
                  missing_days=pd.DatetimeIndex([]),
                  denom_by_day: pd.Series = pd.Series(),
-                 ) -> tuple[Figure, Axes]:
-    
+                 do_aligned_dates:bool = False,
+) -> tuple[Figure, Axes]:
     plt.close() #close any prior graph that was open
 
     if len(df) == 0:
@@ -1866,20 +1886,27 @@ def create_graph(site: str,
     graph_drawn = []
     
     # --- inches-based spec ---
-    top_pad_in = 0.0       # Whitespace at the top
-    title_band_in = 0.2    # Gap for the label
-    top_band_in = top_pad_in + title_band_in
+    if not do_aligned_dates:
+        top_pad_in = 0.0       # Whitespace at the top
+        title_band_in = 0.2    # Gap for the label
+        top_band_in = top_pad_in + title_band_in
 
-    # Height in inches of the actual graph, allot 0.2" per row
-    row_height = 0.2
+        # Height in inches of the actual graph, allot 0.2" per row
+        row_height = 0.2
+
+        label_height_in = 0.25  # Axis labels
+        legend_height_in = 0.0  
+        bottom_pad_in = 0.0     # Whitespace at the bottom
+        bottom_band_in = label_height_in + legend_height_in + bottom_pad_in
+        fig_w = FIG_W           # keep your width in inches
+    else:
+        top_pad_in = 0
+        top_band_in = 0     #nothing goes at the top
+        row_height = 0.05    #half height or so
+        bottom_band_in = 0  #no labels or legend
+        fig_w = FIG_W       #same width for now, may change later
+
     plot_in = row_count * row_height
-
-    label_height_in = 0.25  # Axis labels
-    legend_height_in = 0.0  
-    bottom_pad_in = 0.0     # Whitespace at the bottom
-    bottom_band_in = label_height_in + legend_height_in + bottom_pad_in
-
-    fig_w = FIG_W           # keep your width in inches
     fig_h = top_band_in + plot_in + bottom_band_in
 
     fig, axs = plt.subplots(
@@ -1901,7 +1928,7 @@ def create_graph(site: str,
     fig.subplots_adjust(left=0, right=1, bottom=bottom, top=top)
     
     # If we have one, add the title for the graph and set appropriate formatting
-    if len(title) :
+    if len(title) and not do_aligned_dates:
         title_y = 1.0 - (top_pad_in / fig_h)
         plot_title(fig, title, y=title_y)
     
@@ -2123,7 +2150,7 @@ def create_graph(site: str,
     text_offset_in = LABEL_OFFSET
     text_y = bottom - (text_offset_in / fig_h)
     text_y = -0.65
-    draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top)
+    draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top, do_aligned_dates=do_aligned_dates)
 
     #Draw a black box over every missing date
     #ax0 = fig.get_axes()[0]
@@ -2233,51 +2260,58 @@ def remove_file(full_path:Path) -> bool:
     return result
     
 # Save the graphic to a different folder. All file-related options are managed from here.
-def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, ):
+def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_aligned_dates=False):
     #Do nothing if we're on the server, we can't save files there or download them without a lot of complexity
     if BEING_DEPLOYED_TO_STREAMLIT:
         return
 
-    filename = make_img_filename(site, graph_type)
+    aligned_str = "(aligned)" if do_aligned_dates else ""
+    filename = make_img_filename(site, graph_type, extra=aligned_str)
     figure_path = FIGURE_DIR / filename
+    # We aren't saving the "unclean" one any more, so technically this isn't necessary but doesn't hurt
     remove_file(figure_path)
 
-    cleaned_image_filename = make_img_filename(site, graph_type, extra=' clean')    
+    cleaned_image_filename = make_img_filename(site, graph_type, extra=f"{aligned_str} clean")    
     cleaned_figure_path = FIGURE_DIR / cleaned_image_filename
     remove_file(cleaned_figure_path)
     if not delete_only:
-        # MONTH_NAMES = {
-        #     "January", "February", "March", "April", "May", "June",
-        #     "July", "August", "September", "October", "November", "December"
-        # }
-        # for text in graph.texts[:]:
-        #     if text.get_text() in MONTH_NAMES:
-        #         text.remove()
-        # bbox_inches = None
+        #If we're making the graph where everything is aligned, we don't want the dates
+        if do_aligned_dates:
+            MONTH_NAMES = {
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            }
+            for text in graph.texts[:]:
+                if text.get_text() in MONTH_NAMES:
+                    text.remove()
+            bbox_inches = None
 
-        # # We no longer have labels, so need to move up the legend if appropriate
-        # if graph_type == GRAPH_WEATHER:
-        #     ax = graph.get_axes()[0]
+            # # We no longer have labels, so need to move up the legend if appropriate
+            # if graph_type == GRAPH_WEATHER:
+            #     ax = graph.get_axes()[0]
 
-        #     # Get the legend and it's coordinates 
-        #     legend = ax.get_legend()
-        #     bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
+            #     # Get the legend and it's coordinates 
+            #     legend = ax.get_legend()
+            #     bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
 
-        #     # Shift the coords
-        #     yOffset = 0.1
-        #     new_bb = Bbox.from_bounds(
-        #         bb.x0,
-        #         bb.y0 + yOffset,
-        #         bb.width,
-        #         bb.height,
-        #     )
-        #     legend.set_bbox_to_anchor(new_bb, transform = ax.transAxes)
+            #     # Shift the coords
+            #     yOffset = 0.1
+            #     new_bb = Bbox.from_bounds(
+            #         bb.x0,
+            #         bb.y0 + yOffset,
+            #         bb.width,
+            #         bb.height,
+            #     )
+            #     legend.set_bbox_to_anchor(new_bb, transform = ax.transAxes)
 
         #Now, need to trim off the bottom of the image that we don't need any more
         fig_w, fig_h = graph.get_size_inches()
         fig_w += 1/DPI  #Round up to prevent clipping on the right
         # Crop from the bottom
-        trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1 #0.5 if graph_type == GRAPH_WEATHER else 0.2
+        if do_aligned_dates:
+            trim_amount_in = -(1/DPI)
+        else:
+            trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1 #0.5 if graph_type == GRAPH_WEATHER else 0.2
         bbox_inches = Bbox.from_bounds(
             0,                  # x0 (left)
             trim_amount_in,     # y0 (bottom trim in inches)
@@ -2430,7 +2464,7 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
         final.save(composite_path)
     return
 
-def output_graph(site:str, graph: Figure, graph_type:str, save_files=False, make_all_graphs=False, data_to_graph=True):
+def output_graph(site:str, graph: Figure, graph_type:str, save_files=False, make_all_graphs=False, align_dates=False, data_to_graph=True):
     if data_to_graph:
         if make_all_graphs: #Don't write the graphs to the screen if we're doing them all to speed it up
             #st.write(f"Saving {graph_type} for {site}")
@@ -2442,7 +2476,7 @@ def output_graph(site:str, graph: Figure, graph_type:str, save_files=False, make
         
         #Save it to disk if we are either doing all the graphs, or the Save checkbox is checked
         if make_all_graphs or save_files:
-            save_figure(site, graph_type, graph)
+            save_figure(site, graph_type, graph, do_aligned_dates=make_all_graphs and align_dates)
     else:
         #No data, so show a message instead. 
         save_figure(site, graph_type, graph, delete_only=True)
@@ -2939,7 +2973,7 @@ def do_pattern_matching(site:str, date_range_dict:dict, container_top) -> tuple[
         if date_range_dict:
             pm_date_range_dict = date_range_dict  
         else:
-            pm_date_range_dict = get_date_range(df_pattern_match, MAKE_ALL_GRAPHS, container_top)
+            pm_date_range_dict = get_date_range(df_pattern_match, MAKE_ALL_GRAPHS, ALIGN_DATES, container_top)
 
         if len(df_pattern_match):
             for t in pm_file_types: 
@@ -3170,7 +3204,8 @@ def main():
     pt_pm = pd.DataFrame()
     weather_by_type = {}
 
-    
+    do_aligned_dates = MAKE_ALL_GRAPHS and ALIGN_DATES
+
     for idx, site in enumerate(target_sites):
         if PROFILING:
             if idx > 5: 
@@ -3199,22 +3234,24 @@ def main():
             )
 
             #Using the site of interest, get the first & last dates and give the user the option to customize the range
-            date_range_dict = get_date_range(df_site, MAKE_ALL_GRAPHS, container_top)
+            date_range_dict = get_date_range(df_site, MAKE_ALL_GRAPHS, ALIGN_DATES, container_top)
 
             #Get this list of days without data, for later graphing
             missing_days = get_missing_days(df_site)
 
-            # MANUAL ANALYSIS
-            with timed("Manual analysis"):
-                pt_manual, have_manual_data = do_manual(df_site, date_range_dict)
+            #Make the manual graphs if we're not aligning dates or we're going one-by-one             
+            if not do_aligned_dates:
+                # MANUAL ANALYSIS
+                with timed("Manual analysis"):
+                    pt_manual, have_manual_data = do_manual(df_site, date_range_dict)
 
-            # MINI-MANUAL ANALYSIS
-            with timed("Mini-manual analysis"):
-                pt_mini_manual, have_mini_manual_data = do_mini_manual(df_site, date_range_dict)
+                # MINI-MANUAL ANALYSIS
+                with timed("Mini-manual analysis"):
+                    pt_mini_manual, have_mini_manual_data = do_mini_manual(df_site, date_range_dict)
 
-            # EDGE ANALYSIS
-            with timed("Edge analysis"):
-                pt_edge, have_edge_data = do_edge(df_site, date_range_dict, site)
+                # EDGE ANALYSIS
+                with timed("Edge analysis"):
+                    pt_edge, have_edge_data = do_edge(df_site, date_range_dict, site)
 
             # PATTERN MATCHING ANALYSIS
             with timed("Pattern matching analysis"):
@@ -3268,6 +3305,7 @@ def main():
         month_locs = {} 
 
         # Pattern Matching Analysis
+        # Everything has data, it didn't use to be the case. I'll leave the If in case we ever go back
         if True: #not pt_pm.empty:
             hatch_dates = {}
             for p in PULSES:
@@ -3286,6 +3324,7 @@ def main():
                                     hatch_dates = hatch_dates,
                                     missing_days = missing_days,
                                     denom_by_day = rec_norm,
+                                    do_aligned_dates=do_aligned_dates
                 ) 
 
             # add this if we want to include the site name (site + ' ' if save_files else '')
@@ -3298,11 +3337,13 @@ def main():
                 month_locs = get_month_locs(pt_pm.columns)
     
             output_graph(site, graph, GRAPH_PM,
-                        save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_pm_data)
+                        save_files=save_files, 
+                        make_all_graphs=MAKE_ALL_GRAPHS, align_dates=ALIGN_DATES,
+                        data_to_graph=have_pm_data)
 
 
         # MiniManual Analysis
-        if not pt_mini_manual.empty:
+        if not pt_mini_manual.empty and not do_aligned_dates:
             with timed("Mini manual graph"):
                 graph, axs = create_graph(
                                 site = site,
@@ -3323,7 +3364,7 @@ def main():
 
 
         # Manual analyisis graph    
-        if not pt_manual.empty and SHOW_MANUAL_ANALYSIS:
+        if not pt_manual.empty and SHOW_MANUAL_ANALYSIS and not do_aligned_dates:
             #SEPT2025- trying to hide COURT_SONG from the list of songs
             new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
 
@@ -3344,9 +3385,8 @@ def main():
                         save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_manual_data)
 
 
-
         # Edge Analysis
-        if not pt_edge.empty:
+        if not pt_edge.empty and not do_aligned_dates:
             cmap_edge = {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
             graph, axs = create_graph(
                                 site = site,
@@ -3365,24 +3405,25 @@ def main():
             output_graph(site, graph, GRAPH_EDGE, 
                         save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=have_edge_data)
         
-        #Draw the single legend for the rest of the charts and save to a file if needed
-        draw_legend(CMAP, MAKE_ALL_GRAPHS, save_composite)
+        if not do_aligned_dates:
+            #Draw the single legend for the rest of the charts and save to a file if needed
+            draw_legend(CMAP, MAKE_ALL_GRAPHS, save_composite)
 
-        #Show weather, as needed and if available
-        weather_by_type = {}
-        if show_weather_checkbox:
-            # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's 
-            # possible that there is only one of them. 
-            if pm_date_range_dict or date_range_dict:
-                date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
-                # Load and parse weather data
-                weather_by_type = get_weather_data(site, date_to_use)
-                if weather_by_type:
-                    graph, axs = create_weather_graph(weather_by_type, site)
-                    output_graph(site, graph, GRAPH_WEATHER, 
-                                save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=True)
-        
-        if not BEING_DEPLOYED_TO_STREAMLIT and (MAKE_ALL_GRAPHS or save_composite):
+            #Show weather, as needed and if available
+            weather_by_type = {}
+            if show_weather_checkbox:
+                # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's 
+                # possible that there is only one of them. 
+                if pm_date_range_dict or date_range_dict:
+                    date_to_use = date_range_dict if date_range_dict else pm_date_range_dict
+                    # Load and parse weather data
+                    weather_by_type = get_weather_data(site, date_to_use)
+                    if weather_by_type:
+                        graph, axs = create_weather_graph(weather_by_type, site)
+                        output_graph(site, graph, GRAPH_WEATHER, 
+                                    save_files=save_files, make_all_graphs=MAKE_ALL_GRAPHS, data_to_graph=True)
+            
+        if not BEING_DEPLOYED_TO_STREAMLIT and (MAKE_ALL_GRAPHS or save_composite) and not do_aligned_dates:
             combine_images(site, month_locs, show_weather_checkbox)
 
     #If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
