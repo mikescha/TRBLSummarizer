@@ -1,45 +1,37 @@
 from __future__ import annotations
 
 
-#TODO next steps with the composite graph
-# Make the graph narrower, it's too wide now
-# For the composite...
-#   For each year
-#       Load all the sites from that year
-#       Sort by latitude
-#       Load the graphics for that site
-#       Make the composite with the site name on the left and the graphic on the right
-
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 DEBUG = False  #For testing whether the old and new functions give the same results
 PROFILING = False
 MAKE_ALL_GRAPHS = False
 ALIGN_DATES = False
-STANDARD_START  = "03/15"
+STANDARD_START  = "04/01"
 STANDARD_END    = "07/30"
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import seaborn as sns
+import seaborn as sns #TODO: try to get rid of this
+import math
 
 import matplotlib as mpl
 mpl.use('WebAgg') #Have to select the backend before doing other imports
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 from matplotlib.transforms import Bbox
-import matplotlib.dates as mdates
-
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import matplotlib.lines as mlines
-import matplotlib.dates as mdates
+from matplotlib.patches import Rectangle
+from matplotlib.patches import Circle
+from matplotlib.patches import FancyArrowPatch
+
 from matplotlib import colors
 from pathlib import Path
 import os
@@ -47,9 +39,7 @@ import calendar
 from collections import Counter
 from itertools import tee
 import random
-from PIL import Image as ImageModule
-from PIL.Image import Image
-from PIL import ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime as dt
 import glob
 
@@ -607,11 +597,6 @@ def load_data() -> pd.DataFrame:
         #remove any columns that are missing from the data file, so we don't ask for them as that will cause
         #an exception. Hopefully the rest of the code is robust enough to deal...
         usecols = [item for item in usecols if item not in missing_columns]
-
-        # df = pd.read_csv(file_name, 
-        #                 usecols = usecols,
-        #                 parse_dates = [data_col[DATE]],
-        #                 index_col = [data_col[DATE]])
 
         # 0) Read the file         
         df = pd.read_csv(file_name, usecols=usecols)
@@ -1857,6 +1842,56 @@ def load_recordings_hourly(parquet_path: Path, site_col: str, date_col: str, hou
     return df
 
 
+def draw_hatch_date_marker(ax, x, add_arrow=False):
+    # Cell center
+    cx = x + 0.45
+    cy = 0.4
+
+    # Draw "H" centered in the circle
+    ax.text(
+        cx, cy,
+        "H",
+        ha="center", va="center",
+        fontsize=8,
+        color="black",
+        zorder=16,
+    )
+    # cell center in data coords
+    cx = x + 0.45
+    cy = 0.35
+
+    # Draw circular outline marker (no fill)
+    ax.scatter(
+        [cx], [cy],
+        s=60, # marker area in points^2; tune this
+        facecolors="white",
+        edgecolors="black",
+        linewidths=0.25,
+        zorder=15,
+    )
+
+    if add_arrow:
+        # Arrow parameters
+        arrow_start_x = 1.5         # right edge of rectangle
+        arrow_end_x   = arrow_start_x - 2          # how far arrow points
+        arrow_y       = 0.8              # vertical center of the rect
+
+        arrow = FancyArrowPatch(
+            (arrow_start_x, arrow_y),
+            (arrow_end_x, arrow_y),
+            arrowstyle="->",
+            linewidth=0.5,
+            color="black",
+            mutation_scale=8,            # arrowhead size
+            transform=ax.transData,
+            antialiased=True,
+            zorder=16,
+        )
+        ax.add_patch(arrow)
+
+    return
+
+
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(site: str,
                  df: pd.DataFrame, 
@@ -1904,7 +1939,7 @@ def create_graph(site: str,
         top_band_in = 0     #nothing goes at the top
         row_height = 0.05    #half height or so
         bottom_band_in = 0  #no labels or legend
-        fig_w = FIG_W       #same width for now, may change later
+        fig_w = 5.5            #inches
 
     plot_in = row_count * row_height
     fig_h = top_band_in + plot_in + bottom_band_in
@@ -1922,6 +1957,13 @@ def create_graph(site: str,
     )
     axs = axs.flatten() #normalize axs to 1D 
     
+    fig_width_in = fig.get_size_inches()[0]
+    left_margin = 0.25 / fig_width_in
+    fig.subplots_adjust(left=left_margin)
+    print("fig size (in):", fig.get_size_inches())
+    for k, ax in enumerate(fig.axes):
+        print(k, ax.get_position())  # Bbox(x0=..., x1=...)
+
     # Convert inches -> figure fractions for subplot rectangle
     bottom = bottom_band_in / fig_h
     top = 1.0 - (top_band_in / fig_h)
@@ -2023,7 +2065,6 @@ def create_graph(site: str,
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
-        marker_size = 9 #for the overlay arrows, Determine marker size proportional to cell dimensions
 
         if graph_type == GRAPH_PM:
             #NOTE Add dates of first hatching if they exist
@@ -2031,34 +2072,53 @@ def create_graph(site: str,
                 for pulse in hatch_dates:
                     hatch_date = hatch_dates[pulse]
                     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
-                        hatch_index = 0  #Always drawing this on the first cell
-                        arrow = ax.plot(hatch_index, 0.5, 
-                                    marker='<',
-                                    markerfacecolor='black',
-                                    markeredgecolor='white',
-                                    markeredgewidth=1.0,  
-                                    #color='black', 
-                                    #mew=0.5,
-                                    markersize=marker_size, 
-                                    transform=ax.get_xaxis_transform(),
-                                    clip_on=False)
-                        for a in arrow:
-                            a.set_in_layout(False)
-
+                        x = 0
+                        draw_hatch_date_marker(ax, x, add_arrow=True)
                     elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
-                        hatch_index = df_to_graph.columns.get_loc(hatch_date)
-                        # Plot the "arrow" centered in the cell
-                        ax.plot(hatch_index+0.7, 0.5, 
-                                    marker='>', 
-                                    markerfacecolor='black',
-                                    markeredgecolor='white',
-                                    markeredgewidth=1.0,  
-                                    #color='black', 
-                                    #mew=0.5,
-                                    markersize=marker_size,
-                                    transform=ax.get_xaxis_transform())
+                        loc = df_to_graph.columns.get_loc(hatch_date)
+                        if not isinstance(loc, int):
+                            raise ValueError(f"Expected unique column for {hatch_date}, got {type(loc)}")
+                        x = float(loc)
+                        draw_hatch_date_marker(ax, x)
                     else:
                         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
+
+
+
+                # #do the overlay arrows for hatch date
+                # marker_width = 1 if do_aligned_dates else 1.0
+                # marker_size = 5 if do_aligned_dates else 1.0 
+                # for pulse in hatch_dates:
+                #     hatch_date = hatch_dates[pulse]
+                #     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
+                #         hatch_index = 0  #Always drawing this on the first cell
+                #         arrow = ax.plot(hatch_index, 0.5, 
+                #                     marker='|',
+                #                     markerfacecolor='black',
+                #                     markeredgecolor='white',
+                #                     markeredgewidth=marker_width,  
+                #                     #color='black', 
+                #                     #mew=0.5,
+                #                     markersize=marker_size, 
+                #                     transform=ax.get_xaxis_transform(),
+                #                     clip_on=False)
+                #         for a in arrow:
+                #             a.set_in_layout(False)
+
+                #     elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
+                #         hatch_index = df_to_graph.columns.get_loc(hatch_date)
+                #         # Plot the "arrow" centered in the cell
+                #         ax.plot(hatch_index+0.7, 0.5, 
+                #                     marker='>', 
+                #                     markerfacecolor='black',
+                #                     markeredgecolor='white',
+                #                     markeredgewidth=marker_width,  
+                #                     #color='black', 
+                #                     #mew=0.5,
+                #                     markersize=marker_size,
+                #                     transform=ax.get_xaxis_transform())
+                #     else:
+                #         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
                         
             #NOTE Dec 2024: Added extra lines to separate insects
             if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
@@ -2183,7 +2243,7 @@ def create_graph(site: str,
         transform=fig.transFigure,
         linewidth = BORDER_WIDTH, edgecolor="black",
         fill=False, 
-        zorder=20,)    
+        zorder=8,)    
     fig.add_artist(border)
 
     #if we want to add anything on top of the images, the time to do it is at the end
@@ -2243,7 +2303,7 @@ def add_pulse_overlays(graph, summarized_data:dict, date_range:dict):
 
 #Helper to ensure we make the filename consistently because this is done from multiple places
 def make_img_filename(site:str, graph_type:str, extra="") ->str:
-    filename = f"{site} - {graph_type}{extra}.png"
+    filename = f"{site}_{graph_type}_{extra}.png"
     return filename
 
 #Helper for when we need to remove a file
@@ -2265,13 +2325,14 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_al
     if BEING_DEPLOYED_TO_STREAMLIT:
         return
 
-    aligned_str = "(aligned)" if do_aligned_dates else ""
+    aligned_str = "aligned_" if do_aligned_dates else ""
     filename = make_img_filename(site, graph_type, extra=aligned_str)
     figure_path = FIGURE_DIR / filename
     # We aren't saving the "unclean" one any more, so technically this isn't necessary but doesn't hurt
     remove_file(figure_path)
 
-    cleaned_image_filename = make_img_filename(site, graph_type, extra=f"{aligned_str} clean")    
+    extra = aligned_str if do_aligned_dates else "Clean"
+    cleaned_image_filename = make_img_filename(site, graph_type, extra=extra)    
     cleaned_figure_path = FIGURE_DIR / cleaned_image_filename
     remove_file(cleaned_figure_path)
     if not delete_only:
@@ -2313,7 +2374,7 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_al
         else:
             trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1 #0.5 if graph_type == GRAPH_WEATHER else 0.2
         bbox_inches = Bbox.from_bounds(
-            0,                  # x0 (left)
+            0,              # x0 (left), -0.25 preserves the margin
             trim_amount_in,     # y0 (bottom trim in inches)
             fig_w,              # width
             fig_h - trim_amount_in,  # height
@@ -2328,7 +2389,7 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_al
     plt.close()
 
 
-def concat_images(*images: Image, is_legend:bool = False) -> Image:
+def concat_images(*images: Image.Image, is_legend:bool = False) -> Image.Image:
     """Generate composite of all supplied images."""
     # Get the widest width. This will be a graph, not the legend
     width = max(image.width for image in images)
@@ -2343,7 +2404,7 @@ def concat_images(*images: Image, is_legend:bool = False) -> Image:
     y_padding = 25
     height += y_padding * len(images)
 
-    composite = ImageModule.new('RGB', (width, height), color='white')
+    composite = Image.new('RGB', (width, height), color='white')
     
     # Paste each image below the one before it.
     y = 0 + y_padding
@@ -2357,7 +2418,7 @@ def concat_images(*images: Image, is_legend:bool = False) -> Image:
     return composite
 
 
-def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -> Image:
+def apply_decorations_to_composite(site:str, composite:Image.Image, month_locs:dict) -> Image.Image:
     scale = DPI/300
 
     #Make a new image that's a little bigger so we can add the site name at the top
@@ -2380,7 +2441,7 @@ def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -
     month_font_size = 36 * scale
     fudge = 10 * scale #for descenders
     
-    final = ImageModule.new(composite.mode, (width, new_height), color='white')
+    final = Image.new(composite.mode, (width, new_height), color='white')
 
     #Get the font path
     font_path = os.path.join(os.environ['WINDIR'], 'Fonts', GRAPH_FONT_TTF) 
@@ -2393,10 +2454,7 @@ def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -
 
     #Add the months
     if months_at_top:
-        if BEING_DEPLOYED_TO_STREAMLIT:
-            font = ImageFont.load_default(size=month_font_size)
-        else:
-            font = ImageFont.truetype(font_path, size=month_font_size)
+        font = ImageFont.truetype(font_path, size=month_font_size)
         v_pos = title_height + month_row_height - fudge
         month_row_width = margin_right - margin_left
         
@@ -2423,6 +2481,246 @@ def apply_decorations_to_composite(site:str, composite:Image, month_locs:dict) -
 
     return final
 
+#Code from ChatGPT to draw the labels without clipping
+def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_width: int) -> list[str]:
+    """
+    Word-wrap `text` into lines that fit within `max_width` pixels.
+    Preserves existing newlines as paragraph breaks.
+    """
+    lines: list[str] = []
+    for para in text.splitlines() or [""]:
+        words = para.split()
+        if not words:
+            lines.append("")  # blank line
+            continue
+
+        cur = words[0]
+        for w in words[1:]:
+            trial = f"{cur} {w}"
+            if draw.textlength(trial, font=font) <= max_width:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = w
+        lines.append(cur)
+    return lines
+
+
+def draw_text_box(
+    img: Image.Image,
+    text: str,
+    box: tuple[int, int, int, int],   # (x0, y0, x1, y1)
+    font: ImageFont.FreeTypeFont,
+    fill=(0, 0, 0),
+    align="left",
+    line_spacing_px: int = 2,
+    padding_px: int = 8,
+    ellipsize: bool = True,
+) -> bool:
+    """
+    Draw wrapped text within box. Returns True if all text fit, False if truncated.
+    """
+    draw = ImageDraw.Draw(img)
+    x0, y0, x1, y1 = box
+    x0 += padding_px
+    y0 += padding_px
+    x1 -= padding_px
+    y1 -= padding_px
+
+    max_w = max(1, x1 - x0)
+    max_h = max(1, y1 - y0)
+
+    lines = wrap_text(draw, text, font, max_w)
+
+    # Compute line height (font metrics are more reliable than guessing)
+    ascent, descent = font.getmetrics()
+    line_h = ascent + descent + line_spacing_px
+
+    y = y0
+    fit_all = True
+    i = 100 #max
+    for i, line in enumerate(lines):
+        if y + line_h > y0 + max_h:
+            fit_all = False
+            break
+
+        if align == "center":
+            w = draw.textlength(line, font=font)
+            x = x0 + (max_w - w) / 2
+        elif align == "right":
+            w = draw.textlength(line, font=font)
+            x = x1 - w
+        else:
+            x = x0
+
+        draw.text((x, y), line, font=font, fill=fill)
+        y += line_h
+
+    # If it didn't fit, optionally add ellipsis to the last visible line
+    if not fit_all and ellipsize:
+        # Determine where the last visible line was drawn
+        last_y = y - line_h
+        if last_y >= y0:
+            # Clear and redraw the last line with ellipsis (simple overwrite approach)
+            # (If you need true "clear", draw a filled rectangle behind the text area.)
+            # Build truncated version of the *next* line or current line
+            remaining_line = lines[i] if i < len(lines) else ""
+            base = remaining_line
+            ell = "…"
+
+            # Find max text that fits with ellipsis
+            while base and draw.textlength(base + ell, font=font) > max_w:
+                base = base[:-1].rstrip()
+            if not base:
+                base = ell
+            else:
+                base = base + ell
+
+            # Redraw ellipsized line at last_y
+            if align == "center":
+                w = draw.textlength(base, font=font)
+                x = x0 + (max_w - w) / 2
+            elif align == "right":
+                w = draw.textlength(base, font=font)
+                x = x1 - w
+            else:
+                x = x0
+
+            draw.text((x, last_y), base, font=font, fill=fill)
+
+    return fit_all
+
+
+# Make the composite with the site name on the left and the graphic on the right
+def concat_aligned_images(image_dict:dict, data_dict:dict):
+    """Generate composite of all supplied images."""
+    # Get the widest width. This will be a graph, not the legend
+    img_width = max(image.width for image in image_dict.values())
+    label_width = 250
+    width = img_width + label_width
+
+    # Add up all the heights.
+    height = sum(image.height for image in image_dict.values())
+
+    #put some space between each graph
+    y_padding = 0
+    height += y_padding * len(image_dict)
+
+    composite = Image.new('RGB', (width, height), color='white')
+    
+    # Paste each image below the one before it.
+    #Get the font path
+    scale = DPI/300
+    font_path = os.path.join(os.environ['WINDIR'], 'Fonts', GRAPH_FONT_TTF) 
+    label_font_size = 24 * scale
+    font = ImageFont.truetype(font_path, size=label_font_size)
+
+    # Put the label on the left, and the image to the right
+    y = 0 + y_padding
+    graph_start = dt.strptime(f"2024/{STANDARD_START}", "%Y/%m/%d")
+    graph_end   = dt.strptime(f"2024/{STANDARD_END}", "%Y/%m/%d")
+    width_in_days = (graph_end - graph_start).days + 1
+    pixels_per_day = img_width / width_in_days
+
+    for label, image in image_dict.items():
+        x = 0  # left edge of text
+        text_box = (0, y, label_width, y+image.height)
+        draw_text_box(composite, label, text_box, font, fill="black", align="left")
+
+        img_x = x + label_width
+        composite.paste(image, (img_x, y))
+
+        #Add decorations for Abandoned dates
+        for p in data_dict[label]:
+            val = data_dict[label][p]
+            if val == "ND":
+                continue
+            partial = False
+            if val[-1:].lower() == "p":
+                partial = True
+                val = val[:-1]
+
+            draw = ImageDraw.Draw(composite)
+            abnd_date = dt.strptime(f"{val}", "%m/%d/%Y")
+            year = dt.strptime(val, "%m/%d/%Y").year
+            graph_start = dt.strptime(f"{year}/{STANDARD_START}", "%Y/%m/%d")
+
+            # Pixel edges: length = width_in_days + 1
+            # Using floor is usually the closest match to how raster bins “own” pixels
+            edges = [int(math.floor(i * image.width / width_in_days)) for i in range(width_in_days + 1)]
+
+            # For a given abandoned date:
+            day_i = (abnd_date - graph_start).days  # 0-based
+
+            # The constants below are extra rounding to fit into the same size day as the graph drew
+            left  = img_x + edges[day_i] + 3
+            right = img_x + edges[day_i + 1] - 3  
+
+            top    = y + 1
+            bottom = y + image.height - 2
+            abnd_rect_color = "darkblue" if partial else "crimson" 
+            draw.rectangle([(left, top), (right, bottom)], 
+                           outline = abnd_rect_color, 
+                           fill = abnd_rect_color,
+                           width=0)
+        y += image.height + y_padding
+
+    return composite
+
+
+def sort_by_latitude(files:list) -> list:
+    ''' For each file, get the site name (the first characters up to the -) and then use that to get the latitude
+        Put it all into a dict with latitude as keys
+        Sort the dict by keys
+        Return the dict values (the filenames) as a list
+    '''
+    sorted_files = {}
+    if files:
+        file_list = {}
+        for filename in files:
+            site = Path(filename).name.split("_",1)[0] 
+            lat = get_site_info(site, ["Latitude"])
+            if not "Latitude" in lat.keys():
+                pass
+
+            file_list[float(lat["Latitude"])] = filename
+
+        sorted_files = dict(sorted(file_list.items(), reverse=True))
+
+    return list(sorted_files.values())
+
+def combine_aligned_images():
+    years = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
+
+    for year in years:
+        final_path = FIGURE_DIR / f"{year} Aligned.jpg"
+        remove_file(final_path)    
+
+        #Get all the matching images for this year by the string in the filename
+        pattern = f"{year}*aligned*"
+        matching_files = glob.glob(os.path.join(FIGURE_DIR, pattern))
+
+        #Sort by the latitude of the site
+        sorted_files = sort_by_latitude(matching_files)
+
+        #Make a dict of the {pretty_name:file}
+        images = {}
+        data_dict = {}
+        for filename in sorted_files:
+            site = Path(filename).name.split("_",1)[0]
+            pretty_name = get_pretty_name_for_site(site)
+            with Image.open(filename) as im:
+                images[pretty_name] = im.copy()
+            data_dict[pretty_name] = get_site_info(site, ["p1abandon","p2abandon","p3abandon","p4abandon",])
+        #Concat it all together
+        final = concat_aligned_images(images, data_dict)
+        final.save(final_path)
+
+    return
+
+
+
+
 # Load all the images that match the site name, combine them into a single composite,
 # and then save that out
 def combine_images(site:str, month_locs:dict, include_weather:bool):
@@ -2430,11 +2728,11 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
     if len(month_locs) == 0:
         return
     
-    composite_filename = make_img_filename(site, "composite")
+    composite_filename = make_img_filename(site, "Composite")
     composite_path = FIGURE_DIR / composite_filename
     remove_file(composite_path)
 
-    pattern = f"{site} -*clean.png"
+    pattern = f"{site}_*Clean.png"
     matching_files = glob.glob(os.path.join(FIGURE_DIR, pattern))
 
     #Drop files we don't want
@@ -2452,12 +2750,22 @@ def combine_images(site:str, month_locs:dict, include_weather:bool):
      
     if len(site_fig_dict): 
         # exclude weather for now, we need to add it after the legend
-        images = [ImageModule.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != GRAPH_WEATHER] 
+        #images = [Image.open(filename) for graph_type,filename in site_fig_dict.items() if graph_type != GRAPH_WEATHER] 
+        image_list = []
+        for graph_type,filename in site_fig_dict.items():
+            if graph_type != GRAPH_WEATHER:
+                with Image.open(filename) as im:
+                    image_list.append(im.copy())
+                
         # add the legend
-        image_list = [*images, ImageModule.open(legend)]
+        with Image.open(legend) as im:
+            image_list.append(im.copy())
+
         # add the weather graph at the end, if it's there
         if GRAPH_WEATHER in site_fig_dict.keys() and include_weather:
-            image_list.append(ImageModule.open(site_fig_dict[GRAPH_WEATHER]))
+            with Image.open(site_fig_dict[GRAPH_WEATHER]) as im:
+                image_list.append(im.copy())
+
         composite = concat_images(*image_list)
 
         final = apply_decorations_to_composite(site, composite, month_locs)
@@ -3116,6 +3424,13 @@ def get_month_locs(cols: pd.Index) -> dict[str, list[int]]:
 
 def main():
     global MAKE_ALL_GRAPHS
+
+
+    with timed("Load summary data"):
+        # Load all the summary data
+        summary_df = load_summary_data()
+
+    #combine_aligned_images()
     init_logging()
 
     # Set up the sidebar with three zones so it looks like we want
@@ -3135,7 +3450,6 @@ def main():
         )
         show_station_info_checkbox = st.checkbox('Show station info', value=True)
         show_weather_checkbox = st.checkbox('Show station weather', value=True)
-        show_PM_dates = st.checkbox('Graph derived pulse dates', value=False)
 
     with container_bottom:
         st.write("Contact wendy.schackwitz@gmail.com with any questions")
@@ -3161,10 +3475,6 @@ def main():
         # Nuke the original data, hopefully this frees up memory
         del df_original
         gc.collect()
-
-    with timed("Load summary data"):
-        # Load all the summary data
-        summary_df = load_summary_data()
 
     save_files = False
     save_composite = False
@@ -3525,6 +3835,8 @@ def main():
             load_weather_data_from_file.clear()
         
         plt.close("all")
+    if do_aligned_dates:
+            combine_aligned_images()
     return
 
 def profile_main():

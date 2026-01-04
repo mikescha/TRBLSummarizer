@@ -3852,7 +3852,6 @@ ws_rush_ranch_backup-2018-05-20_14-00.flac
 ws_rush_ranch_backup-2018-05-20_15-00.flac
 ws_rush_ranch_backup-2018-05-20_16-10.flac
 ws_rush_ranch_backup-2018-05-20_17-10.flac
-ws_rush_ranch_backup-2018-05-22_07-00.flac
 ws_rush_ranch_backup-2018-05-25_08-50.flac
 ws_rush_ranch_backup-2018-05-25_10-30.flac
 ws_rush_ranch_backup-2018-05-25_12-00.flac
