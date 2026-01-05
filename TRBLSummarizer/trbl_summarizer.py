@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 
-
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
-DEBUG = False  #For testing whether the old and new functions give the same results
 PROFILING = False
 MAKE_ALL_GRAPHS = False
 ALIGN_DATES = False
@@ -31,6 +29,9 @@ import matplotlib.lines as mlines
 from matplotlib.patches import Rectangle
 from matplotlib.patches import Circle
 from matplotlib.patches import FancyArrowPatch
+from matplotlib.ticker import NullLocator, NullFormatter
+from matplotlib.backend_bases import RendererBase
+from matplotlib.font_manager import FontProperties
 
 from matplotlib import colors
 from pathlib import Path
@@ -45,19 +46,22 @@ import glob
 
 
 #Crap that I needed to fix pylance errors
-from typing import cast
 from collections.abc import Sequence
+from typing import Any, Dict, Tuple, Protocol, cast
 
 #to force garbage collection and reduce memory use
 import gc
 
 #For profiling
-import time
+if PROFILING:
+    import cProfile
+    import pstats
+
+    import traceback
+    from matplotlib.backend_bases import FigureCanvasBase
+
 from contextlib import contextmanager
-import cProfile
-import pstats
-
-
+import time
 @contextmanager
 def timed(label: str):
     if not PROFILING:
@@ -68,6 +72,21 @@ def timed(label: str):
     dt = time.perf_counter() - t0
     print(f"[TIMER] {label}: {dt:.3f}s")
 
+
+import matplotlib.text as mtext
+
+def count_text_artists(fig):
+    texts = [a for a in fig.findobj(mtext.Text) if a.get_visible()]
+    # Filter out empty strings (Matplotlib has a lot of empty placeholders)
+    texts = [t for t in texts if (t.get_text() or "").strip()]
+    return len(texts), texts
+
+import io
+def st_image_figure(fig, *, dpi=120):
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=None)  # keep None
+    buf.seek(0)
+    st.image(buf)
 
 # Constants and Globals
 #
@@ -123,8 +142,8 @@ data_col = {
     HOUR     : 'hour', 
     DATE     : 'date',
     tag_YNC_p2   : 'tag<YNC-p2>', #Young nestling call pulse 2
-    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 2
-    tag_YNC_p4   : 'tag<YNC-p4>', #Young nestling call pulse 2
+    tag_YNC_p3   : 'tag<YNC-p3>', #Young nestling call pulse 3
+    tag_YNC_p4   : 'tag<YNC-p4>', #Young nestling call pulse 4
     tag_p1a      : 'tag<p1a>',
     tag_p1c      : 'tag<p1c>',
     tag_p1f      : 'tag<p1f>',
@@ -181,10 +200,9 @@ site_columns = {
     'site_id'   : 'site_id'
 }
 
-songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1]
-song_cols = [data_col[s] for s in songs]
-all_songs = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1, SIMPLE_CALL2] 
-all_song_cols = [data_col[s] for s in all_songs]
+SONGS = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1]
+SONG_COLS = [data_col[s] for s in SONGS]
+ALL_SONGS = [MALE_SONG, COURT_SONG, ALTSONG2, ALTSONG1, SIMPLE_CALL2] 
 
 MANUAL_TAGS = [tag_mh, tag_ws, tag_]
 MINI_MANUAL_TAGS = [tag_mhh, tag_mhm, tag_wsm]
@@ -589,7 +607,7 @@ def load_data() -> pd.DataFrame:
 
         #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
         usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
-        for song in all_songs:
+        for song in ALL_SONGS:
             usecols.append(data_col[song])
         for tag in ALL_TAGS:
             usecols.append(data_col[tag])
@@ -612,6 +630,58 @@ def load_data() -> pd.DataFrame:
     # We've loaded all the data, let's do a quick error check
     check_for_tag_errors(combined_df)
     return combined_df
+
+def load_data_for_site(site:str):
+    '''
+    Given a site, retrieve the data set for that 
+    
+    :param site: Description
+    :type site: str
+    '''
+    # df = pd.DataFrame()
+
+    # #Figure out which data file we need
+    year = site[0:4]
+    # file_name = DATA_DIR / f"data {year}.csv"
+    # headers = pd.read_csv(file_name, nrows=0).columns.tolist()
+    # missing_columns = confirm_columns(data_col, headers, file_name)
+
+    # #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
+    # usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]] 
+    # for song in ALL_SONGS:
+    #     usecols.append(data_col[song])
+    # for tag in ALL_TAGS:
+    #     usecols.append(data_col[tag])
+    # #remove any columns that are missing from the data file, so we don't ask for them as that will cause
+    # #an exception. Hopefully the rest of the code is robust enough to deal...
+    # usecols = [item for item in usecols if item not in missing_columns]
+
+    # # 0) Read the file
+    # df = pd.read_csv(file_name, usecols=usecols)
+    # df = df[df[SITE] == site]
+    # # 1) Convert the date column explicitly
+    # df['date'] = pd.to_datetime(df['date'], format='mixed', dayfirst=False)
+
+    # # 2) Make it the index
+    # df = df.set_index('date')
+
+    pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]] 
+    for song in ALL_SONGS:
+        pusecols.append(data_col[song])
+    for tag in ALL_TAGS:
+        pusecols.append(data_col[tag])
+
+    pfile_name = DATA_DIR / f"data {year}.parquet"
+    pusecols.append("dt")
+
+    pdf = pd.read_parquet(pfile_name, columns=pusecols)
+    pdf = pdf[pdf[SITE] == site]
+    pdf = pdf.set_index("dt")
+    pdf.index = pd.DatetimeIndex(pdf.index).normalize()
+    df = clean_data(pdf, [site])
+    df = df.rename_axis("date")
+    
+    return df
 
 
 def load_pm_data(site:str) -> pd.DataFrame:
@@ -907,7 +977,7 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     df_clean = df_clean.replace('---', MISSING_DATA_FLAG)
     
     # For each type of song, convert its column to be numeric instead of a string so we can run pivots
-    for s in all_songs + ALL_TAGS:
+    for s in ALL_SONGS + ALL_TAGS:
         if data_col[s] in df_clean.columns:
             df_clean[data_col[s]] = pd.to_numeric(df_clean[data_col[s]])
     return df_clean
@@ -918,18 +988,6 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # Data Analysis
 # 
 #  
-
-# Get the subset of rows where there's at least one tag, i.e. the count of any tag is greater than zero
-# See here for an explanation of the next couple lines: 
-# https://stackoverflow.com/questions/45925327/dynamically-filtering-a-pandas-dataframe
-# filter_str is '>0' by default because that's what most queries involve, but if a 
-# different string is passed in then we use that instead. 
-def old_filter_df_by_tags(df:pd.DataFrame, target_tags:list, filter_str='>0', exclude_tags=[]) -> pd.DataFrame:
-    # This is an alternative to: tagged_rows = site_df[((site_df[columns[tag_wse]]>0) | (site_df[columns[tag_mhh]]>0) ...
-    query  =  '(' + ' | '.join([f'`{tag}`{filter_str}' for tag in target_tags]) + ')' 
-    query += ' & ~'.join([f'`{tag}`{filter_str}' for tag in exclude_tags])
-    filtered_df = df.query(query)
-    return filtered_df
 
 import operator as op
 
@@ -971,44 +1029,6 @@ def normalize_pt(pt:pd.DataFrame, date_range_dict:dict) -> pd.DataFrame:
     temp = temp.astype(float) #convert all numeric data to floats
 
     return temp
-
-# Generate the pivot table for the site
-def old_make_pivot_table(df: pd.DataFrame, date_range_dict:dict, preserve_edges=False, labels=[], label_dict={}) -> pd.DataFrame:
-    if len(df):
-        if len(label_dict):
-            # Assumes dict is: {"column to filter on": "column to count"}
-            # In this case, we filter to only columns that match the key (because the DF being passed in has
-            # columns matching any key in the dict), and then count the columns in that subset that are non-zero.
-            # And then, the result is all merged together
-            aggregate_df = pd.DataFrame()
-            for tag in label_dict:
-                temp = filter_df_by_tags(df, [tag])
-                if DEBUG:
-                    temp2 = old_filter_df_by_tags(df, [tag])
-                    assert temp.equals(temp2), "filter_df_by_tags and old_filter_df_by_tags returned different results"
-
-                # If the value in a column is >=1, count it. To achieve this, the aggfunc below sums up 
-                # the number of times that the test 'x>=1' is true
-                temp_pt = pd.pivot_table(temp, values = [label_dict[tag]], index = [data_col[DATE]], 
-                                    aggfunc = lambda x: (x>=1).sum())
-                if len(temp_pt):
-                    temp_pt.rename(columns={label_dict[tag]:'temp'}, inplace=True) #rename so that in the merge the cols are added
-                    aggregate_df = pd.concat([aggregate_df, temp_pt]).groupby('date').sum()
-            #rename the index so that it's the song name            
-            aggregate_df.rename(columns={'temp':list(label_dict.keys())[0]}, inplace=True) 
-        else:
-            #If we were passed a list of labels instead of a dict, then use the same logic to count songs
-            aggregate_df = pd.pivot_table(df, values = labels, index = [data_col[DATE]], 
-                                    aggfunc = lambda x: (x>=1).sum()) 
-
-        if preserve_edges:
-            # For every date where there is a tag, make sure that the value is non-zero. Then, when we do the
-            # graph later, we'll use this to show where the edges of the analysis were
-            aggregate_df = aggregate_df.replace(to_replace=0, value=PRESERVE_EDGES_FLAG)
-
-        return normalize_pt(aggregate_df, date_range_dict)
-    else:
-        return pd.DataFrame()
 
 
 def make_pivot_table(df, date_range_dict, preserve_edges=False, labels=None, label_dict=None):
@@ -1472,11 +1492,11 @@ def set_global_theme():
 
 
 def output_cmap():
-    #Save the legend
+    #Save the legend if one doesn't exist; if I update the code, need to delete the file to regenerate it
     figure_path = FIGURE_DIR / LEGEND_NAME
-    if os.path.exists(figure_path):
-        os.remove(figure_path)
-    plt.savefig(figure_path, dpi='figure', bbox_inches='tight', pad_inches=0)    
+    if not os.path.exists(figure_path):
+        # os.remove(figure_path)
+        plt.savefig(figure_path, dpi='figure',  bbox_inches='tight', pad_inches=0)   
 
 
 def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
@@ -1613,6 +1633,7 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
 
     if not make_all_graphs:
         st.pyplot(fig)
+        #st_image_figure(fig)
 
     if save_files:
         output_cmap()
@@ -1627,64 +1648,42 @@ def get_days_per_month(date_list:list) -> dict:
     months = [pd.to_datetime(date).strftime('%B') for date in date_list]
     return Counter(months)
 
-#Take the list of month length counts we got from the function above, and draw lines at those positions. 
-#Skip the last one so we don't draw over the border
-def draw_axis_labels(fig: Figure, 
-                     month_lengths:dict, 
-                     skip_month_names=False,
-                     y: float=0, bottom:float=0, top:float=0,
-                     do_aligned_dates:bool = False,
-):
-    
+
+
+def draw_axis_labels(fig, month_lengths: dict, skip_month_names=False,
+                     y: float = 0, bottom: float = 0, top: float = 0,
+                     do_aligned_dates: bool = False):
+
+    def approx_text_width_px(text: str, fontsize_pt: float) -> float:
+        # Rule-of-thumb: average Latin glyph is ~0.5–0.6 em.
+        # 1 pt = 1/72 inch, but we can stay relative because we compare widths in px.
+        # In practice: width ≈ fontsize_px * 0.55 * n_chars
+        return fontsize_pt * 1.333 * 0.55 * len(text)  # 1.333 ≈ 96/72 (px per pt at 96 dpi)
+
+
     def draw_month_label_if_fits(
         ax,
-        fig,
         text: str,
         x_start: float,
         x_end: float,
-        y: float,
+        y_axes: float,
         *,
         fontsize=AXIS_FONT_SIZE,
         fontfamily=GRAPH_FONT,
         pad_px=4,
         **text_kwargs,
     ):
-        """
-        Draw `text` centered between x_start and x_end only if it fits
-        in pixel space.
-        """
-        # Ensure we have a renderer
-        fig.canvas.draw()
-        renderer = fig.canvas.get_renderer()
-
-        # 1) Measure available pixel width
-        x0_disp, _ = ax.transData.transform((x_start, y))
-        x1_disp, _ = ax.transData.transform((x_end, y))
+        # available width in display pixels
+        x0_disp, _ = ax.transData.transform((x_start, 0))
+        x1_disp, _ = ax.transData.transform((x_end, 0))
         available_px = abs(x1_disp - x0_disp)
 
-        # 2) Create a temporary text object to measure
-        tmp = ax.text(
-            (x_start + x_end) / 2,
-            y,
-            text,
-            ha="center",
-            va="center",
-            fontsize=fontsize,
-            fontfamily=fontfamily,
-            alpha=0,          # invisible
-            **text_kwargs,
-        )
+        text_px = approx_text_width_px(text, fontsize)
 
-        bbox = tmp.get_window_extent(renderer=renderer)
-        text_px = bbox.width
-
-        tmp.remove()
-
-        # 3) Decide whether to draw
         if text_px + pad_px <= available_px:
             ax.text(
                 (x_start + x_end) / 2,
-                y,
+                y_axes,
                 text,
                 ha="center",
                 va="bottom",
@@ -1694,44 +1693,36 @@ def draw_axis_labels(fig: Figure,
                 **text_kwargs,
             )
 
-
-    mpl.rcParams["figure.raise_window"] = True
-
-    ax_count = len(fig.get_axes())
-    ax = fig.get_axes()[ax_count - 1]
+    ax = fig.get_axes()[-1]
     x_min, x_max = ax.get_xlim()
-    day_width = 1/(x_max-x_min)
-    x = 0
-    x_days = 0
-    for month in month_lengths:
-        # Center the label on the middle of the month, which is the #-days-in-the-month/2
-        center_pt = int((month_lengths[month])/2)
-        mid = x + (center_pt * day_width)
+
+    x_fig = 0.0
+    x_days = 0.0
+    day_width = 1.0 / (x_max - x_min)
+
+    for month, n_days in month_lengths.items():
         if not skip_month_names and not do_aligned_dates:
             draw_month_label_if_fits(
-                ax, fig,
-                month, # name of the month
-                x_days, x_days+month_lengths[month],
+                ax,
+                month,
+                x_days,
+                x_days + n_days,
                 y,
             )
-#            fig.text(
-            #     x = mid,
-            #     y = y,
-            #     s = month,
-            #     fontsize=AXIS_FONT_SIZE, fontfamily=GRAPH_FONT,
-            #     transform=fig.transFigure,  # THIS MUST BE HERE to get the units right
-            # )
-        x_days += month_lengths[month] 
-        x += month_lengths[month] * day_width
-        # draw vertical line in figure coords
-        line = mlines.Line2D([x, x], [bottom+(BORDER_WIDTH/200), top-(BORDER_WIDTH/200)],
-                             transform=fig.transFigure,
-                             color = "black",
-                             linewidth=BORDER_WIDTH,
-                             alpha=1,
+
+        x_days += n_days
+        x_fig += n_days * day_width
+
+        line = mlines.Line2D(
+            [x_fig, x_fig],
+            [bottom + (BORDER_WIDTH / 200), top - (BORDER_WIDTH / 200)],
+            transform=fig.transFigure,
+            color="black",
+            linewidth=BORDER_WIDTH,
+            alpha=1,
         )
         fig.add_artist(line)
-    
+
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
 def plot_title(fig:Figure, title:str, y:float=1.0):
@@ -1957,12 +1948,24 @@ def create_graph(site: str,
     )
     axs = axs.flatten() #normalize axs to 1D 
     
+
+    def disable_ticks(ax):
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        for axis in (ax.xaxis, ax.yaxis):
+            axis.set_major_locator(NullLocator())
+            axis.set_minor_locator(NullLocator())
+            axis.set_major_formatter(NullFormatter())
+            axis.set_minor_formatter(NullFormatter())
+
+    for ax in axs:
+        disable_ticks(ax)
+
+
     fig_width_in = fig.get_size_inches()[0]
     left_margin = 0.25 / fig_width_in
     fig.subplots_adjust(left=left_margin)
-    print("fig size (in):", fig.get_size_inches())
-    for k, ax in enumerate(fig.axes):
-        print(k, ax.get_position())  # Bbox(x0=..., x1=...)
 
     # Convert inches -> figure fractions for subplot rectangle
     bottom = bottom_band_in / fig_h
@@ -2206,34 +2209,22 @@ def create_graph(site: str,
                                             fc='none', ec='C0', lw=0.5)
                     fig.add_artist(rect)
        
-    # Add the vertical lines and month names
-    text_offset_in = LABEL_OFFSET
-    text_y = bottom - (text_offset_in / fig_h)
-    text_y = -0.65
-    draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top, do_aligned_dates=do_aligned_dates)
-
     #Draw a black box over every missing date
-    #ax0 = fig.get_axes()[0]
     start_day = pd.Timestamp(df.columns.min()).normalize()
     last_day = pd.Timestamp(df.columns.max()).normalize()
-    # draw_missing_day_boxes(
-    #     fig,
-    #     ax0,
-    #     missing_days,
-    #     bottom=bottom,
-    #     top=top,
-    #     color="black",
-    #     alpha=0.1,
-    #     start_day=start_day,
-    #     last_day=last_day,
-    # )
-
     overlay_missing_days_hatch(
         axs,
         missing_days,
         start_day=start_day,
         last_day=last_day,
     )
+
+    # Add the vertical lines and month names
+    text_offset_in = LABEL_OFFSET
+    text_y = bottom - (text_offset_in / fig_h)
+    text_y = -0.65
+    draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top, do_aligned_dates=do_aligned_dates)
+
 
     # Draw a bounding rectangle around everything except the caption
     border = Rectangle(
@@ -2245,6 +2236,7 @@ def create_graph(site: str,
         fill=False, 
         zorder=8,)    
     fig.add_artist(border)
+
 
     #if we want to add anything on top of the images, the time to do it is at the end
     #add_watermark(title)
@@ -2780,7 +2772,8 @@ def output_graph(site:str, graph: Figure, graph_type:str, save_files=False, make
         else:
             #If there is data in the graph, then write it to the screen if we are doing one graphic at a time
             if graph.get_axes():
-                st.write(graph)
+                #st_image_figure(graph)
+                st.pyplot(graph)
         
         #Save it to disk if we are either doing all the graphs, or the Save checkbox is checked
         if make_all_graphs or save_files:
@@ -3165,7 +3158,7 @@ def check_tags(df: pd.DataFrame):
     non_zero_rows = filter_df_by_tags(df, [data_col[tag_mhm], 
                                             data_col[tag_wsm]])
     bad_rows = pd.concat([bad_rows,
-                            filter_df_by_tags(non_zero_rows, song_cols, f'=={MISSING_DATA_FLAG}')])
+                            filter_df_by_tags(non_zero_rows, SONG_COLS, f'=={MISSING_DATA_FLAG}')])
 
 
     #P1N, P2N throws an error if it's missing alternative song
@@ -3211,7 +3204,7 @@ def make_final_pt(site_pt: pd.DataFrame, columns: list, friendly_names: dict) ->
 def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
     pt_site = pt_site.transpose()
     output = {}
-    for song in song_cols:
+    for song in SONG_COLS:
         output[song] = {}
         d = pt_site[pt_site[song]>0]
         if d.empty:
@@ -3222,7 +3215,7 @@ def get_first_and_last_dates(pt_site: pd.DataFrame) -> dict:
             output[song]['First count'] = str(d.iloc[0][song])
     
     pt_site.sort_index(ascending=False, inplace=True)
-    for song in song_cols:
+    for song in SONG_COLS:
         d = pt_site[pt_site[song]>0]
         if d.empty:
             output[song]['Last'] = 'n/a'
@@ -3238,11 +3231,11 @@ def get_ratio(site):
     Read the ratios file and retrieve the value for this site
     '''
     all_ratios = pd.read_csv(r"./TRBLSummarizer/nestling-to-female-ratios.csv")
-    ratio_rows = all_ratios[all_ratios["Site Name"]==site]
+    ratio_rows = all_ratios[all_ratios["Site_Name"]==site]
     if len(ratio_rows):
         ratio_str = "Nestling-to-Female Ratios: "
         for i, (index, row) in enumerate(ratio_rows.iterrows()): 
-            ratio = "n/a" if pd.isna(row["Ratio"]) else f"{row["Ratio"]:.2f}"
+            ratio = "n/a" if pd.isna(row["ARI"]) else f"{row["ARI"]:.2f}"
             ratio_str += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}"
             if i < (len(ratio_rows) - 1):
                 ratio_str += ",  "
@@ -3250,11 +3243,11 @@ def get_ratio(site):
         ratio_str2 = "Nestling-to-Female Ratios: "
         ratio_str2 += "  \n" if len(ratio_rows) > 1 else ""
         for i, (index, row) in enumerate(ratio_rows.iterrows()): 
-            ratio = "n/a" if pd.isna(row["Ratio"]) else f"{row["Ratio"]:.2f}"
+            ratio = "n/a" if pd.isna(row["ARI"]) else f"{row["ARI"]:.2f}"
             ratio = ratio.replace("inf", "∞")
             ratio_str2 += f"**{row["Pulse Name"][-2:].capitalize()}**: {ratio}, " + \
-                          f"Inc days: {row["Incubation Days"]} ({row["Total Female Calls"]} calls), " + \
-                          f"Brood days: {row["Nestling Days"]} ({row["Total Nestling Calls"]} calls)" 
+                          f"Inc days: {row["Incubation_Days"]} ({row["Total_Female_Calls"]} calls), " + \
+                          f"Brood days: {row["Nestling_Days"]} ({row["Total_Nestling_Calls"]} calls)" 
             if i < (len(ratio_rows) - 1):
                 ratio_str2 += "  \n"
 
@@ -3319,12 +3312,9 @@ def do_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.DataFrame
     #       The number of recordings from that set that have AltSong >= 1 
     #     
     df_manual = filter_df_by_tags(df_site, MANUAL_COLS)
-    pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
-    if DEBUG:
-        pt_manual_old = old_make_pivot_table(df_manual,  date_range_dict, labels=song_cols)
-        assert_df_equal(pt_manual_old, pt_manual, "do_manual")
-
+    pt_manual = make_pivot_table(df_manual,  date_range_dict, labels=SONG_COLS)
     return pt_manual, not df_manual.empty
+
 
 def do_mini_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.DataFrame, bool]:
     # 1. Select all rows with one of the following tags:
@@ -3332,16 +3322,11 @@ def do_mini_manual(df_site: pd.DataFrame, date_range_dict:dict) -> tuple[pd.Data
     # 2. Make a pivot table as above
     #   
     df_mini_manual = filter_df_by_tags(df_site, MINI_MANUAL_COLS)
-    pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
-    if DEBUG:
-        pt_mini_manual_old = old_make_pivot_table(df_mini_manual, date_range_dict, labels=song_cols)
-        assert_df_equal(pt_mini_manual_old, pt_mini_manual, "do_mini_manual")
-
+    pt_mini_manual = make_pivot_table(df_mini_manual, date_range_dict, labels=SONG_COLS)
     return pt_mini_manual, not df_mini_manual.empty
 
 
 def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.DataFrame, bool]:
-
     pt_edge = pd.DataFrame()    
     have_edge_data = False
 
@@ -3358,9 +3343,6 @@ def do_edge(df_site: pd.DataFrame, date_range_dict:dict, site:str) -> tuple[pd.D
         df_for_tag = filter_df_by_tags(df_site, [tag])
         have_edge_data = have_edge_data or len(df_for_tag)>0
         pt_for_tag = make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = {tag:new_pn_tag_map[tag]})
-        if DEBUG:
-            old_pt_for_tag = old_make_pivot_table(df_for_tag, date_range_dict, preserve_edges=True, label_dict = {tag:new_pn_tag_map[tag]})
-            assert_df_equal(old_pt_for_tag, pt_for_tag, "do_edge")
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
     else:
@@ -3459,8 +3441,8 @@ def main():
             MAKE_ALL_GRAPHS = False
 
     #Load all the data for most of the graphs
-    with timed("Load all tag data"):
-        df_original = load_data()
+    # with timed("Load all tag data"):
+    #     df_original = load_data()
 
     #Load the hourly groupings for the PM graphs
     parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
@@ -3469,12 +3451,12 @@ def main():
     #Get the list of sites that we're going to do reports for, and then remove all the other data
     with timed("Clean data"):
         site_list = get_target_sites()
-        df = clean_data(df_original, site_list)
+    #     df = clean_data(df_original, site_list)
 
-    with timed("Free memory"):
-        # Nuke the original data, hopefully this frees up memory
-        del df_original
-        gc.collect()
+    # with timed("Free memory"):
+    #     # Nuke the original data, hopefully this frees up memory
+    #     del df_original
+    #     gc.collect()
 
     save_files = False
     save_composite = False
@@ -3523,7 +3505,11 @@ def main():
         error_msgs = []
         site_counter += 1
         # Select the site matching the one of interest
-        df_site = df[df[data_col[SITE]] == site]
+        #df_site = df[df[data_col[SITE]] == site]
+        
+        #Get the data for this site
+        df_site = load_data_for_site(site)
+
         date_range_dict = {}
         pm_date_range_dict = {}
         missing_days = pd.DatetimeIndex([])
@@ -3645,7 +3631,8 @@ def main():
 
             if month_locs=={}:
                 month_locs = get_month_locs(pt_pm.columns)
-    
+
+
             output_graph(site, graph, GRAPH_PM,
                         save_files=save_files, 
                         make_all_graphs=MAKE_ALL_GRAPHS, align_dates=ALIGN_DATES,
@@ -3658,7 +3645,7 @@ def main():
                 graph, axs = create_graph(
                                 site = site,
                                 df = pt_mini_manual, 
-                                row_names = song_cols, 
+                                row_names = SONG_COLS, 
                                 cmap = CMAP, 
                                 raw_data = df_site,
                                 draw_vert_rects = True,
@@ -3747,19 +3734,20 @@ def main():
                             data_col[ALTSONG1] : 'M-Nestling'
             }
             overview = []
-            overview.append(make_final_pt(pt_manual, song_cols, friendly_names))
+            overview.append(make_final_pt(pt_manual, SONG_COLS, friendly_names))
             
             friendly_names = {data_col[MALE_SONG] : 'MM-Male', 
                             data_col[COURT_SONG]: 'MM-Chorus',
                             data_col[ALTSONG2] : 'MM-Female', 
                             data_col[ALTSONG1] : 'MM-Nestling'
             }
-            overview.append(make_final_pt(pt_mini_manual, song_cols, friendly_names))
+            overview.append(make_final_pt(pt_mini_manual, SONG_COLS, friendly_names))
 
             friendly_names =   {data_col[tag_p1c]: 'E-P1C',
                                 data_col[tag_p1n]: 'E-P1N',
                                 data_col[tag_p2c]: 'E-P2C',
                                 data_col[tag_p2n]: 'E-P2N',
+                                data_col[tag_p3n]: 'E-P3N',
             }
             overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
 
@@ -3839,6 +3827,19 @@ def main():
             combine_aligned_images()
     return
 
+# def profile_main():
+#     prof = cProfile.Profile()
+#     prof.enable()
+#     main()  # or whatever generates your graphs
+#     prof.disable()
+
+#     out = Path("profile_main.prof")
+#     prof.dump_stats(out)
+
+#     stats = pstats.Stats(prof).sort_stats("cumtime")
+#     stats.print_stats(40)  # top 40 by cumulative time
+
+
 def profile_main():
     prof = cProfile.Profile()
     prof.enable()
@@ -3848,9 +3849,42 @@ def profile_main():
     out = Path("profile_main.prof")
     prof.dump_stats(out)
 
-    stats = pstats.Stats(prof).sort_stats("cumtime")
+    # Existing summary
+    stats = pstats.Stats(prof)
+    stats.strip_dirs().sort_stats("cumtime")
     stats.print_stats(40)  # top 40 by cumulative time
 
+    # NEW: show who is calling the expensive matplotlib text-measurement paths
+    print("\n=== CALLERS: get_text_width_height_descent ===")
+    stats.print_callers("get_text_width_height_descent")
+
+    print("\n=== CALLERS: _get_text_metrics_with_cache_impl ===")
+    stats.print_callers("_get_text_metrics_with_cache_impl")
+
+    print("\n=== CALLERS: _get_text_metrics_with_cache ===")
+    stats.print_callers("_get_text_metrics_with_cache")
+
+    # Optional: check common triggers
+    print("\n=== CALLERS: tight_layout ===")
+    stats.print_callers("tight_layout")
+
+    print("\n=== CALLERS: constrained_layout ===")
+    stats.print_callers("constrained_layout")
+
+    print("\n=== CALLERS: Axis._update_ticks ===")
+    stats.print_callers("_update_ticks")
+
+    print("\n=== CALLERS: get_tightbbox ===")
+    stats.print_callers("get_tightbbox")
+
+    print("\n=== CALLERS: Figure.get_tightbbox ===")
+    stats.print_callers("Figure.get_tightbbox")
+
+    print("\n=== CALLERS: savefig ===")
+    stats.print_callers("savefig")
+
+    print("\n=== CALLERS: print_figure ===")
+    stats.print_callers("print_figure")
 
 if __name__ == "__main__":
     if PROFILING:
