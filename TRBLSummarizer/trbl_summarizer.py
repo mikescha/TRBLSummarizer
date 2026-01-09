@@ -53,12 +53,11 @@ from typing import Any, Dict, Tuple, Protocol, cast
 import gc
 
 #For profiling
-if PROFILING:
-    import cProfile
-    import pstats
+import cProfile
+import pstats
 
-    import traceback
-    from matplotlib.backend_bases import FigureCanvasBase
+import traceback
+from matplotlib.backend_bases import FigureCanvasBase
 
 from contextlib import contextmanager
 import time
@@ -759,20 +758,35 @@ def load_summary_data() -> pd.DataFrame:
     return df
 
 # clean up the data for a particular site
+DATE_FORMAT = "%m/%d/%Y"
 def is_valid_date_string(date_string):
-    result = pd.to_datetime(date_string, format="%m/%d/%Y", errors="coerce")
+    potential_date = date_string
+    if type(date_string) == str:
+        # Strip leading '~' and trailing '*' markers around dates
+        # e.g. "~8/24/2024" -> "8/24/2024", "7/14/2024*" -> "7/14/2024"
+        potential_date = potential_date.lstrip("~").rstrip("*").strip()
+
+    result = pd.to_datetime(potential_date, format=DATE_FORMAT, errors="coerce")
     if pd.isna(result):
         return False
     else:
         return True 
 
+
 def convert_to_datetime(date_string):
-    date_format = "%m/%d/%Y"
-    result = pd.to_datetime(date_string, format=date_format, errors="coerce")
-    return result  # Will return pd.NaT for missing or null datetime values
+    potential_date = date_string
+    if type(date_string) == str:
+        # Strip leading '~' and trailing '*' markers around dates
+        # e.g. "~8/24/2024" -> "8/24/2024", "7/14/2024*" -> "7/14/2024"
+        potential_date = potential_date.lstrip("~").rstrip("*").strip()
+
+    ts = pd.to_datetime(potential_date, format=DATE_FORMAT, errors="coerce")
+    return ts
+    
 
 def is_valid_date(timestamp):
     return pd.notna(timestamp)
+
 
 def is_valid_date_pair(phase_data:dict) -> bool:
     result = False
@@ -781,6 +795,7 @@ def is_valid_date_pair(phase_data:dict) -> bool:
     if is_valid_date(start) and is_valid_date(end):
         result = True
     return result
+
 
 def count_valid_pulses(pulse_data:dict) -> int:
     #A pulse is considered valid if there is at least one "graphable" date pair
@@ -796,9 +811,11 @@ def count_valid_pulses(pulse_data:dict) -> int:
 
     return count
 
+
 def get_val_from_df(df:pd.DataFrame, col) -> str:
     result = df.iloc[0,df.columns.get_loc(col)]
     return str(result)
+
 
 def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
     nd_string = "ND"
@@ -1833,15 +1850,21 @@ def load_recordings_hourly(parquet_path: Path, site_col: str, date_col: str, hou
     return df
 
 
-def draw_hatch_date_marker(ax, x, add_arrow=False):
+def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
     # Cell center
     cx = x + 0.45
     cy = 0.4
 
+    date_markers = {
+        PULSE_HATCH : "H",
+        PULSE_FIRST_FLDG : "F",
+        PULSE_LAST_FLDG : "D"
+    }
+
     # Draw "H" centered in the circle
     ax.text(
         cx, cy,
-        "H",
+        date_markers[date_type],
         ha="center", va="center",
         fontsize=8,
         color="black",
@@ -1882,6 +1905,28 @@ def draw_hatch_date_marker(ax, x, add_arrow=False):
 
     return
 
+def calc_x_from_date(df, event_date) -> float:
+    loc = df.columns.get_loc(event_date)
+    if not isinstance(loc, int):
+        raise ValueError(f"Expected unique column for {event_date}, got {type(loc)}")
+    x = float(loc)
+    return x
+
+
+def add_event_date_marker(ax, df, date_type, event_date): 
+    add_arrow = False
+    if date_type == PULSE_HATCH and event_date == convert_to_datetime("6/1/1967"):
+        #This is the new special case of a hatch date prior to graph start 
+        x = 0
+        add_arrow = True
+    elif event_date >= df.columns[0] and event_date <= df.columns[-1]:
+        x = calc_x_from_date(df, event_date)
+    else:
+        log_error(f"create_graph: {date_type} {event_date} is outside range of this year, which is {df.columns[0]} through {df.columns[-1]}")
+        return
+    draw_event_date_marker(ax, x, add_arrow=add_arrow, date_type=date_type)
+
+
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(site: str,
@@ -1893,7 +1938,7 @@ def create_graph(site: str,
                  title="", 
                  graph_type="",
                  draw_connectors:bool = False,
-                 hatch_dates={},
+                 key_dates={},
                  missing_days=pd.DatetimeIndex([]),
                  denom_by_day: pd.Series = pd.Series(),
                  do_aligned_dates:bool = False,
@@ -2070,58 +2115,12 @@ def create_graph(site: str,
         graph_drawn.append(i)
 
         if graph_type == GRAPH_PM:
-            #NOTE Add dates of first hatching if they exist
-            if row == "Hatchling":
-                for pulse in hatch_dates:
-                    hatch_date = hatch_dates[pulse]
-                    if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
-                        x = 0
-                        draw_hatch_date_marker(ax, x, add_arrow=True)
-                    elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
-                        loc = df_to_graph.columns.get_loc(hatch_date)
-                        if not isinstance(loc, int):
-                            raise ValueError(f"Expected unique column for {hatch_date}, got {type(loc)}")
-                        x = float(loc)
-                        draw_hatch_date_marker(ax, x)
-                    else:
-                        log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
+            for pulse in key_dates:
+                for date_type, event_date in key_dates[pulse].items():
+                    if row == "Hatchling" and date_type == PULSE_HATCH or\
+                       row == "Fledgling" and (date_type == PULSE_FIRST_FLDG or date_type == PULSE_LAST_FLDG):
+                        add_event_date_marker(ax, df, date_type, event_date)
 
-
-
-                # #do the overlay arrows for hatch date
-                # marker_width = 1 if do_aligned_dates else 1.0
-                # marker_size = 5 if do_aligned_dates else 1.0 
-                # for pulse in hatch_dates:
-                #     hatch_date = hatch_dates[pulse]
-                #     if hatch_date == convert_to_datetime("6/1/1967"): #This is the new special case of a hatch date prior to graph start
-                #         hatch_index = 0  #Always drawing this on the first cell
-                #         arrow = ax.plot(hatch_index, 0.5, 
-                #                     marker='|',
-                #                     markerfacecolor='black',
-                #                     markeredgecolor='white',
-                #                     markeredgewidth=marker_width,  
-                #                     #color='black', 
-                #                     #mew=0.5,
-                #                     markersize=marker_size, 
-                #                     transform=ax.get_xaxis_transform(),
-                #                     clip_on=False)
-                #         for a in arrow:
-                #             a.set_in_layout(False)
-
-                #     elif hatch_date >= df_to_graph.columns[0] and hatch_date <= df_to_graph.columns[-1]:
-                #         hatch_index = df_to_graph.columns.get_loc(hatch_date)
-                #         # Plot the "arrow" centered in the cell
-                #         ax.plot(hatch_index+0.7, 0.5, 
-                #                     marker='>', 
-                #                     markerfacecolor='black',
-                #                     markeredgecolor='white',
-                #                     markeredgewidth=marker_width,  
-                #                     #color='black', 
-                #                     #mew=0.5,
-                #                     markersize=marker_size,
-                #                     transform=ax.get_xaxis_transform())
-                #     else:
-                #         log_error(f"create_graph: Hatch date {hatch_date} is outside range of this year, which is {df_to_graph.columns[0]} through {df_to_graph.columns[-1]}")
                         
             #NOTE Dec 2024: Added extra lines to separate insects
             if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
@@ -3603,12 +3602,21 @@ def main():
         # Pattern Matching Analysis
         # Everything has data, it didn't use to be the case. I'll leave the If in case we ever go back
         if True: #not pt_pm.empty:
-            hatch_dates = {}
+            key_dates = {}
             for p in PULSES:
                 if p in site_summary_dict:
-                    hatch_date = site_summary_dict[p]["Brooding"]["start"]
+                    key_dates[p] = {}
+                    hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
+                    fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
+                    dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
                     if pd.notna(hatch_date):
-                        hatch_dates[p] = hatch_date
+                        key_dates[p][PULSE_HATCH] = hatch_date
+                    if pd.notna(fledge_start_date):
+                        key_dates[p][PULSE_FIRST_FLDG] = fledge_start_date
+                    if pd.notna(dispersal):
+                        key_dates[p][PULSE_LAST_FLDG] = dispersal
+
+
             with timed("Pattern matching graph"):
                 graph, axs = create_graph(
                                     site = site,
@@ -3617,7 +3625,7 @@ def main():
                                     cmap = CMAP_PM, 
                                     title = GRAPH_PM,
                                     graph_type = GRAPH_PM,
-                                    hatch_dates = hatch_dates,
+                                    key_dates = key_dates,
                                     missing_days = missing_days,
                                     denom_by_day = rec_norm,
                                     do_aligned_dates=do_aligned_dates
