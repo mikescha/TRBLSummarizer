@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 PROFILING = False
@@ -3743,11 +3743,12 @@ def main():
             }
             overview.append(make_final_pt(pt_mini_manual, SONG_COLS, friendly_names))
 
-            friendly_names =   {data_col[tag_p1c]: 'E-P1C',
-                                data_col[tag_p1n]: 'E-P1N',
-                                data_col[tag_p2c]: 'E-P2C',
-                                data_col[tag_p2n]: 'E-P2N',
-                                data_col[tag_p3n]: 'E-P3N',
+            friendly_names =   {data_col[tag_p1c]: 'P1C',
+                                data_col[tag_p1n]: 'P1N',
+                                data_col[tag_p2c]: 'P2C',
+                                data_col[tag_p2n]: 'P2N',
+                                data_col[tag_p3n]: 'P3N',
+                                data_col[tag_p4n]: 'P4N',
             }
             overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
 

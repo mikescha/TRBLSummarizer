@@ -89,7 +89,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 33851,2022 OR1,2022 Oregon State - Dizney Rd p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails, Himalayan blackberry",50,No valid hatch date
 34073,2022 OR2,2022 Oregon State - Prineville Woodward Rd p1,Successful,Unknown,Simple,2022-05-16,2022-05-06,10,6,0.6,2022-05-27,10,0,0.0,0.0,2022-06-03,8,45,5.625,True,Cattails,40-80,
 34071,2022 Paicines Ranch - Teal Pond,2022 Paicines Ranch - Teal Pond p1,Successful,Unknown,Simple,2022-04-22,2022-04-12,10,31,3.1,2022-05-03,10,34,3.4,1.097,2022-05-17,15,117,7.8,True,"Bulrush, cattails",4000,
-34072,2022 Paicines Ranch - Teal Pond B,2022 Paicines Ranch - Teal Pond B p1,Successful,Unknown,Simple,2022-04-26,2022-04-16,10,16,1.6,2022-05-07,10,23,2.3,1.437,2022-05-21,15,145,9.667,True,"Bulrush, cattails",4000,
+34072,2022 Paicines Ranch - Teal Pond B,2022 Paicines Ranch - Teal Pond B p1,Successful,Unknown,Simple,2022-04-22,2022-04-12,10,9,0.9,2022-05-03,10,15,1.5,1.667,2022-05-17,15,104,6.933,True,"Bulrush, cattails",4000,
 52598,2022 Panoche Creek Preserve Loc4,2022 Panoche Creek Marsh East 1 p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,NEED,NEED,No valid hatch date
 34130,2022 Panoche Creek Preserve Loc5,2022 Panoche Creek Marsh East 2 p1,Successful,Unknown,Simple,2022-04-20,2022-04-14,6,95,15.833,2022-05-01,10,145,14.5,0.916,2022-05-15,15,90,6.0,True,NEED,NEED,
 52597,2022 Panoche Creek Preserve Loc3,2022 Panoche Creek Preserve Location 3 p1,Successful,Unknown,Simple,2022-04-20,2022-04-10,10,98,9.8,2022-05-01,10,148,14.8,1.51,2022-05-15,15,65,4.333,True,NEED,NEED,
@@ -123,7 +123,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 48462,2023 Creed Rd,2023 Denverton Creek p1,Abandoned,Unknown,Simple,2023-05-18,2023-05-08,10,11,1.1,2023-05-29,10,0,0.0,0.0,2023-06-12,15,0,0.0,False,Himalayan blackberry,1000,
 48463,2023 Hale Road,2023 Hale Road p1,Successful,Unknown,Sequential,2023-06-06,2023-05-27,10,462,46.2,2023-06-17,10,320,32.0,0.693,2023-07-01,15,478,31.867,True,"Himalayan blackberry, cattails",10000,
 48463,2023 Hale Road,2023 Hale Road p2,Unknown,Unknown,Sequential,post,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Himalayan blackberry, cattails",10000,No valid hatch date
-48468,2023 Hale Road Site 2,2023 Hale Road Site 2 p1,Successful,Unknown,Simple,2023-06-05,2023-05-26,10,441,44.1,2023-06-16,10,381,38.1,0.864,2023-06-30,15,526,35.067,True,"Himalayan blackberry, cattails",10000,
+48468,2023 Hale Road Site 2,2023 Hale Road Site 2 p1,Successful,Unknown,Simple,2023-06-06,2023-05-27,10,439,43.9,2023-06-17,10,427,42.7,0.973,2023-07-01,15,516,34.4,True,"Himalayan blackberry, cattails",10000,
 48457,2023 Iron Point,2023 Iron Point p1,Partially Abandoned,Unknown,Simple,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Himalayan blackberry, willow",600,No valid hatch date
 48434,2023 Kentucky Lateral,2023 Kentucky Lateral p1,Successful,Unknown,Asynchronous,2023-04-26,2023-04-16,10,179,17.9,2023-05-07,10,120,12.0,n/a,2023-05-21,15,51,3.4,True,Bull thistle,500,Breeding Type is not valid: Asynchronous
 48467,2023 Kern - Canebreak Ecological Reserve 4,2023 Kern - Canebreak Ecological Reserve 4 p1,No TRBL,Unknown,No TRBL,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Stinging nettle,No Colony,No valid hatch date
@@ -191,7 +191,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 66012,2024 Newberry Springs,2024 Newberry Springs  - Lake Wainani p1,Successful,Unknown,Unknown,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Cattails, willows",500,No valid hatch date
 77023,2024 North Regional Pond,2024 North Regional Pond p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Mustard, milk thistle",6000,No valid hatch date
 63086,2024 OR Eureka Lane,2024 Oregon State -  Eureka Lane p1,No TRBL,Unknown,No TRBL,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Cattails, Himalayan blackberry",NEED,No valid hatch date
-65471,2024 Panoche Creek Preserve - Dollar Marsh East,2024 Panoche Creek Marsh East p1,Successful,Unknown,Simple,2024-04-29,2024-04-19,10,277,27.7,2024-05-10,10,247,24.7,0.892,2024-05-24,15,342,22.8,True,"Cattails, bulrush",1000-1500,
+65471,2024 Panoche Creek Preserve - Dollar Marsh East,2024 Panoche Creek Marsh East p1,Successful,Unknown,Simple,2024-04-29,2024-04-19,10,277,27.7,2024-05-10,10,247,24.7,0.892,2024-05-24,15,425,28.333,True,"Cattails, bulrush",1000-1500,
 65469,2024 Panoche Creek Preserve - Dollar Marsh South,2024 Panoche Creek Marsh South p1,Successful,Unknown,Simple,2024-05-01,2024-04-21,10,313,31.3,2024-05-12,10,204,20.4,0.652,2024-05-26,15,60,4.0,True,"Cattails, bulrush",Several hundred,
 65470,2024 Panoche Creek Preserve - Dollar Marsh West,2024 Panoche Creek Marsh West p1,Successful,Unknown,Simple,2024-05-05,2024-04-25,10,277,27.7,2024-05-16,10,280,28.0,1.011,2024-05-29,14,137,9.786,True,"Cattails, bulrush",NEED,
 63656,2024 Rancho Jamul - Main Pond 1,2024 Rancho Jamul - Main Pond 1 p1,Successful,Unknown,Complex,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,NEED,NEED,No valid hatch date
