@@ -49,7 +49,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 48468,2023 Hale Road Site 2,2023 Hale Road Site 2 p1,Successful,Unknown,Simple,2023-06-06,2023-05-27,10,439,43.9,2023-06-17,10,427,42.7,0.973,2023-07-01,15,516,34.4,True,"Himalayan blackberry, cattails",10000,
 48470,2023 Kern - HQ2,2023 Kern - Headquarters 2 p1,Successful,Unknown,Sequential,2023-06-08,2023-05-29,10,127,12.7,2023-06-19,10,243,24.3,1.913,2023-07-03,15,429,28.6,True,Sandbar Willow,100,
 48470,2023 Kern - HQ2,2023 Kern - Headquarters 2 p2,Successful,Unknown,Sequential,2023-07-05,2023-06-25,10,19,1.9,2023-07-16,10,107,10.7,5.632,2023-07-30,15,166,11.067,True,Sandbar Willow,100,
-48465,2023 Laguna Fry Confluence - Site 1,2023 Laguna Fry Confluence 3 p1,Successful,Unknown,Simple,2023-05-17,2023-05-09,8,242,30.25,2023-05-28,10,214,21.4,0.707,2023-06-10,14,104,7.429,True,NEED,NEED,
+48465,2023 Laguna Fry Confluence - Site 1,2023 Laguna Frye Confluence 3 p1,Successful,Unknown,Simple,2023-05-17,2023-05-09,8,242,30.25,2023-05-28,10,214,21.4,0.707,2023-06-10,14,104,7.429,True,NEED,NEED,
 48458,2023 Weagell Property 2,2023 Laguna Frye Confluence 2 p1,Successful,Unknown,Sequential,2023-05-19,2023-05-09,10,85,8.5,2023-05-30,10,115,11.5,1.353,2023-06-13,15,307,20.467,True,"Himalayan blackberry, cattails",17500,
 48444,2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p1,Successful,Unknown,Sequential,2023-04-28,2023-04-18,10,238,23.8,2023-05-09,10,303,30.3,1.273,2023-05-23,15,407,27.133,True,Himalayan blackberry,2000,
 48444,2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p2,Successful,Unknown,Sequential,2023-06-15,2023-06-05,10,49,4.9,2023-06-26,10,116,11.6,2.367,2023-07-10,15,314,20.933,True,Himalayan blackberry,2000,
