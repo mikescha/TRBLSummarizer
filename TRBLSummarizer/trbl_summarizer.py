@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 PROFILING = False
