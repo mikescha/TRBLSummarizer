@@ -334,9 +334,9 @@ PHASE_MALE_CHORUS = "Settlement"
 PHASE_INC = "Incubation"
 PHASE_BROOD = "Brooding"
 PHASE_FLDG = "Fledgling"
-pulse_phases = {PHASE_MALE_CHORUS : [PULSE_MC_START, PULSE_MC_END],
-                PHASE_INC : [PULSE_MC_END, PULSE_HATCH],#WENDY Should this change?
-                PHASE_BROOD : [PULSE_HATCH, PULSE_FIRST_FLDG],
+PULSE_PHASES = {PHASE_MALE_CHORUS : [PULSE_MC_START, PULSE_INC_START], #-1
+                PHASE_INC : [PULSE_INC_START, PULSE_HATCH],            #-1
+                PHASE_BROOD : [PULSE_HATCH, PULSE_FIRST_FLDG],         #-1
                 PHASE_FLDG : [PULSE_FIRST_FLDG, PULSE_LAST_FLDG]}
 
 
@@ -345,7 +345,7 @@ pulse_phases = {PHASE_MALE_CHORUS : [PULSE_MC_START, PULSE_MC_END],
 #edit this if we add/remove file types
 #Change: Color Map for Pattern Matching, Legend Text, plus File Types. Also, there are some lists
 #of column names in summarize_pm() that likely need to change
-pm_song_types = ["Male Song",
+PM_SONG_TYPES = ["Male Song",
                  "Male Chorus", 
                  "Female", 
                  "Hatchling", 
@@ -369,24 +369,24 @@ PM_OTHER_TYPES = {
 
 #adjust the set of file types based on what data we want to show in the graphs
 if INCLUDE_INSECT_AND_FROG_DATA:
-    pm_file_types = pm_song_types + list(PM_OTHER_TYPES.keys())
+    PM_FILE_TYPES = PM_SONG_TYPES + list(PM_OTHER_TYPES.keys())
 else:
-    pm_file_types = pm_song_types
+    PM_FILE_TYPES = PM_SONG_TYPES
 
 #Abbreviations are used in the summary table, to reduce column width
 pm_abbreviations = ["PM-MS", "PM-MC", "PM-F", "PM-H", "PM-N", "PM-FL","PM-I30", "PM-I31", "PM-I32", "PM-I33", "PM-PTF", "PM-RLF", "PM-BF"]
-pm_friendly_names = dict(zip(pm_file_types, pm_abbreviations))
+pm_friendly_names = dict(zip(PM_FILE_TYPES, pm_abbreviations))
 
 FIRST = "First"
 LAST = "Last"
 BEFORE_FIRST = "Before First"
 AFTER_LAST = "After Last"
 
-valid_pm_date_deltas = {pm_song_types[1]:0, #Male Chorus to Female can be 0 days
-                        pm_song_types[2]:5, #Female to Hatchling must be at least 5 days
-                        pm_song_types[3]:0, #Hatchling to Nestling can be 0 days
-                        pm_song_types[4]:3, #Nestling to Fledgling must be at least 3 days
-                        pm_song_types[5]:0, #Nestling to Nestling is zero, here to make math easy
+valid_pm_date_deltas = {PM_SONG_TYPES[1]:0, #Male Chorus to Female can be 0 days
+                        PM_SONG_TYPES[2]:5, #Female to Hatchling must be at least 5 days
+                        PM_SONG_TYPES[3]:0, #Hatchling to Nestling can be 0 days
+                        PM_SONG_TYPES[4]:3, #Nestling to Fledgling must be at least 3 days
+                        PM_SONG_TYPES[5]:0, #Nestling to Nestling is zero, here to make math easy
                         }
 
 MISSING_DATA_FLAG = -100
@@ -713,7 +713,7 @@ def load_pm_data(site:str) -> pd.DataFrame:
     # Add the site name so we look into the appropriate folder
     site_dir = PMJ_DATA_DIR / site
     if os.path.isdir(site_dir):
-        for t in pm_file_types:
+        for t in PM_FILE_TYPES:
             fname = f"{site} {t}.csv"
             full_file_name = site_dir / fname
 
@@ -815,7 +815,7 @@ def count_valid_pulses(pulse_data:dict) -> int:
     for p in PULSES:
         result = False
         for phase in pulse_data[p]:
-            if phase in pulse_phases.keys(): #Need to skip Abandoned, as it doesn't have a pair of dates
+            if phase in PULSE_PHASES.keys(): #Need to skip Abandoned, as it doesn't have a pair of dates
                 if is_valid_date_pair(pulse_data[p][phase]):
                     result = True
                     break
@@ -853,8 +853,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
         if is_valid_date(abandoned_date):
             pulse_result[ABANDONED] = abandoned_date 
 
-        for phase in pulse_phases:
-            start, end = pulse_phases[phase]
+        for phase in PULSE_PHASES:
+            start, end = PULSE_PHASES[phase]
 
             target1 = f"{pulse}{start}"
             value1 = get_val_from_df(summary_row, target1) 
@@ -1196,11 +1196,11 @@ def find_pm_dates(row: pd.Series, pulse_gap:int, threshold: int) -> dict:
 
 def make_empty_summary_row() -> dict:
     # Create an empty row for a single pulse
-    phases = pm_file_types[1:] #Creates a new list except it drops "Male Song"
+    phases = PM_FILE_TYPES[1:] #Creates a new list except it drops "Male Song"
     base_dict = {}
     for phase in phases:
         #NOTE Dec 2024: added this if statement to limit the summarizing to just the bird songs
-        if phase in pm_song_types:
+        if phase in PM_SONG_TYPES:
             base_dict[f"{phase}"] = {}
     return base_dict
 
@@ -1233,7 +1233,7 @@ def  find_first_non_empty_key(d):
 def find_correct_pulse(target_phase:str, target_date:pd.Timestamp, proposed_pulse:int, current_dates:dict):
     # Check to see if a pulse already has a date for a phase that is later than the current one.
     correct_pulse = proposed_pulse
-    all_phases = pm_song_types[1:] #Creates a new list except it drops "Male Song"
+    all_phases = PM_SONG_TYPES[1:] #Creates a new list except it drops "Male Song"
     target_position = all_phases.index(target_phase)
 
     while True:
@@ -1274,7 +1274,7 @@ def correct_pulse_has_date_collision(target_phase:str, target_date:pd.Timestamp,
             min_delta = 0 
             start_adding = False
 
-            for item in pm_song_types:
+            for item in PM_SONG_TYPES:
                 if item == earlier_phase:
                     start_adding = True 
                 min_delta += valid_pm_date_deltas[item] if start_adding else 0
@@ -1375,7 +1375,7 @@ def summarize_pm(pt_pm: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     #Get all the date pairs
     dates = {}    
     for idx, row in pt_pm.iterrows(): 
-        if idx in pm_song_types:
+        if idx in PM_SONG_TYPES:
             dates[idx] = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
 
     #Sanity check the data
@@ -1870,9 +1870,11 @@ def load_recordings_hourly(parquet_path: Path, site_col: str, date_col: str, hou
 def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
     # Cell center
     cx = x + 0.45
-    cy = 0.4
+    cy = 0.45
 
     date_markers = {
+        PULSE_MC_START : "S",
+        PULSE_INC_START : "I",
         PULSE_HATCH : "H",
         PULSE_FIRST_FLDG : "F",
         PULSE_LAST_FLDG : "D"
@@ -1891,7 +1893,7 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
 
     # cell center in data coords
     cx = x + 0.45
-    cy = 0.35
+    cy = 0.41   
 
     # Draw circular outline marker (no fill)
     circ = ax.scatter(
@@ -1908,7 +1910,7 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
         # Arrow parameters
         # arrow_end_x   = x          # how far arrow points
         # arrow_start_x = arrow_end_x + 1.5        # right edge of rectangle
-        arrow_y       = 0.2              # vertical center of the rect
+        arrow_y       = 0.15              # vertical center of the rect
 
         arrow = FancyArrowPatch(
             (0.02, arrow_y),     # start inside the axes
@@ -2144,7 +2146,9 @@ def create_graph(site: str,
             #Add the event markers if available
             for pulse in key_dates:
                 for date_type, event_date in key_dates[pulse].items():
-                    if row == "Hatchling" and date_type == PULSE_HATCH or\
+                    if row == "Male Chorus" and date_type == PULSE_MC_START or\
+                       row == "Female" and date_type == PULSE_INC_START or\
+                       row == "Hatchling" and date_type == PULSE_HATCH or\
                        row == "Fledgling" and (date_type == PULSE_FIRST_FLDG or date_type == PULSE_LAST_FLDG):
                         add_event_date_marker(ax, df, date_type, event_date)
 
@@ -2307,7 +2311,7 @@ def add_pulse_overlays(graph, summarized_data:dict, date_range:dict):
     # after the end dates
 
     graph_start_date = pd.to_datetime(date_range["start"])
-    for idx, phase_type in enumerate(pm_file_types): 
+    for idx, phase_type in enumerate(PM_FILE_TYPES): 
         if phase_type in summarized_data:
             for pulse in summarized_data[phase_type]:
                 pulse_dates = summarized_data[phase_type][pulse]
@@ -3353,7 +3357,7 @@ def do_pattern_matching(site:str, date_range_dict:dict, container_top) -> tuple[
             pm_date_range_dict = get_date_range(df_pattern_match, MAKE_ALL_GRAPHS, ALIGN_DATES, container_top)
 
         if len(df_pattern_match):
-            for t in pm_file_types: 
+            for t in PM_FILE_TYPES: 
                 #For each file type, get the filtered range of just that type
                 df_for_file_type = df_pattern_match[df_pattern_match['type']==t]
                 #Build the pivot table for it
@@ -3683,9 +3687,15 @@ def main():
             for p in PULSES:
                 if p in site_summary_dict:
                     key_dates[p] = {}
+                    mc_date = site_summary_dict[p][PHASE_MALE_CHORUS]["start"]
+                    inc_date = site_summary_dict[p][PHASE_INC]["start"]
                     hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
                     fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
                     dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
+                    if pd.notna(mc_date):
+                        key_dates[p][PULSE_MC_START] = mc_date
+                    if pd.notna(inc_date):
+                        key_dates[p][PULSE_INC_START] = inc_date
                     if pd.notna(hatch_date):
                         key_dates[p][PULSE_HATCH] = hatch_date
                     if pd.notna(fledge_start_date):
@@ -3698,7 +3708,7 @@ def main():
                 graph, axs = create_graph(
                                     site = site,
                                     df = pt_pm, 
-                                    row_names = pm_file_types, 
+                                    row_names = PM_FILE_TYPES, 
                                     cmap = CMAP_PM, 
                                     title = GRAPH_PM,
                                     graph_type = GRAPH_PM,
@@ -3838,7 +3848,7 @@ def main():
             overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
 
             #Pattern Matching 
-            overview.append(make_final_pt(pt_pm, pm_file_types, pm_friendly_names))
+            overview.append(make_final_pt(pt_pm, PM_FILE_TYPES, pm_friendly_names))
 
             #Add weather at the end
             if len(weather_by_type):
