@@ -10,6 +10,7 @@ MAKE_ALL_GRAPHS = False
 ALIGN_DATES = False
 STANDARD_START  = "04/01"
 STANDARD_END    = "07/30"
+GRAPH_LEFT_PADDING = 0.1
 
 import streamlit as st
 import pandas as pd
@@ -82,8 +83,19 @@ def count_text_artists(fig):
 
 import io
 def st_image_figure(fig, *, dpi=120):
+    fig_w, fig_h = fig.get_size_inches()
+
+    pos = Bbox.union([ax.get_position() for ax in fig.axes])   # figure fraction
+    fig_w, fig_h = fig.get_size_inches()
+
+    bbox_in = Bbox.from_bounds(
+        pos.x0 * fig_w,
+        pos.y0 * fig_h,
+        pos.width * fig_w,
+        pos.height * fig_h,
+    )
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=None)  # keep None
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=bbox_in)  # keep None
     buf.seek(0)
     st.image(buf)
 
@@ -1717,7 +1729,10 @@ def draw_axis_labels(fig, month_lengths: dict, skip_month_names=False,
     x_days = 0.0
     day_width = 1.0 / (x_max - x_min)
 
-    for month, n_days in month_lengths.items():
+    months = list(month_lengths.items())
+    total = len(months)
+
+    for i, (month, n_days) in enumerate(months):
         if not skip_month_names and not do_aligned_dates:
             draw_month_label_if_fits(
                 ax,
@@ -1729,21 +1744,23 @@ def draw_axis_labels(fig, month_lengths: dict, skip_month_names=False,
 
         x_days += n_days
         x_fig += n_days * day_width
-
-        line = mlines.Line2D(
-            [x_fig, x_fig],
-            [bottom + (BORDER_WIDTH / 200), top - (BORDER_WIDTH / 200)],
-            transform=fig.transFigure,
-            color="black",
-            linewidth=BORDER_WIDTH,
-            alpha=1,
-        )
-        fig.add_artist(line)
+        
+        #Don't draw the border for the last month
+        if i < total - 1:
+            line = mlines.Line2D(
+                [x_fig, x_fig],
+                [bottom + (BORDER_WIDTH / 200), top - (BORDER_WIDTH / 200)],
+                transform=fig.transFigure,
+                color="black",
+                linewidth=BORDER_WIDTH,
+                alpha=1,
+            )
+            fig.add_artist(line)
 
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
-def plot_title(fig:Figure, title:str, y:float=1.0):
-    fig.suptitle(' ' + title, x=0, y=y,
+def plot_title(fig:Figure, title:str, x:float=0.0,y:float=1.0):
+    fig.suptitle(' ' + title, x=x, y=y,
                  fontsize=TITLE_FONT_SIZE, fontfamily=GRAPH_FONT,
                  horizontalalignment="left", verticalalignment="top")
 
@@ -1862,7 +1879,7 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
     }
 
     # Draw "H" centered in the circle
-    ax.text(
+    txt = ax.text(
         cx, cy,
         date_markers[date_type],
         ha="center", va="center",
@@ -1870,12 +1887,14 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
         color="black",
         zorder=16,
     )
+    txt.set_in_layout(False)
+
     # cell center in data coords
     cx = x + 0.45
     cy = 0.35
 
     # Draw circular outline marker (no fill)
-    ax.scatter(
+    circ = ax.scatter(
         [cx], [cy],
         s=60, # marker area in points^2; tune this
         facecolors="white",
@@ -1883,24 +1902,30 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
         linewidths=0.25,
         zorder=15,
     )
+    circ.set_in_layout(False)
 
     if add_arrow:
         # Arrow parameters
-        arrow_start_x = 1.5         # right edge of rectangle
-        arrow_end_x   = arrow_start_x - 2          # how far arrow points
-        arrow_y       = 0.8              # vertical center of the rect
+        # arrow_end_x   = x          # how far arrow points
+        # arrow_start_x = arrow_end_x + 1.5        # right edge of rectangle
+        arrow_y       = 0.2              # vertical center of the rect
 
         arrow = FancyArrowPatch(
-            (arrow_start_x, arrow_y),
-            (arrow_end_x, arrow_y),
+            (0.02, arrow_y),     # start inside the axes
+            (-0.003, arrow_y),   # end exactly at the left border
+            transform=ax.transAxes,
+            # (arrow_start_x, arrow_y),
+            # (arrow_end_x, arrow_y),
+            # transform=ax.transData,
             arrowstyle="->",
             linewidth=0.5,
             color="black",
             mutation_scale=8,            # arrowhead size
-            transform=ax.transData,
             antialiased=True,
-            zorder=16,
+            zorder=18,
+            clip_on=False,
         )
+        arrow.set_in_layout(False)
         ax.add_patch(arrow)
 
     return
@@ -1992,6 +2017,7 @@ def create_graph(site: str,
         squeeze=False,   #forces axs to be 2D array even if 1 row
     )
     axs = axs.flatten() #normalize axs to 1D 
+
     
 
     def disable_ticks(ax):
@@ -2007,9 +2033,9 @@ def create_graph(site: str,
     for ax in axs:
         disable_ticks(ax)
 
-
+    #This is the left gutter to allow the decorations to hang out
     fig_width_in = fig.get_size_inches()[0]
-    left_margin = 0.25 / fig_width_in
+    left_margin = GRAPH_LEFT_PADDING / fig_width_in
     fig.subplots_adjust(left=left_margin)
 
     # Convert inches -> figure fractions for subplot rectangle
@@ -2115,6 +2141,7 @@ def create_graph(site: str,
         graph_drawn.append(i)
 
         if graph_type == GRAPH_PM:
+            #Add the event markers if available
             for pulse in key_dates:
                 for date_type, event_date in key_dates[pulse].items():
                     if row == "Hatchling" and date_type == PULSE_HATCH or\
@@ -2188,7 +2215,8 @@ def create_graph(site: str,
             break
         else:
             i += 1
-        
+    
+
     # For mini-manual: Add a rect around each day that has some data
     if graph_type == GRAPH_MINIMAN and len(raw_data)>0 and False:
         if draw_vert_rects :
@@ -2224,12 +2252,14 @@ def create_graph(site: str,
     text_y = -0.65
     draw_axis_labels(fig, get_days_per_month(df.columns.tolist()), y=text_y, bottom=bottom, top=top, do_aligned_dates=do_aligned_dates)
 
-
     # Draw a bounding rectangle around everything except the caption
+    #b = axes_union_bbox(fig, "i") #Get the dimensions of the plot area
+    b = Bbox.union([ax.get_position() for ax in fig.axes])
+
     border = Rectangle(
-        (0.0, bottom),  # (x0, y0) in figure coords
-        1.0,            # width (full figure width)
-        top - bottom,   # height = plot area only
+        (b.x0, b.y0),  # (x0, y0) in figure coords
+        b.width,           # width (full figure width)
+        b.height,   # height = plot area only
         transform=fig.transFigure,
         linewidth = BORDER_WIDTH, edgecolor="black",
         fill=False, 
@@ -2243,6 +2273,31 @@ def create_graph(site: str,
     # return the final plotted heatmap
     return fig, axs
 
+def axes_union_bbox(fig):
+    # union of all axes positions in figure-fraction coords
+    #b = Bbox.union([ax.get_position() for ax in fig.axes])
+
+    fig_w, fig_h = fig.get_size_inches()
+    b = Bbox.union([ax.get_position() for ax in fig.axes])  # figure fraction
+
+    # axes bbox -> inches
+    x0_in = b.x0 * fig_w
+    y0_in = b.y0 * fig_h
+    w_in  = b.width * fig_w
+    h_in  = b.height * fig_h
+
+    left_pad_in   = GRAPH_LEFT_PADDING
+    right_pad_in  = 0.00
+    top_pad_in    = 0.00
+    bottom_pad_in = 0.00
+
+    bbox_in = Bbox.from_bounds(
+        x0_in - left_pad_in,
+        y0_in - bottom_pad_in,
+        w_in + left_pad_in + right_pad_in,
+        h_in + top_pad_in + bottom_pad_in,
+    )
+    return bbox_in
 
 def add_pulse_overlays(graph, summarized_data:dict, date_range:dict):
     # For each of the derived summary dates, draw a line on the graph
@@ -2363,14 +2418,15 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_al
         if do_aligned_dates:
             trim_amount_in = -(1/DPI)
         else:
-            trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1 #0.5 if graph_type == GRAPH_WEATHER else 0.2
+            trim_amount_in = 0.2 if graph_type==GRAPH_WEATHER else 0.1
         bbox_inches = Bbox.from_bounds(
             0,              # x0 (left), -0.25 preserves the margin
             trim_amount_in,     # y0 (bottom trim in inches)
             fig_w,              # width
             fig_h - trim_amount_in,  # height
             )
-        plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches=bbox_inches)    
+        plt.savefig(cleaned_figure_path, dpi='figure', bbox_inches=bbox_inches)   
+        #save_with_reserved_margin(graph, cleaned_figure_path, dpi="figure", bottom_pad_in=trim_amount_in)
 
     else:
         #TODO If there is no data, what to do? The line below saves an empty image.
@@ -2379,6 +2435,27 @@ def save_figure(site:str, graph_type:str, graph:Figure, delete_only=False, do_al
 
     plt.close()
 
+
+def save_with_reserved_margin(fig, path, left_pad_in=GRAPH_LEFT_PADDING, right_pad_in=0.0, top_pad_in=0.0, bottom_pad_in=0.0, dpi="figure"):
+    fig_w, fig_h = fig.get_size_inches()
+
+    b = axes_union_bbox(fig)  # figure fraction
+
+    # Convert axes bbox (fraction) -> inches
+    x0_in = b.x0 * fig_w
+    y0_in = b.y0 * fig_h
+    w_in  = b.width * fig_w
+    h_in  = b.height * fig_h
+
+    # Expand by reserved margins (inches)
+    bbox_in = Bbox.from_bounds(
+        x0_in - left_pad_in,
+        y0_in - bottom_pad_in,
+        w_in + left_pad_in + right_pad_in,
+        h_in + top_pad_in + bottom_pad_in,
+    )
+
+    fig.savefig(path, dpi=dpi, bbox_inches=bbox_in)
 
 def concat_images(*images: Image.Image, is_legend:bool = False) -> Image.Image:
     """Generate composite of all supplied images."""

@@ -49,7 +49,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 24544,2021 Kern 2,2021 Kern 2 p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Cattails,No Colony,No valid hatch date
 24641,2021 Kern 3,2021 Kern 3 p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Bulrush,No Colony,No valid hatch date
 24655,2021 Kern 4,2021 Kern 4 p1,Partially Abandoned,Unknown,Simple,2021-05-24,2021-05-14,10,0,0.0,2021-06-04,10,8,0.8,n/a,2021-06-18,15,6,0.4,True,Stinging nettle,NEED,Female calls = 0
-26534,2021 Kern 5,2021 Kern 5 p1,Successful,Unknown,Complex,2021-04-29,2021-04-27,2,16,8.0,2021-05-10,10,198,19.8,n/a,2021-05-24,15,134,8.933,True,Himalayan blackberry,NEED,Incubation days less than 4 |Breeding Type is not valid: Complex
+26534,2021 Kern 5,2021 Kern 5 p1,Successful,Unknown,Complex,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Himalayan blackberry,NEED,No valid hatch date
 26534,2021 Kern 5,2021 Kern 5 p2,Successful,Unknown,Complex,2021-05-23,2021-05-13,10,106,10.6,2021-06-03,10,235,23.5,n/a,2021-06-17,15,177,11.8,True,Himalayan blackberry,NEED,Breeding Type is not valid: Complex
 26535,2021 Kern 6,2021 Kern 6 p1,No TRBL,Unknown,No TRBL,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Cattails,No Colony,No valid hatch date
 26536,2021 Kern 7,2021 Kern 7 p1,Abandoned,Unknown,Unknown,2021-05-31,2021-05-21,10,41,4.1,2021-06-11,10,0,0.0,n/a,2021-06-25,15,0,0.0,False,Stinging nettle,NEED,Breeding Type is not valid: Unknown
