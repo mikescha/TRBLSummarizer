@@ -101,7 +101,7 @@ Id,Name,Number of Recordings,Latitude,Longitude,Altitude,Timezone,Skip
 34131,2022 Private Site 1 - not real lat lon,3239,37.0000,-120.0000,92,America/Los_Angeles,
 34133,2022 Private Site 2 - not real lat lon,932,37.0000,-120.0000,92,America/Los_Angeles,
 34132,2022 Private Site 3 - not real lat lon,3228,37.0000,-120.0000,92,America/Los_Angeles,
-34045,2022 Rancho Jamul,8547,32.6846,-116.8560,236,America/Los_Angeles,
+34045,2022 Rancho Jamul,8547,,,236,America/Los_Angeles,
 33985,2022 Sedgwick,7703,34.6950,-120.0420,343,America/Los_Angeles,
 34046,2022 SJWA,3457,33.8627,-117.0730,435,America/Los_Angeles,
 33984,2022 WA Harder Spring,7984,46.6572,-118.4990,276,America/Los_Angeles,
@@ -147,8 +147,8 @@ Id,Name,Number of Recordings,Latitude,Longitude,Altitude,Timezone,Skip
 48461,2023 Peterson Ranch Pond - West,8202,34.6331,-118.3200,1030,America/Los_Angeles,Dupe
 48475,2023 Plumas Arboga 2,3089,39.0338,-121.5240,19,America/Los_Angeles,
 48437,2023 Plumas Arboga 8 - North Regional Pond,5611,39.0430,-121.5310,18,America/Los_Angeles,
-48764,2023 Rancho Jamul North Pond - fix lat lon,9321,32.6846,-116.8560,236,America/Los_Angeles,
-48765,2023 Rancho Jamul Site 1 fix lat lon,9045,32.6846,-116.8560,236,America/Los_Angeles,
+48764,2023 Rancho Jamul North Pond - fix lat lon,9321,,,236,America/Los_Angeles,
+48765,2023 Rancho Jamul Site 1 fix lat lon,9045,,,236,America/Los_Angeles,
 48447,2023 San Luis Bear Creek,2735,37.2393,-120.8210,26,America/Los_Angeles,
 48464,2023 San Luis NWR - West Bank Creek,3376,37.2663,-120.8340,24,America/Los_Angeles,
 48466,2023 Sedgwick,9000,34.6950,-120.0420,343,America/Los_Angeles,
@@ -182,10 +182,10 @@ Id,Name,Number of Recordings,Latitude,Longitude,Altitude,Timezone,Skip
 65471,2024 Panoche Creek Preserve - Dollar Marsh East,7788,36.5905,-120.7694,313,America/Los_Angeles,
 65469,2024 Panoche Creek Preserve - Dollar Marsh South,7736,36.5892,-120.7707,317,America/Los_Angeles,Dupe
 65470,2024 Panoche Creek Preserve - Dollar Marsh West,7790,36.5919,-120.7723,315,America/Los_Angeles,Dupe
-63656,2024 Rancho Jamul - Main Pond 1,9409,32.6846,-116.8560,236,America/Los_Angeles,
-63657,2024 Rancho Jamul - Main Pond 2,7386,32.6846,-116.8560,236,America/Los_Angeles,Dupe
-63468,2024 Rancho Jamul - North Pond,6096,32.6846,-116.8560,236,America/Los_Angeles,
-63738,2024 Sedgwick,8740,34.9950,-120.0420,922,America/Los_Angeles,
+63656,2024 Rancho Jamul - Main Pond 1,9409,,,236,America/Los_Angeles,
+63657,2024 Rancho Jamul - Main Pond 2,7386,,,236,America/Los_Angeles,Dupe
+63468,2024 Rancho Jamul - North Pond,6096,,,236,America/Los_Angeles,
+63738,2024 Sedgwick,8740,34.6950,-120.0420,343,America/Los_Angeles,
 63089,2024 SJWA Thistle NW of Bridge Street Pond,1224,33.8624,-117.0760,435,America/Los_Angeles,
 63116,2024 WA Harder Spring,9452,46.6570,-118.4990,276,America/Los_Angeles,
 63465,2024 WA McCain Pond,9011,48.8520,-119.1830,1244,America/Los_Angeles,

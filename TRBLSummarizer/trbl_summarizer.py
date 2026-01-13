@@ -2,12 +2,12 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 PROFILING = False
-MAKE_ALL_GRAPHS = False
-ALIGN_DATES = False
+MAKE_ALL_GRAPHS = True
+ALIGN_DATES = True
 STANDARD_START  = "04/01"
 STANDARD_END    = "07/30"
 GRAPH_LEFT_PADDING = 0.1
@@ -883,13 +883,8 @@ def process_site_summary_data(summary_row:pd.DataFrame) -> dict:
             elif value1.lower() == "before start, hbc absent".lower():
                 pass #Don't do anything right now, maybe later
             elif value1 == "pre":
-                #If the start date is "before start" then we don't know when it was exactly. I used to use the
-                #date of the first recording as "before start" but that's not correct, so we took this line 
-                #out:
-                #   result1 = summary_dict[SUMMARY_FIRST_REC]
-                #
-                #Not sure if there's anything to do here...
-                pass
+                #If the start date is "pre" then we want to indicate this so we can draw the arrow on the graph
+                result1 = convert_to_datetime("6/1/1967") 
             elif value1 == "post":
                 if value2 != "post":
                     log_error(f"{error_prefix}: {target1} is 'after end' but {target2} is not")
@@ -1873,9 +1868,9 @@ def draw_event_date_marker(ax, x, add_arrow=False, date_type=PULSE_HATCH):
     cy = 0.45
 
     date_markers = {
-        PULSE_MC_START : "S",
+        PULSE_MC_START : "M",
         PULSE_INC_START : "I",
-        PULSE_HATCH : "H",
+        PULSE_HATCH : "B",
         PULSE_FIRST_FLDG : "F",
         PULSE_LAST_FLDG : "D"
     }
@@ -1942,7 +1937,7 @@ def calc_x_from_date(df, event_date) -> float:
 
 def add_event_date_marker(ax, df, date_type, event_date): 
     add_arrow = False
-    if date_type == PULSE_HATCH and event_date == convert_to_datetime("6/1/1967"):
+    if event_date == convert_to_datetime("6/1/1967"):
         #This is the new special case of a hatch date prior to graph start 
         x = 0
         add_arrow = True
@@ -2141,8 +2136,7 @@ def create_graph(site: str,
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
-
-        if graph_type == GRAPH_PM:
+        if graph_type == GRAPH_PM and not do_aligned_dates:
             #Add the event markers if available
             for pulse in key_dates:
                 for date_type, event_date in key_dates[pulse].items():
@@ -2754,8 +2748,9 @@ def sort_by_latitude(files:list) -> list:
             lat = get_site_info(site, ["Latitude"])
             if not "Latitude" in lat.keys():
                 pass
-
-            file_list[float(lat["Latitude"])] = filename
+            
+            if pd.notna(pd.to_numeric(lat["Latitude"], errors="coerce")):
+                file_list[float(lat["Latitude"])] = filename
 
         sorted_files = dict(sorted(file_list.items(), reverse=True))
 
@@ -3207,6 +3202,7 @@ def pretty_print_table(df:pd.DataFrame, body_alignment="center"):
 
     st.markdown(output_df.to_html(escape=False), unsafe_allow_html=True)
 
+
 def get_site_info(site_name:str, site_info_fields:list) -> dict:
     site_info = {}
     df = load_all_file()
@@ -3218,6 +3214,7 @@ def get_site_info(site_name:str, site_info_fields:list) -> dict:
         site_info = {k: ("N/A" if pd.isna(v) else v) for k, v in site_info.items()}  # Replace NaN
 
     return site_info
+
 
 def show_station_info(site:pd.DataFrame):
     alt = site.at[site.index[0], "Altitude"]
@@ -3577,6 +3574,8 @@ def main():
     weather_by_type = {}
 
     do_aligned_dates = MAKE_ALL_GRAPHS and ALIGN_DATES
+    if do_aligned_dates:
+            combine_aligned_images()
 
     for idx, site in enumerate(target_sites):
         if PROFILING:

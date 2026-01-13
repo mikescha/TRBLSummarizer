@@ -9,7 +9,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 2719,2018 Rush Ranch,2018 Rush Ranch p1,Successful,Unknown,Simple,2018-05-26,2018-05-16,10,52,5.2,2018-06-06,10,32,3.2,0.615,2018-06-20,15,85,5.667,True,"Bulrush, cattails",2000,
 3682,2018 SJWA-rose-2,2018 San Jacinto Wildlife Area - Bridge St. Pond p1,Abandoned,Unknown,Unknown,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",30000,No valid hatch date
 3417,2018 SJWA-rose-1,2018 San Jacinto Wildlife Area - Little Ramona p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",30000,No valid hatch date
-82621,2018 SJWA WSS,2018 SJWA Little Ramona p1,Abandoned,Unknown,Unknown,2018-04-24,2018-04-14,10,84,8.4,2018-05-01,6,0,0.0,n/a,n/a,0,0,n/a,False,"Bulrush, cattails",30000,Breeding Type is not valid: Unknown
+82621,2018 SJWA WSS,2018 SJWA Little Ramona p1,Abandoned,Unknown,Unknown,2018-04-30,2018-04-20,10,23,2.3,n/a,0,0,n/a,n/a,n/a,0,0,n/a,False,"Bulrush, cattails",30000,Nestling days less than 4 |Breeding Type is not valid: Unknown
 5642,2019 Colusa NWR 27-1,2019 Colusa NWR T27.1 p1,Successful,Unknown,Simple,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",20000,No valid hatch date
 5643,2019 Colusa NWR 27-2,2019 Colusa NWR T27.2 p1,Partially Abandoned,Unknown,Simple,2019-05-29,2019-05-21,8,27,3.375,2019-06-09,10,2,0.2,0.059,2019-06-18,10,1,0.1,True,"Bulrush, cattails",60,
 4455,2019 Creed Road,2019 Denverton Creek p1,Successful,Unknown,Sequential,2019-05-10,2019-04-30,10,65,6.5,2019-05-21,10,42,4.2,0.646,2019-06-04,15,129,8.6,True,Himalayan blackberry,1000,
@@ -28,7 +28,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 6199,2020 Hay Landfill,2020 Hay Landfill p1,Successful,Unknown,Asynchronous,2020-04-30,2020-04-20,10,18,1.8,2020-05-11,10,35,3.5,n/a,2020-05-25,15,177,11.8,True,"Bulrush, cattails",4000,Breeding Type is not valid: Asynchronous
 6199,2020 Hay Landfill,2020 Hay Landfill p2,Successful,Unknown,Asynchronous,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",4000,No valid hatch date
 7650,2020 Iron Point,2020 Iron Point p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Himalayan blackberry, willow",No Colony,No valid hatch date
-6404,2020 Markham Ravine,2020 Markham Ravine p1,Partially Abandoned,Unknown,Simple,2020-05-19,2020-05-09,10,240,24.0,2020-05-29,9,48,5.333,0.222,2020-06-13,15,17,1.133,True,"Himalayan blackberry, willow",1000,
+6404,2020 Markham Ravine,2020 Markham Ravine p1,Partially Abandoned,Unknown,Simple,2020-05-19,2020-05-09,10,279,27.9,2020-05-29,9,48,5.333,0.191,2020-06-13,15,17,1.133,True,"Himalayan blackberry, willow",1000,
 2915,2020 Rush Ranch,2020 Rush Ranch p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",No Colony,No valid hatch date
 18572,2020 Ohlone - Santa Lucia Preserve,2020 Santa Lucia Preserve - Ohlone Pond p1,Successful,Unknown,Simple,2020-05-04,2020-04-24,10,59,5.9,2020-05-15,10,84,8.4,1.424,2020-05-29,15,81,5.4,True,NEED,NEED,
 24130,2021 Colusa NWR 27-1,2021 Colusa NWR T27.1 p1,Successful,Unknown,Simple,2021-06-06,2021-05-27,10,11,1.1,2021-06-17,10,23,2.3,2.091,2021-06-26,10,0,0.0,False,"Bulrush, cattails",NEED,
@@ -82,7 +82,7 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 33966,2022 Hay Landfill,2022 Hay Landfill p1,Partially Abandoned,Unknown,Sequential,2022-04-12,2022-04-02,10,125,12.5,2022-04-23,10,23,2.3,0.184,2022-05-07,15,160,10.667,True,"Bulrush, cattails",4000,
 33966,2022 Hay Landfill,2022 Hay Landfill p2,Successful,Unknown,Sequential,2022-05-19,2022-05-09,10,17,1.7,2022-05-30,10,11,1.1,0.647,2022-06-13,15,36,2.4,True,"Bulrush, cattails",4000,
 34077,2022 Laguna Seca,2022 Laguna Seca p1,Successful,Unknown,Sequential,2022-04-15,2022-04-05,10,0,0.0,2022-04-26,10,5,0.5,n/a,2022-05-10,15,0,0.0,False,"Bulrush, cattails",NEED,Female calls = 0
-34077,2022 Laguna Seca,2022 Laguna Seca p2,Unknown,Unknown,Sequential,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Bulrush, cattails",NEED,No valid hatch date
+34077,2022 Laguna Seca,2022 Laguna Seca p2,Unknown,Unknown,Sequential,2022-05-28,2022-05-18,10,67,6.7,2022-06-08,10,35,3.5,n/a,2022-06-22,15,0,0.0,False,"Bulrush, cattails",NEED,Outcome is not valid: Unknown |
 34117,2022 Los Vaqueros Reservoir,2022 Los Vaqueros Reservoir p1,Successful,Unknown,Unknown,2022-04-19,2022-04-15,4,104,26.0,2022-04-30,10,262,26.2,n/a,2022-05-14,15,201,13.4,True,Himalayan blackberry,400-500,Breeding Type is not valid: Unknown
 34076,2022 Marsh Creek Reservoir,2022 Marsh Creek Reservoir p1,No TRBL,Unknown,No TRBL,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Cattails,No Colony,No valid hatch date
 34075,2022 Newberry Springs - Lake Wainani,2022 Newberry Springs - Lake Wainani p1,Successful,Unknown,Unknown,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Cattails, willows",500,No valid hatch date
@@ -141,15 +141,15 @@ Site_ID,Site_Name,Pulse Name,Outcome,Calculated_Outcome,Breeding_Type,Hatch_Date
 48444,2023 Los Vaqueros Reservoir,2023 Los Vaqueros Reservoir p2,Successful,Unknown,Sequential,2023-06-15,2023-06-05,10,49,4.9,2023-06-26,10,116,11.6,2.367,2023-07-10,15,314,20.933,True,Himalayan blackberry,2000,
 48436,2023 Markham Ravine,2023 Markham Ravine p1,Partially Abandoned,Unknown,Simple,2023-05-31,2023-05-21,10,89,8.9,2023-06-11,10,26,2.6,0.292,2023-06-25,15,198,13.2,True,"Himalayan blackberry, willow",3000-4000,
 48446,2023 Merced NWR - Cottonwood,2023 Merced NWR - Cottonwood Trail p1,Successful,Unknown,Sequential,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Buttonwillow, milk thistle",ND,No valid hatch date
-48446,2023 Merced NWR - Cottonwood,2023 Merced NWR - Cottonwood Trail p2,Partially Abandoned,Unknown,Sequential,2023-05-25,2023-05-15,10,58,5.8,2023-06-05,10,0,0.0,0.0,2023-06-16,12,9,0.75,True,"Buttonwillow, milk thistle",ND,
+48446,2023 Merced NWR - Cottonwood,2023 Merced NWR - Cottonwood Trail p2,Partially Abandoned,Unknown,Sequential,2023-05-24,2023-05-14,10,56,5.6,2023-06-04,10,0,0.0,0.0,2023-06-16,13,10,0.769,True,"Buttonwillow, milk thistle",ND,
 48490,2023 Merced NWR Deadman Wetland Ditch,2023 Merced NWR - Deadman Wetland Ditch p1,Abandoned,Unknown,Simple,2023-05-31,2023-05-23,8,75,9.375,2023-06-11,10,6,0.6,0.064,2023-06-25,15,0,0.0,False,"Milk thistle, mustard",200,
-48448,2023 North Regional Pond,2023 North Regional Pond p1,Successful,Unknown,Simple,2023-05-05,2023-04-25,10,7,0.7,2023-05-16,10,6,0.6,0.857,2023-05-30,15,119,7.933,True,"Mustard, milk thistle",150,
+48448,2023 North Regional Pond,2023 North Regional Pond p1,Successful,Unknown,Simple,2023-05-04,2023-04-24,10,7,0.7,2023-05-15,10,7,0.7,1.0,2023-05-29,15,120,8.0,True,"Mustard, milk thistle",150,
 48397,2023 OR Dizney Rd,2023 Oregon State - Dizney Rd p1,Partially Abandoned,Unknown,Simple,2023-05-19,2023-05-09,10,145,14.5,2023-05-30,10,18,1.8,0.124,2023-06-13,15,9,0.6,True,"Cattails, Himalayan blackberry",75-100,
 48392,2023 OR Eureka Rd,2023 Oregon State - Eureka Lane p1,Successful,Unknown,Asynchronous,2023-05-19,2023-05-09,10,53,5.3,2023-05-30,10,55,5.5,n/a,2023-06-13,15,135,9.0,True,"Cattails, Himalayan blackberry",100,Breeding Type is not valid: Asynchronous
 48445,2023 OR Prineville North,2023 Oregon State - Prineville Grimes Rd p1,Successful,Unknown,Sequential,2023-05-15,2023-05-05,10,126,12.6,2023-05-26,10,313,31.3,2.484,2023-06-09,15,47,3.133,True,Cattails,50-75,
 48445,2023 OR Prineville North,2023 Oregon State - Prineville Grimes Rd p2,Successful,Unknown,Sequential,2023-06-21,2023-06-11,10,64,6.4,2023-07-02,10,130,13.0,2.031,2023-07-15,14,46,3.286,True,Cattails,50-75,
 48796,2023 Panoche Creek Preserve - Corrals NW,2023 Panoche Creek Preserve - Corrals North West p1,Successful,Unknown,Simple,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Fiddleneck, cheeseweed, London rocket, and Chilean chess",400-500,No valid hatch date
-48797,2023 Panoche Creek Preserve - Corrals SE,2023 Panoche Creek Preserve - Corrals South East p1,Successful,Unknown,Simple,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Fiddleneck, cheeseweed, London rocket, and Chilean chess",400-500,No valid hatch date
+48797,2023 Panoche Creek Preserve - Corrals SE,2023 Panoche Creek Preserve - Corrals Southeast p1,Successful,Unknown,Simple,pre,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,"Fiddleneck, cheeseweed, London rocket, and Chilean chess",400-500,No valid hatch date
 48440,2023 Peterson Ranch Pond - East,2023 Petersen Ranch Pond - East p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Bulrush,No Colony,No valid hatch date
 48461,2023 Peterson Ranch Pond - West,2023 Petersen Ranch Pond - West p1,No Colony,Unknown,No Colony,NHD,n/a,0,0,n/a,n/a,0,0,n/a,n/a,n/a,0,0,0,False,Bulrush,No Colony,No valid hatch date
 48475,2023 Plumas Arboga 2,2023 Plumas Arboga 2 p1,Successful,Unknown,Simple,2023-06-07,2023-05-28,10,401,40.1,2023-06-18,10,348,34.8,0.868,2023-07-02,15,358,23.867,True,Himalayan blackberry,7000,
