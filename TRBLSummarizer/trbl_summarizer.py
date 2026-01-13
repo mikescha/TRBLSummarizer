@@ -2,11 +2,11 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = False
 PROFILING = False
-MAKE_ALL_GRAPHS = True
+MAKE_ALL_GRAPHS = False
 ALIGN_DATES = True
 STANDARD_START  = "04/01"
 STANDARD_END    = "07/30"
@@ -3574,8 +3574,8 @@ def main():
     weather_by_type = {}
 
     do_aligned_dates = MAKE_ALL_GRAPHS and ALIGN_DATES
-    if do_aligned_dates:
-            combine_aligned_images()
+    # if do_aligned_dates:
+    #         combine_aligned_images()
 
     for idx, site in enumerate(target_sites):
         if PROFILING:
