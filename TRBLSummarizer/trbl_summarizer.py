@@ -2756,7 +2756,7 @@ def sort_by_latitude(files:list) -> list:
 
     return list(sorted_files.values())
 
-def combine_aligned_images():
+def combine_aligned_images(by_group:bool=False):
     years = ["2018", "2019", "2020", "2021", "2022", "2023", "2024"]
 
     for year in years:
@@ -2784,7 +2784,6 @@ def combine_aligned_images():
         final.save(final_path)
 
     return
-
 
 
 
