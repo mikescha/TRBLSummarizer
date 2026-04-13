@@ -2,11 +2,11 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
-INCLUDE_INSECT_AND_FROG_DATA = False
+INCLUDE_INSECT_AND_FROG_DATA = True
 PROFILING = False
-MAKE_ALL_GRAPHS = False
+MAKE_ALL_GRAPHS = True
 ALIGN_DATES = True
 STANDARD_START  = "04/01"
 STANDARD_END    = "07/30"
@@ -273,13 +273,16 @@ CMAP_PM = {"Male Song":         "Greens",
            "Hatchling":         "Blues",
            "Nestling" :         "Blues",
            "Fledgling":         "Blues",
-           "Insect 30":         "Greys",
-           "Insect 31":   	    "Greys",
-           "Insect 32":         "Greys",	
-           "Insect 33":         "Greys",
-           "Pacific Tree Frog": "YlGn",	
-           "Red-legged Frog":   "YlGn",
-           "Bull Frog":         "YlGn"}
+           "Chirper" :         "Greys",
+           "Triller" :         "Greys",
+        #    "Insect 30":         "Greys",
+        #    "Insect 31":   	    "Greys",
+        #    "Insect 32":         "Greys",	
+        #    "Insect 33":         "Greys",
+        #    "Pacific Tree Frog": "YlGn",	
+        #    "Red-legged Frog":   "YlGn",
+        #    "Bull Frog":         "YlGn"
+}
 
 NO_DATA_COLOR = "lightgray"
 HATCH_PATTERN = "////////"
@@ -355,16 +358,19 @@ PM_SONG_TYPES = ["Male Song",
 #NOTE Dec 2024: The file names are matching what the PM Downloader does, which is missing the "sp" from the name
 #       so to prevent having to re-download everything we'll leave it this way and change it in the graph
 #       rendering code or elsewhere as necessary. If this changes, need to update the cmap and the legend text
-PM_INSECT_SP30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
-PM_FROG_PACTF = "Pacific Tree Frog"
+# PM_INSECT_SP30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
+# PM_FROG_PACTF = "Pacific Tree Frog"
+PM_CHIRPER = "Chirper"
 PM_OTHER_TYPES = {
-    PM_INSECT_SP30 : "Bug 30",
-    "Insect 31": "Bug 31",	
-    "Insect 32": "Bug 32",	
-    "Insect 33": "Bug 33",	
-    PM_FROG_PACTF: "Pacific Tree Frog",	
-    "Red-legged Frog": "Red-legged Frog",
-    "Bull Frog": "Bull Frog",
+    PM_CHIRPER : "Chirper",
+    "Triller" : "Triller",
+    # PM_INSECT_SP30 : "Bug 30",
+    # "Insect 31": "Bug 31",	
+    # "Insect 32": "Bug 32",	
+    # "Insect 33": "Bug 33",	
+    # PM_FROG_PACTF: "Pacific Tree Frog",	
+    # "Red-legged Frog": "Red-legged Frog",
+    # "Bull Frog": "Bull Frog",
 }
 
 #adjust the set of file types based on what data we want to show in the graphs
@@ -2148,7 +2154,7 @@ def create_graph(site: str,
 
                         
             #NOTE Dec 2024: Added extra lines to separate insects
-            if row == PM_INSECT_SP30 or row == PM_FROG_PACTF:
+            if row == PM_CHIRPER:
                 #Want to add a line above these two rows to separate them
                 # Get the top y-limit
                 top_y = ax.get_ylim()[1]
@@ -3573,8 +3579,8 @@ def main():
     weather_by_type = {}
 
     do_aligned_dates = MAKE_ALL_GRAPHS and ALIGN_DATES
-    # if do_aligned_dates:
-    #         combine_aligned_images()
+    if do_aligned_dates:
+        combine_aligned_images()
 
     for idx, site in enumerate(target_sites):
         if PROFILING:
