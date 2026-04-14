@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 #Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 SHOW_MANUAL_ANALYSIS = True  # Dec 2025, we may or may not want to show the manual analysis graph
 INCLUDE_INSECT_AND_FROG_DATA = True
 PROFILING = False
@@ -275,11 +275,11 @@ CMAP_PM = {"Male Song":         "Greens",
            "Fledgling":         "Blues",
            "Chirper" :         "Greys",
            "Triller" :         "Greys",
+           "Pacific Tree Frog": "YlGn",	
         #    "Insect 30":         "Greys",
         #    "Insect 31":   	    "Greys",
         #    "Insect 32":         "Greys",	
         #    "Insect 33":         "Greys",
-        #    "Pacific Tree Frog": "YlGn",	
         #    "Red-legged Frog":   "YlGn",
         #    "Bull Frog":         "YlGn"
 }
@@ -359,16 +359,16 @@ PM_SONG_TYPES = ["Male Song",
 #       so to prevent having to re-download everything we'll leave it this way and change it in the graph
 #       rendering code or elsewhere as necessary. If this changes, need to update the cmap and the legend text
 # PM_INSECT_SP30 = "Insect 30"  #Making these variables because this string is referenced in the graphing code
-# PM_FROG_PACTF = "Pacific Tree Frog"
+PM_FROG_PACTF = "Pacific Tree Frog"
 PM_CHIRPER = "Chirper"
 PM_OTHER_TYPES = {
     PM_CHIRPER : "Chirper",
     "Triller" : "Triller",
+    PM_FROG_PACTF: "Pacific Tree Frog",	
     # PM_INSECT_SP30 : "Bug 30",
     # "Insect 31": "Bug 31",	
     # "Insect 32": "Bug 32",	
     # "Insect 33": "Bug 33",	
-    # PM_FROG_PACTF: "Pacific Tree Frog",	
     # "Red-legged Frog": "Red-legged Frog",
     # "Bull Frog": "Bull Frog",
 }
@@ -1955,6 +1955,11 @@ def add_event_date_marker(ax, df, date_type, event_date):
     draw_event_date_marker(ax, x, add_arrow=add_arrow, date_type=date_type)
 
 
+def add_text(ax, text, color):
+    ax.text(0.5,0.5,text, 
+            font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
+            color=color, verticalalignment='center')
+
 
 # Create a graph, given a dataframe, list of row names, color map, and friendly names for the rows
 def create_graph(site: str,
@@ -1970,13 +1975,13 @@ def create_graph(site: str,
                  missing_days=pd.DatetimeIndex([]),
                  denom_by_day: pd.Series = pd.Series(),
                  do_aligned_dates:bool = False,
-) -> tuple[Figure, Axes]:
+) -> Figure:
     plt.close() #close any prior graph that was open
 
     if len(df) == 0:
         #return an empty plot if nothing to graph
         fig, axs = plt.subplots(nrows=1, ncols=1)
-        return fig, axs
+        return fig
 
     if graph_type == GRAPH_EDGE:
         row_count = 1 #All data should be drawn on the same axis for edge
@@ -2123,22 +2128,14 @@ def create_graph(site: str,
             if graph_type == GRAPH_EDGE and df.loc[row].lt(0).any():
                 pass
             else:
-                pass
-                # if file_missing(site, graph_type, row):
-                #     label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
-                #     display_label = tag_name_map[label] if label in tag_name_map.keys() else label
-                #     axs[i].text(0.5,0.5,f"No data for {display_label}", 
-                #                 font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-                #                 color='gray', verticalalignment='center')
-        elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys():
-            ax.text(0.5,0.5,f"{PM_OTHER_TYPES[row]}", 
-                        font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-                        color='black', verticalalignment='center')
+                if file_missing(site, graph_type, row) and not do_aligned_dates:
+                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row 
+                    display_label = tag_name_map[label] if label in tag_name_map.keys() else label
+                    add_text(axs[i], f"No data for {display_label}", 'gray')
+        elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys() and not do_aligned_dates:
+            add_text(ax, f"{PM_OTHER_TYPES[row]}", 'black')
         elif graph_type == GRAPH_EDGE:
             pass
-            # ax.text(0.5,0.5,f"{row}", 
-            #             font = GRAPH_FONT, fontsize=8, fontstyle='italic', 
-            #             color='black', verticalalignment='center')
 
         # Track which graphs we drew, so we can put the proper ticks on later
         graph_drawn.append(i)
@@ -2275,7 +2272,8 @@ def create_graph(site: str,
     #add_watermark(title)
 
     # return the final plotted heatmap
-    return fig, axs
+    return fig
+
 
 def axes_union_bbox(fig):
     # union of all axes positions in figure-fraction coords
@@ -2741,22 +2739,22 @@ def concat_aligned_images(image_dict:dict, data_dict:dict):
 
 
 def sort_by_latitude(files:list) -> list:
-    ''' For each file, get the site name (the first characters up to the -) and then use that to get the latitude
+    ''' For each file, get the site name (the first characters up to the _) and then use that to get the latitude
         Put it all into a dict with latitude as keys
         Sort the dict by keys
         Return the dict values (the filenames) as a list
-    '''
+    ''' 
     sorted_files = {}
     if files:
         file_list = {}
-        for filename in files:
+        for filename in files: 
             site = Path(filename).name.split("_",1)[0] 
             lat = get_site_info(site, ["Latitude"])
-            if not "Latitude" in lat.keys():
-                pass
-            
-            if pd.notna(pd.to_numeric(lat["Latitude"], errors="coerce")):
-                file_list[float(lat["Latitude"])] = filename
+            if "Latitude" in lat.keys():
+                if pd.notna(pd.to_numeric(lat["Latitude"], errors="coerce")):
+                    file_list[float(lat["Latitude"])] = filename
+            else:
+                print(f"No latitude for site {site} from file {filename}")
 
         sorted_files = dict(sorted(file_list.items(), reverse=True))
 
@@ -3486,17 +3484,8 @@ def get_month_locs(cols: pd.Index) -> dict[str, list[int]]:
 # ===========================================================================================================
 # ===========================================================================================================
 
-def main():
+def set_up_sidebar():
     global MAKE_ALL_GRAPHS
-
-
-    with timed("Load summary data"):
-        # Load all the summary data
-        summary_df = load_summary_data()
-
-    #combine_aligned_images()
-    init_logging()
-
     # Set up the sidebar with three zones so it looks like we want
     container_top = st.sidebar.container()
     container_mid = st.sidebar.container(border=True)
@@ -3517,14 +3506,23 @@ def main():
 
     with container_bottom:
         st.write("Contact wendy.schackwitz@gmail.com with any questions")
-        if not BEING_DEPLOYED_TO_STREAMLIT:
-            MAKE_ALL_GRAPHS = st.checkbox('Make all graphs')
-        else:
+        if BEING_DEPLOYED_TO_STREAMLIT:
             MAKE_ALL_GRAPHS = False
+        else:
+            MAKE_ALL_GRAPHS = st.checkbox('Make all graphs')
 
-    #Load all the data for most of the graphs
-    # with timed("Load all tag data"):
-    #     df_original = load_data()
+    return container_top, container_mid, show_station_info_checkbox, show_weather_checkbox
+
+
+def main():
+    global MAKE_ALL_GRAPHS
+    init_logging()
+
+    with timed("Load summary data"):
+        # Load all the summary data
+        summary_df = load_summary_data()
+
+    container_top, container_mid, show_station_info_checkbox, show_weather_checkbox = set_up_sidebar()
 
     #Load the hourly groupings for the PM graphs
     parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
@@ -3533,12 +3531,6 @@ def main():
     #Get the list of sites that we're going to do reports for, and then remove all the other data
     with timed("Clean data"):
         site_list = get_target_sites()
-    #     df = clean_data(df_original, site_list)
-
-    # with timed("Free memory"):
-    #     # Nuke the original data, hopefully this frees up memory
-    #     del df_original
-    #     gc.collect()
 
     save_files = False
     save_composite = False
@@ -3570,6 +3562,7 @@ def main():
     # Set format shared by all graphs
     set_global_theme()
 
+    # All our main storage variables
     df_site = pd.DataFrame()
     site_counter = 0
     pt_manual = pd.DataFrame()
@@ -3578,9 +3571,9 @@ def main():
     pt_pm = pd.DataFrame()
     weather_by_type = {}
 
+    # Only generate the aligned dates if we are also generating all the graphs, otherwise some graphs
+    # make not exist and it doesn't make sense.
     do_aligned_dates = MAKE_ALL_GRAPHS and ALIGN_DATES
-    if do_aligned_dates:
-        combine_aligned_images()
 
     for idx, site in enumerate(target_sites):
         if PROFILING:
@@ -3606,7 +3599,11 @@ def main():
         if not df_site.empty:
             #Get the data that we're going to graph
             rec_df_site = recordings_df.loc[recordings_df["site"] == site]
+
+            # She only wants the graphs to reflect rough daytime hours, so we need to filter 
+            # the recordings data to just those hours before we do the graphing.
             mask = (rec_df_site["hour"] >= 5) & (rec_df_site["hour"] < 21)  # 05:00–20:59 
+
             rec_norm = (
                 rec_df_site.loc[mask]
                 .groupby("date")["n_recordings"]
@@ -3679,78 +3676,73 @@ def main():
                 show_station_info(summary_row)
             ratio_str = get_ratio(site)
             st.success(f"{ratio_str}")
-            
 
         #list of month positions in the graphs
         month_locs = {} 
 
-        # Pattern Matching Analysis
-        # Everything has data, it didn't use to be the case. I'll leave the If in case we ever go back
-        if True: #not pt_pm.empty:
-            key_dates = {}
-            for p in PULSES:
-                if p in site_summary_dict:
-                    key_dates[p] = {}
-                    mc_date = site_summary_dict[p][PHASE_MALE_CHORUS]["start"]
-                    inc_date = site_summary_dict[p][PHASE_INC]["start"]
-                    hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
-                    fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
-                    dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
-                    if pd.notna(mc_date):
-                        key_dates[p][PULSE_MC_START] = mc_date
-                    if pd.notna(inc_date):
-                        key_dates[p][PULSE_INC_START] = inc_date
-                    if pd.notna(hatch_date):
-                        key_dates[p][PULSE_HATCH] = hatch_date
-                    if pd.notna(fledge_start_date):
-                        key_dates[p][PULSE_FIRST_FLDG] = fledge_start_date
-                    if pd.notna(dispersal):
-                        key_dates[p][PULSE_LAST_FLDG] = dispersal
+        # Generate key dates from the pattern matching data
+        key_dates = {}
+        for p in PULSES:
+            if p in site_summary_dict:
+                key_dates[p] = {}
+                mc_date = site_summary_dict[p][PHASE_MALE_CHORUS]["start"]
+                inc_date = site_summary_dict[p][PHASE_INC]["start"]
+                hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
+                fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
+                dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
+                if pd.notna(mc_date):
+                    key_dates[p][PULSE_MC_START] = mc_date
+                if pd.notna(inc_date):
+                    key_dates[p][PULSE_INC_START] = inc_date
+                if pd.notna(hatch_date):
+                    key_dates[p][PULSE_HATCH] = hatch_date
+                if pd.notna(fledge_start_date):
+                    key_dates[p][PULSE_FIRST_FLDG] = fledge_start_date
+                if pd.notna(dispersal):
+                    key_dates[p][PULSE_LAST_FLDG] = dispersal
 
+        with timed("Pattern matching graph"):
+            graph = create_graph(
+                site = site,
+                df = pt_pm, 
+                row_names = PM_FILE_TYPES, 
+                cmap = CMAP_PM, 
+                title = GRAPH_PM,
+                graph_type = GRAPH_PM,
+                key_dates = key_dates,
+                missing_days = missing_days,
+                denom_by_day = rec_norm,
+                do_aligned_dates=do_aligned_dates
+            ) 
 
-            with timed("Pattern matching graph"):
-                graph, axs = create_graph(
-                                    site = site,
-                                    df = pt_pm, 
-                                    row_names = PM_FILE_TYPES, 
-                                    cmap = CMAP_PM, 
-                                    title = GRAPH_PM,
-                                    graph_type = GRAPH_PM,
-                                    key_dates = key_dates,
-                                    missing_days = missing_days,
-                                    denom_by_day = rec_norm,
-                                    do_aligned_dates=do_aligned_dates
-                ) 
+        # add this if we want to include the site name (site + ' ' if save_files else '')
+        # Need to be able to build an image that looks like the graph labels so that it can be drawn
+        # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
+        # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
+        # to accidentally delete our list
 
-            # add this if we want to include the site name (site + ' ' if save_files else '')
-            # Need to be able to build an image that looks like the graph labels so that it can be drawn
-            # at the top of the composite. So, try to pull out the month positions for each graph as we don't 
-            # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
-            # to accidentally delete our list
+        if month_locs=={}:
+            month_locs = get_month_locs(pt_pm.columns)
 
-            if month_locs=={}:
-                month_locs = get_month_locs(pt_pm.columns)
-
-
-            output_graph(site, graph, GRAPH_PM,
-                        save_files=save_files, 
-                        make_all_graphs=MAKE_ALL_GRAPHS, align_dates=ALIGN_DATES,
-                        data_to_graph=have_pm_data)
+        output_graph(site, graph, GRAPH_PM,
+                    save_files=save_files, 
+                    make_all_graphs=MAKE_ALL_GRAPHS, align_dates=ALIGN_DATES,
+                    data_to_graph=have_pm_data)
 
 
         # MiniManual Analysis
         if not pt_mini_manual.empty and not do_aligned_dates:
             with timed("Mini manual graph"):
-                graph, axs = create_graph(
-                                site = site,
-                                df = pt_mini_manual, 
-                                row_names = SONG_COLS, 
-                                cmap = CMAP, 
-                                raw_data = df_site,
-                                draw_vert_rects = True,
-                                title = "Manual Analysis (Periodic)",
-                                graph_type = GRAPH_MINIMAN,
-                                missing_days = missing_days,
+                graph = create_graph(
+                    site = site,
+                    df = pt_mini_manual, 
+                    row_names = SONG_COLS, 
+                    cmap = CMAP, 
+                    raw_data = df_site,
+                    draw_vert_rects = True,
+                    title = "Manual Analysis (Periodic)",
+                    graph_type = GRAPH_MINIMAN,
+                    missing_days = missing_days,
             )
             if month_locs=={}:
                 month_locs = get_month_locs(pt_mini_manual.columns)
@@ -3765,14 +3757,14 @@ def main():
             new_songs = [MALE_SONG, ALTSONG2, ALTSONG1]
 
             with timed("Manual graph"): 
-                graph, axs = create_graph(
-                                    site = site,
-                                    df = pt_manual, 
-                                    row_names = [data_col[s] for s in new_songs], #SEPT2025
-                                    cmap = CMAP, 
-                                    title = "Manual Analysis (Daily Review)",
-                                    graph_type=GRAPH_MANUAL,
-                                    missing_days = missing_days
+                graph = create_graph(
+                    site = site,
+                    df = pt_manual, 
+                    row_names = [data_col[s] for s in new_songs], #SEPT2025
+                    cmap = CMAP, 
+                    title = "Manual Analysis (Daily Review)",
+                    graph_type=GRAPH_MANUAL,
+                    missing_days = missing_days
                 ) 
             if month_locs=={}:
                 month_locs = get_month_locs(pt_manual.columns)
@@ -3784,16 +3776,16 @@ def main():
         # Edge Analysis
         if not pt_edge.empty and not do_aligned_dates:
             cmap_edge = {n:'Blues' for n in EDGE_N_COLS} # the |" is used to merge dicts
-            graph, axs = create_graph(
-                                site = site,
-                                df = pt_edge, #was pt_edge
-                                row_names = pt_edge.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
-                                cmap = cmap_edge, 
-                                raw_data = df_site,
-                                draw_horiz_rects = True,
-                                title = "Manual Analysis (Hatchlings Only)", # was GRAPH_EDGE,
-                                graph_type=GRAPH_EDGE,
-                                missing_days = missing_days
+            graph = create_graph(
+                site = site,
+                df = pt_edge, #was pt_edge
+                row_names = pt_edge.index.to_list(), #was EDGE_N_COLS, #was EDGE_COLS,
+                cmap = cmap_edge, 
+                raw_data = df_site,
+                draw_horiz_rects = True,
+                title = "Manual Analysis (Hatchlings Only)", # was GRAPH_EDGE,
+                graph_type=GRAPH_EDGE,
+                missing_days = missing_days
             )
             if month_locs=={}:
                 month_locs = get_month_locs(pt_edge.columns)
