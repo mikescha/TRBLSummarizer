@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import Any
 
 import matplotlib as mpl
 import numpy as np
@@ -333,6 +334,32 @@ PULSE_PHASES = {
     PHASE_FLDG: [PULSE_FIRST_FLDG, PULSE_LAST_FLDG],
 }
 CONTINUOUS = "continuous"
+
+# Core hours, these are the only ones we check for presences
+CORE_START_HOUR = 7
+CORE_END_HOUR_EXCLUSIVE = 20  # includes 7 through 19, excludes 20
+MIN_CORE_HOURS_FOR_MEANINGFUL_ABSENCE = 4  # Fewer than this and we can't say much about an absence, so we won't count it as an absence in the effort-aware logic
+MAX_CONSECUTIVE_BRIDGE_DAYS = 2
+EFFORT_THRESHOLD_RATIOS = {
+    "male_chorus": (3, 13),
+    "female_chatter": (2, 13),
+    "hbc": (1, 2),
+    "nbc": (3, 13),
+    "fbc": (3, 13),
+}
+
+DETECTION_COLUMN_RULES = {
+    # Pattern-matching / PMJ columns use regular recording effort.
+    "PM-MC": {"song_type": "male_chorus", "effort_col": "D-Hrs"},
+    "PM-FC": {"song_type": "female_chatter", "effort_col": "D-Hrs"},
+    "PM-NL": {"song_type": "nbc", "effort_col": "D-Hrs"},
+    "PM-FL": {"song_type": "fbc", "effort_col": "D-Hrs"},
+    # Manual HBC / edge review uses HBC-reviewed effort.
+    "P1N": {"song_type": "hbc", "effort_col": "Edge D-Hrs"},
+    "P2N": {"song_type": "hbc", "effort_col": "Edge D-Hrs"},
+    "P3N": {"song_type": "hbc", "effort_col": "Edge D-Hrs"},
+    "P4N": {"song_type": "hbc", "effort_col": "Edge D-Hrs"},
+}
 
 
 #
@@ -3778,6 +3805,137 @@ def create_weather_graph(
 #     return result
 
 
+def to_number(value, default=0.0) -> float:
+    value = pd.to_numeric(value, errors="coerce")
+    return default if pd.isna(value) else float(value)
+
+
+STATE_STYLES = {
+    # Connection / confident present
+    "C": "background-color: #C6EFCE; color: #006100; font-weight: bold;",
+    # Bridge-eligible
+    "B": "background-color: #FFF2CC; color: #7F6000;",
+    # Break / meaningful absence
+    "X": "background-color: #F4CCCC; color: #990000;",
+}
+
+DEFAULT_EMPTY_STYLE = "background-color: WhiteSmoke;"
+DEFAULT_NONZERO_STYLE = "color: DarkBlue; background-color: White;"
+EFFORT_STYLE = "background-color: DarkKhaki;"
+
+
+def style_detection_states(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Cell-wise styler.
+
+    For each detection column, classify the cell using its matching effort column.
+    Non-detection columns keep simpler styling.
+    """
+    styles = pd.DataFrame("", index=df.index, columns=df.columns)
+
+    # Date: no color.
+    if "Date" in styles.columns:
+        styles["Date"] = ""
+
+    # Effort columns: highlight, but do not classify as C/B/X.
+    for effort_col in ["D-Hrs", "Edge D-Hrs"]:
+        if effort_col in styles.columns:
+            styles[effort_col] = EFFORT_STYLE
+
+    # Weather columns: leave unstyled or add your own later.
+    for weather_col in ["prcp", "tmax", "tmin", "wspd"]:
+        if weather_col in styles.columns:
+            styles[weather_col] = ""
+
+    # Simple default styling for non-classified vocalization columns.
+    # These are not using Track B thresholds unless you add them to DETECTION_COLUMN_RULES.
+    for col in df.columns:
+        if col in DETECTION_COLUMN_RULES:
+            continue
+        if col in ["Date", "D-Hrs", "Edge D-Hrs", "prcp", "tmax", "tmin", "wspd"]:
+            continue
+
+        col_styles = []
+        for v in df[col]:
+            val = pd.to_numeric(v, errors="coerce")
+            if pd.isna(val) or val == 0:
+                col_styles.append(DEFAULT_EMPTY_STYLE)
+            else:
+                col_styles.append(DEFAULT_NONZERO_STYLE)
+        styles[col] = col_styles
+
+    # Track B-style C/B/X styling for mapped detection columns.
+    for detection_col, rule in DETECTION_COLUMN_RULES.items():
+        if detection_col not in df.columns:
+            continue
+
+        effort_col = rule["effort_col"]
+        song_type = rule["song_type"]
+
+        if effort_col not in df.columns:
+            # Fail visually but safely if the effort column is missing.
+            styles[detection_col] = "background-color: #EADCF8; color: #4B0082;"
+            continue
+
+        cell_styles = []
+
+        for idx, row in df.iterrows():
+            detection_hours = to_number(row[detection_col], default=0)
+            valid_core_hours = to_number(row[effort_col], default=0)
+
+            state, reason, threshold = classify_effort_adjusted_day(
+                song_type=song_type,
+                valid_core_hours=valid_core_hours,
+                detection_hours=detection_hours,
+            )
+
+            cell_styles.append(STATE_STYLES[state])
+
+        styles[detection_col] = cell_styles
+
+    return styles
+
+
+def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+
+    for idx, row in df.iterrows():
+        date_value = row["Date"] if "Date" in df.columns else idx
+
+        for detection_col, rule in DETECTION_COLUMN_RULES.items():
+            if detection_col not in df.columns:
+                continue
+
+            effort_col = rule["effort_col"]
+            if effort_col not in df.columns:
+                continue
+
+            detection_hours = to_number(row[detection_col], default=0)
+            valid_core_hours = to_number(row[effort_col], default=0)
+
+            state, reason, threshold = classify_effort_adjusted_day(
+                song_type=rule["song_type"],
+                valid_core_hours=valid_core_hours,
+                detection_hours=detection_hours,
+            )
+
+            rows.append(
+                {
+                    "Date": date_value,
+                    "column": detection_col,
+                    "song_type": rule["song_type"],
+                    "effort_col": effort_col,
+                    "valid_core_hours": valid_core_hours,
+                    "detection_hours": detection_hours,
+                    "threshold": threshold,
+                    "state": state,
+                    "reason": reason,
+                }
+            )
+
+    return pd.DataFrame(rows)
+
+
 # Color options: https://www.w3schools.com/colors/colors_names.asp
 def style_columns(column):
     # Colors for standard columns
@@ -4122,14 +4280,6 @@ def get_month_locs(cols: pd.Index) -> dict[str, list[int]]:
     return month_locs
 
 
-# ===========================================================================================================
-# ===========================================================================================================
-#
-#  Main
-#
-# ===========================================================================================================
-# ===========================================================================================================
-
 
 def set_up_sidebar():
     global make_all_graphs
@@ -4144,7 +4294,7 @@ def set_up_sidebar():
             "Heatmap contrast",
             min_value=0.1,
             max_value=1.0,
-            value=0.65,
+            value=0.85,
             step=0.05,
             key="gamma",
         )
@@ -4164,10 +4314,6 @@ def set_up_sidebar():
         show_station_info_checkbox,
         show_weather_checkbox,
     )
-
-
-CORE_START_HOUR = 7
-CORE_END_HOUR_EXCLUSIVE = 20  # includes 7 through 19, excludes 20
 
 
 def add_core_hour_column(
@@ -4225,6 +4371,68 @@ def filter_to_core_hours(
     return out.loc[mask].copy()
 
 
+def ceiling_divide(a: int, b: int) -> int:
+    return (int(a) + int(b) - 1) // int(b)
+
+
+def clean_str(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float) and math.isnan(value):
+        return ""
+    return str(value).strip()
+
+
+def safe_num(value: Any, default: float = 0.0) -> float:
+    try:
+        out = pd.to_numeric(value, errors="coerce")
+        if pd.isna(out):
+            return default
+        return float(out)
+    except Exception:
+        return default
+
+
+def classify_effort_adjusted_day(
+    song_type: str, valid_core_hours: int, detection_hours: int
+) -> tuple[str, str, int]:
+    """Classify one site/date/song row as C/B/X using effort-aware logic.
+
+    C = confident behavior present
+    B = bridge-eligible uncertainty/weak evidence
+    X = meaningful absence / hard break
+    """
+    full_core_hours = CORE_END_HOUR_EXCLUSIVE - CORE_START_HOUR
+    song = clean_str(song_type)
+    valid = int(max(0, min(full_core_hours, safe_num(valid_core_hours, 0))))
+    det = int(max(0, safe_num(detection_hours, 0)))
+
+    if valid <= 0:
+        return "B", "no_data", 0
+
+    numerator, denominator = EFFORT_THRESHOLD_RATIOS.get(song, (3, 13))
+    threshold = ceiling_divide(valid * numerator, denominator)
+    threshold = max(threshold, 1)
+
+    if det >= threshold:
+        return "C", "confident_present", threshold
+    if det > 0:
+        return "B", "positive_subthreshold", threshold
+    if valid < MIN_CORE_HOURS_FOR_MEANINGFUL_ABSENCE:
+        return "B", "low_effort_zero", threshold
+    return "X", "meaningful_absence", threshold
+
+
+
+
+# ===========================================================================================================
+# ===========================================================================================================
+#
+#  Main
+#
+# ===========================================================================================================
+# ===========================================================================================================
+
 def main():
     global make_all_graphs
     global align_dates
@@ -4236,12 +4444,6 @@ def main():
 
     container_top, container_mid, show_station_info_checkbox, show_weather_checkbox = (
         set_up_sidebar()
-    )
-
-    # Load the hourly groupings for the PM graphs, this is used for normalizing the data by the number of recordings made
-    parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
-    recordings_df = load_recordings_hourly(
-        parquet_path, "site", "date", "hour", "n_recordings"
     )
 
     # Get the list of sites that we're going to do reports for, and then remove all the other data
@@ -4324,7 +4526,6 @@ def main():
         if not df_site.empty:
             # Only consider recordings made during the core hours of 7:00 <= hour < 20:00, and get the number of recordings made per day for the site. This is used for graphing,
             df_core = filter_to_core_hours(df_site, hour_col="hour")
-
             rec_norm = df_core.groupby(level="date")["core_hour"].nunique()
 
             # Using the site of interest, get the first & last dates and give the user the option to customize the range
@@ -4686,7 +4887,7 @@ def main():
 
                     # Step B: Flip to a string and swap out <NA> for an absolute empty string ""
                     # This bypasses Streamlit's "None" canvas text rendering bug completely!
-                    df_display[c] = int_series.astype("string").fillna("")
+                    df_display[c] = int_series.astype("string").fillna(0)
 
             # 3. Generate column configurations dynamically using a dictionary comprehension
             configs = {
@@ -4705,14 +4906,25 @@ def main():
                 for col in df_display.columns
             }
 
-            sty_report = df_display.style.apply(style_columns, axis=0)
+            #            sty_report = df_display.style.apply(style_columns, axis=0)
+            sty_report = df_display.style.apply(style_detection_states, axis=None)
 
+            st.markdown(
+                """
+                **Detection state legend:**  
+                🟩 C = confident/connection day; 🟨 B = bridge day; 🟥 X = break day.
+                """
+            )
             # Render main table
             st.dataframe(
                 sty_report,
                 column_config=configs,
                 use_container_width=True,
             )
+
+        with st.expander("Detection state debug table"):
+            state_debug = build_detection_state_debug_table(df_display)
+            st.dataframe(state_debug, use_container_width=True)
 
         with st.expander("See overview of dates"):
 
