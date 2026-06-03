@@ -1,27 +1,10 @@
 from __future__ import annotations
 
-# TODO
-
-
-# Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
-SHOW_MANUAL_ANALYSIS = (
-    True  # Dec 2025, we may or may not want to show the manual analysis graph
-)
-INCLUDE_INSECT_AND_FROG_DATA = True
-PROFILING = False
-make_all_graphs = False
-align_dates = False
-STANDARD_START = "04/01"
-STANDARD_END = "07/30"
-GRAPH_LEFT_PADDING = 0.1
-
 import math
 
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
-import seaborn as sns  # TODO: try to get rid of this
 import streamlit as st
 
 mpl.use("WebAgg")  # Have to select the backend before doing other imports
@@ -31,6 +14,8 @@ import calendar
 # For profiling
 import cProfile
 import glob
+import io
+import operator as op
 import os
 import pstats
 import random
@@ -38,15 +23,14 @@ import time
 from collections import Counter
 
 # Crap that I needed to fix pylance errors
-from collections.abc import Sequence
 from contextlib import contextmanager
 from datetime import datetime as dt
 from itertools import tee
 from pathlib import Path
-from typing import cast
 
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
+import matplotlib.text as mtext
 import matplotlib.transforms as mtransforms
 import matplotlib.transforms as transforms
 from matplotlib import colors
@@ -58,47 +42,18 @@ from matplotlib.ticker import NullFormatter, NullLocator
 from matplotlib.transforms import Bbox
 from PIL import Image, ImageDraw, ImageFont
 
+# Set appropriately before I deploy
+BEING_DEPLOYED_TO_STREAMLIT = True
+# Dec 2025, we may or may not want to show the manual analysis graph
+SHOW_MANUAL_ANALYSIS = True
 
-@contextmanager
-def timed(label: str):
-    if not PROFILING:
-        yield
-        return
-    t0 = time.perf_counter()
-    yield
-    dt = time.perf_counter() - t0
-    print(f"[TIMER] {label}: {dt:.3f}s")
-
-
-import matplotlib.text as mtext
-
-
-def count_text_artists(fig):
-    texts = [a for a in fig.findobj(mtext.Text) if a.get_visible()]
-    # Filter out empty strings (Matplotlib has a lot of empty placeholders)
-    texts = [t for t in texts if (t.get_text() or "").strip()]
-    return len(texts), texts
-
-
-import io
-
-
-def st_image_figure(fig, *, dpi=120):
-    fig_w, fig_h = fig.get_size_inches()
-
-    pos = Bbox.union([ax.get_position() for ax in fig.axes])  # figure fraction
-    fig_w, fig_h = fig.get_size_inches()
-
-    bbox_in = Bbox.from_bounds(
-        pos.x0 * fig_w,
-        pos.y0 * fig_h,
-        pos.width * fig_w,
-        pos.height * fig_h,
-    )
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=bbox_in)  # keep None
-    buf.seek(0)
-    st.image(buf)
+INCLUDE_INSECT_AND_FROG_DATA = True
+PROFILING = False
+make_all_graphs = False
+align_dates = False
+STANDARD_START = "04/01"
+STANDARD_END = "07/30"
+GRAPH_LEFT_PADDING = 0.1
 
 
 # Constants and Globals
@@ -118,21 +73,19 @@ tag_mhe2 = "tag_mhe2"
 tag_ws = "tag_ws"
 tag_mh = "tag_mh"
 tag_ = "tag_"
-tag_p1c = "tag_p1c"
-tag_p1n = "tag_p1n"
+TAG_P1N = "tag_p1n"
 tag_p1a = "tag_p1a"  # used to be P1NA
 tag_p1f = "tag_p1f"
-tag_p2c = "tag_p2c"
-tag_p2n = "tag_p2n"
+TAG_P2N = "tag_p2n"
 tag_p2f = "tag_p2f"
-tag_p3n = "tag_p3n"
-tag_p4n = "tag_p4n"
+TAG_P3N = "tag_p3n"
+TAG_P4N = "tag_p4n"
 
 tag_wsmc = "tag_wsmc"
-validated = "validated"
-tag_YNC_p2 = "tag<YNC-p2>"
-tag_YNC_p3 = "tag<YNC-p3>"
-tag_YNC_p4 = "tag<YNC-p4>"
+VALIDATED_STR = "validated"
+TAG_YNC_P2 = "tag<YNC-p2>"
+TAG_YNC_P3 = "tag<YNC-p3>"
+TAG_YNC_P4 = "tag<YNC-p4>"
 MALE_SONG = "malesong"
 ALTSONG2 = "altsong2"
 ALTSONG1 = "altsong1"
@@ -143,6 +96,8 @@ PRESENT = "present"
 
 START = "start"
 END = "end"
+ND_STRING = "ND"
+
 
 # Master list of all the columns I need. If columns get added/removed then this needs to update
 # The dictionary values MUST map to what's in the data file.
@@ -154,18 +109,16 @@ data_col = {
     "year": "year",
     HOUR: "hour",
     DATE: "date",
-    tag_YNC_p2: "tag<YNC-p2>",  # Young nestling call pulse 2
-    tag_YNC_p3: "tag<YNC-p3>",  # Young nestling call pulse 3
-    tag_YNC_p4: "tag<YNC-p4>",  # Young nestling call pulse 4
+    TAG_YNC_P2: "tag<YNC-p2>",  # Young nestling call pulse 2
+    TAG_YNC_P3: "tag<YNC-p3>",  # Young nestling call pulse 3
+    TAG_YNC_P4: "tag<YNC-p4>",  # Young nestling call pulse 4
     tag_p1a: "tag<p1a>",
-    tag_p1c: "tag<p1c>",
     tag_p1f: "tag<p1f>",
-    tag_p1n: "tag<p1n>",
-    tag_p2c: "tag<p2c>",
+    TAG_P1N: "tag<p1n>",
     tag_p2f: "tag<p2f>",
-    tag_p2n: "tag<p2n>",
-    tag_p3n: "tag<p3n>",
-    tag_p4n: "tag<p4n>",
+    TAG_P2N: "tag<p2n>",
+    TAG_P3N: "tag<p3n>",
+    TAG_P4N: "tag<p4n>",
     tag_mhe2: "tag<reviewed-MH-e2>",
     tag_mhe: "tag<reviewed-MH-e>",
     tag_mhh: "tag<reviewed-MH-h>",
@@ -210,7 +163,7 @@ site_columns = {
     "y1": "y1",
     "y2": "y2",
     "frequency": "frequency",
-    validated: "validated",
+    VALIDATED_STR: "validated",
     "url": "url",
     "score": "score",
     "site_id": "site_id",
@@ -224,14 +177,21 @@ MANUAL_TAGS = [tag_mh, tag_ws, tag_]
 MINI_MANUAL_TAGS = [tag_mhh, tag_mhm, tag_wsm]
 
 EDGE_N_TAGS = [
-    tag_p1n,
-    tag_p2n,
-    tag_p3n,
-    tag_p4n,
+    TAG_P1N,
+    TAG_P2N,
+    TAG_P3N,
+    TAG_P4N,
 ]  # nestlings, p1 = pulse 1, p2 = pulse 2
-EDGE_YNC_TAGS = [tag_YNC_p2, tag_YNC_p3, tag_YNC_p4]
+EDGE_YNC_TAGS = [TAG_YNC_P2, TAG_YNC_P3, TAG_YNC_P4]
 EDGE_TAGS = EDGE_N_TAGS + EDGE_YNC_TAGS
 ALL_TAGS = MANUAL_TAGS + MINI_MANUAL_TAGS + EDGE_TAGS
+
+TAG_MAP = {  # map of tag_pXn to ync tag
+    data_col[TAG_P1N]: data_col[ALTSONG1],
+    data_col[TAG_P2N]: data_col[TAG_YNC_P2],
+    data_col[TAG_P3N]: data_col[TAG_YNC_P3],
+    data_col[TAG_P4N]: data_col[TAG_YNC_P4],
+}
 
 MANUAL_COLS = [data_col[t] for t in MANUAL_TAGS]
 MINI_MANUAL_COLS = [data_col[t] for t in MINI_MANUAL_TAGS]
@@ -372,6 +332,7 @@ PULSE_PHASES = {
     PHASE_BROOD: [PULSE_HATCH, PULSE_FIRST_FLDG],  # -1
     PHASE_FLDG: [PULSE_FIRST_FLDG, PULSE_LAST_FLDG],
 }
+CONTINUOUS = "continuous"
 
 
 #
@@ -417,9 +378,9 @@ else:
 pm_abbreviations = [
     "PM-MS",
     "PM-MC",
-    "PM-F",
-    "PM-H",
-    "PM-N",
+    "PM-FC",
+    "PM-HL",
+    "PM-NL",
     "PM-FL",
     "PM-I30",
     "PM-I31",
@@ -450,6 +411,42 @@ PRESERVE_EDGES_FLAG = -99
 DPI = 300
 
 error_list = ""
+
+
+@contextmanager
+def timed(label: str):
+    if not PROFILING:
+        yield
+        return
+    t0 = time.perf_counter()
+    yield
+    dt = time.perf_counter() - t0
+    print(f"[TIMER] {label}: {dt:.3f}s")
+
+
+def count_text_artists(fig):
+    texts = [a for a in fig.findobj(mtext.Text) if a.get_visible()]
+    # Filter out empty strings (Matplotlib has a lot of empty placeholders)
+    texts = [t for t in texts if (t.get_text() or "").strip()]
+    return len(texts), texts
+
+
+def st_image_figure(fig, *, dpi=120):
+    fig_w, fig_h = fig.get_size_inches()
+
+    pos = Bbox.union([ax.get_position() for ax in fig.axes])  # figure fraction
+    fig_w, fig_h = fig.get_size_inches()
+
+    bbox_in = Bbox.from_bounds(
+        pos.x0 * fig_w,
+        pos.y0 * fig_h,
+        pos.width * fig_w,
+        pos.height * fig_h,
+    )
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=bbox_in)  # keep None
+    buf.seek(0)
+    st.image(buf)
 
 
 #
@@ -505,9 +502,9 @@ def init_logging():
 def log_error(msg: str):
     global error_list
     error_list += f"{msg}\n\n"
-    # if not BEING_DEPLOYED_TO_STREAMLIT:
-    #     with ERROR_FILE.open("a") as f:
-    #         f.write(f"{my_time()}: {msg}\n")
+    if not BEING_DEPLOYED_TO_STREAMLIT:
+        with ERROR_FILE.open("a") as f:
+            f.write(f"{my_time()}: {msg}\n")
 
 
 def show_error(msg: str):
@@ -600,20 +597,51 @@ def fix_bad_values(df: pd.DataFrame):
             df[col] = df[col].replace(-100, 0)
 
 
-def check_edge_cols_for_errors(df: pd.DataFrame) -> bool:
+def check_edge_cols_for_errors(df: pd.DataFrame, tag_map: dict) -> bool:
     error_found = False
+    error_label = "check_edge_cols_for_errors"
+    if not BEING_DEPLOYED_TO_STREAMLIT:
+        # Look for -100s
+        df_edge_cols = filter_df_by_tags(df, list(tag_map.keys()))
+        df_bad_values = df_edge_cols[df_edge_cols.isin([-100]).any(axis=1)]
+        if len(df_bad_values) > 0:
+            error_found = True
+            show_error(
+                f"{error_label}: Found {len(df_bad_values)} rows with -100 values in edge columns, which indicates missing data that should have been cleaned up. See log for details."
+            )
+            for i, row in df_bad_values.iterrows():
+                log_error(
+                    f"   > {row['filename']}: "
+                    + ", ".join(
+                        [
+                            f"{col}={row[col]}"
+                            for col in df_edge_cols.columns
+                            if row[col] == -100
+                        ]
+                    )
+                )
+
+        # Confirm that if a value is >=1 then the key == 1
+        for key, value in tag_map.items():
+            if key in df.columns and value in df.columns:
+                errors = df.loc[(df[value] >= 1) & (df[key] != 1)]
+                if len(errors):
+                    error_found = True
+                    show_error(
+                        f"{error_label}: Found recordings where {value} is >= 1 but the corresponding {key} tag is not 1"
+                    )
+                    for i, row in errors.iterrows():
+                        log_error(
+                            f"   > {row['filename']}: {value}={row[value]}, {key}={row[key]}"
+                        )
+            else:
+                show_error(
+                    f"{error_label}: Column {key} or {value} not found in DataFrame"
+                )
+                error_found = True
 
     # Remove any -100 (were "---" in the original file, converted to numbers in the first cleaning pass) and log it, if there are any
     fix_bad_values(df)
-
-    # # For each day, there should be only either P1F or P1N, never both
-    # tag_errors = df.loc[(df[data_col[tag_p1f]]>=1) & (df[data_col[tag_p1n]]>=1)]
-
-    # if len(tag_errors):
-    #     error_found = True
-    #     show_error("check_edge_cols_for_errors: Found recordings that have both P1F and P1N tags, see log")
-    #     for f in tag_errors[FILENAME]:
-    #         log_error(f"check_edge_cols_for_errors: {f}\tRecording has both P1F and P1N tags")
 
     return error_found
 
@@ -758,7 +786,7 @@ def load_data_for_site(site: str):
     # # 2) Make it the index
     # df = df.set_index('date')
 
-    pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
+    pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE], data_col[HOUR]]
     for song in ALL_SONGS:
         pusecols.append(data_col[song])
     for tag in ALL_TAGS:
@@ -794,7 +822,8 @@ def load_pm_data(site: str) -> pd.DataFrame:
         site_columns["year"],
         site_columns["month"],
         site_columns["day"],
-        site_columns[validated],
+        site_columns[HOUR],
+        site_columns[VALIDATED_STR],
     ]
 
     # Add the site name so we look into the appropriate folder
@@ -804,11 +833,9 @@ def load_pm_data(site: str) -> pd.DataFrame:
             fname = f"{site} {t}.csv"
             full_file_name = site_dir / fname
 
-            df_temp = pd.DataFrame()
+            df_single_pmj_type = pd.DataFrame()
             if is_non_zero_file(full_file_name):
-                # Validate that all columns exist, and abandon ship if we're missing any
-                headers = pd.read_csv(full_file_name, nrows=0).columns.tolist()
-
+                # I used to validate that all columns exist, and abandon ship if we're missing any, not doing this as data is solid
                 df_temp = pd.read_csv(full_file_name, usecols=usecols)
                 # make a new column that has the date in it, take into account that the table could be empty
                 if not df_temp.empty:
@@ -819,20 +846,29 @@ def load_pm_data(site: str) -> pd.DataFrame:
                         + "-"
                         + df_temp["day"].astype("int64").astype(str).str.zfill(2)
                     )
-                    df_temp[DATE] = pd.to_datetime(date_str, errors="coerce")
-                    # df_temp[DATE + "2"] = df_temp.apply(make_date, axis=1)
-
+                    old_way = pd.to_datetime(date_str, errors="coerce")
+                    new_way = pd.to_datetime(df_temp[["year", "month", "day"]])
+                    matches = (old_way == new_way).all()
+                    if not matches:
+                        mismatches = df_temp[old_way != new_way]
+                        log_error(
+                            f"load_pm_data: Date parsing mismatch for file {full_file_name}"
+                        )
+                        log_error(f"{mismatches.head()}")
+                    # Add date column
+                    df_temp[DATE] = pd.to_datetime(df_temp[["year", "month", "day"]])
+                    df_single_pmj_type = df_temp.copy()
                 else:
-                    df_temp[DATE] = []
+                    df_single_pmj_type[DATE] = []
 
             else:
-                df_temp[DATE] = []
+                df_single_pmj_type[DATE] = []
 
             # Finally, add the table that we loaded to the end of the main one
-            df_temp["type"] = t
+            df_single_pmj_type["type"] = t
             # Ensure all columns in df_temp have explicit dtypes to avoid warning
-            df_temp = df_temp.astype("object")
-            df = pd.concat([df, df_temp], ignore_index=True)
+            df_single_pmj_type = df_single_pmj_type.astype("object")
+            df = pd.concat([df, df_single_pmj_type], ignore_index=True)
 
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
@@ -866,7 +902,7 @@ DATE_FORMAT = "%m/%d/%Y"
 
 def is_valid_date_string(date_string):
     potential_date = date_string
-    if type(date_string) == str:
+    if type(date_string) is str:
         # Strip leading '~' and trailing '*' markers around dates
         # e.g. "~8/24/2024" -> "8/24/2024", "7/14/2024*" -> "7/14/2024"
         potential_date = potential_date.lstrip("~").rstrip("*").strip()
@@ -880,7 +916,7 @@ def is_valid_date_string(date_string):
 
 def convert_to_datetime(date_string):
     potential_date = date_string
-    if type(date_string) == str:
+    if type(date_string) is str:
         # Strip leading '~' and trailing '*' markers around dates
         # e.g. "~8/24/2024" -> "8/24/2024", "7/14/2024*" -> "7/14/2024"
         potential_date = potential_date.lstrip("~").rstrip("*").strip()
@@ -925,11 +961,9 @@ def get_val_from_df(df: pd.DataFrame, col) -> str:
 
 
 def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
-    nd_string = "ND"
     first_rec = get_val_from_df(summary_row, SUMMARY_FIRST_REC)
     last_rec = get_val_from_df(summary_row, SUMMARY_LAST_REC)
 
-    # TODO Is this the best way to handle the zero recording case?
     if pd.isna(first_rec):
         log_error("process_site: date of first recording was empty")
         return {}
@@ -938,6 +972,14 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
         SUMMARY_FIRST_REC: convert_to_datetime(first_rec),
         SUMMARY_LAST_REC: convert_to_datetime(last_rec),
     }
+
+    valid_descriptors = [
+        "inf",
+        "before start, hbc present",
+        "before start, hbc absent",
+        CONTINUOUS,
+        "missed",
+    ]
 
     for pulse in PULSES:
         pulse_result = {}
@@ -950,6 +992,7 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
         if is_valid_date(abandoned_date):
             pulse_result[ABANDONED] = abandoned_date
 
+        check_for_continuous = False  # flag to track if we see "continuous" in either date for this pulse, so we can check for errors
         for phase in PULSE_PHASES:
             start, end = PULSE_PHASES[phase]
 
@@ -965,11 +1008,12 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                 # It's a good date, so format it
                 result1 = convert_to_datetime(value1)
 
-                if (
-                    value2.lower() not in [nd_string.lower(), "post"]
-                ) and not is_valid_date(value2):
+                if value2.lower() not in [
+                    ND_STRING.lower(),
+                    CONTINUOUS,
+                ] and not is_valid_date(value2):
                     log_error(
-                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, post, or a date"
+                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, Continuous, or a date"
                     )
 
             elif pd.notna(value1) and value1.startswith(ABANDONED):
@@ -979,21 +1023,20 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                     )
                 else:
                     result1 = pd.NaT
-            # Check: if the phase = brooding and it is "Before Start, HBC Present" then we want to draw a left-pointing
-            # arrow on the graph. So, if we find this, save it with a signal we can pass along to the graph maker
-            elif value1.lower() == "before start, hbc present".lower():
-                result1 = convert_to_datetime("6/1/1967")
-            elif value1.lower() == "before start, hbc absent".lower():
-                result1 = convert_to_datetime("6/1/1967")
-            elif value1 == "pre":
-                # If the start date is "pre" then we want to indicate this so we can draw the arrow on the graph
-                result1 = convert_to_datetime("6/1/1967")
-            elif value1 == "post":
-                if value2 != "post":
-                    log_error(
-                        f"{error_prefix}: {target1} is 'after end' but {target2} is not"
-                    )
-            elif value1 == nd_string or value1 == "" or pd.isna(value1):
+            # Check: if the phase = brooding and it is one of the strings that indicated the process started before
+            # the date of the first recording, then we want to draw a left-pointing arrow on the graph. So, if we find this,
+            #  save it with a signal we can pass along to the graph maker (signal=Wendy's bday)
+            elif value1.lower() in valid_descriptors:
+                if value1.lower() != CONTINUOUS:
+                    result1 = convert_to_datetime("6/1/1967")
+                else:
+                    result1 = CONTINUOUS
+                    if not check_for_continuous:
+                        log_error(
+                            f"{error_prefix}: Found 'continuous' in {pulse} without it in the prior pulse"
+                        )
+                        check_for_continuous = False  # reset the flag for the next phase, as continuous should only be valid for one phase per pulse
+            elif value1 == ND_STRING:
                 # this is OK, we aren't going to draw anything in this case
                 pass
             else:
@@ -1001,11 +1044,13 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                 log_error(f"{error_prefix}: Found invalid data in {target1}: {value1}")
 
             if is_valid_date_string(value2):
-                if (
-                    value1.lower() not in ["pre", nd_string.lower()]
-                ) and not is_valid_date_string(value1):
+                if value1.lower() not in [
+                    "inf",
+                    CONTINUOUS,
+                    ND_STRING.lower(),
+                ] and not is_valid_date_string(value1):
                     log_error(
-                        f"{error_prefix}: {target2} is a valid date, but {target1} is not ND, pre, or a valid date"
+                        f"{error_prefix}: {target2} is a valid date, but {target1} is '{value1}' not ND, inf, continuous, or a valid date"
                     )
                 # It's a good date, so format it
                 if phase == PHASE_FLDG:
@@ -1021,26 +1066,20 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                     )
                 else:
                     result2 = abandoned_date - pd.Timedelta(days=1)
-            elif value2.lower() == "pre".lower():
-                # In this scenario, the start should be ND, throw an error if not
-                if not value1 == nd_string:
+            elif value2.lower() in valid_descriptors:
+                if value2.lower() == CONTINUOUS:
+                    result2 = CONTINUOUS
+                    check_for_continuous = True  # set the flag so we can check that the next phase doesn't also have continuous, which would be an error
+                elif (
+                    value2.lower() == "inf" and value1.lower() not in valid_descriptors
+                ):
                     log_error(
-                        f"{error_prefix}: In {target2} end date is 'pre' but start date is not 'ND'"
+                        f"{error_prefix}: In {target2} end date is 'inf' but start date is not 'inf'"
                     )
-            elif value2.lower() == "post".lower():
-                # See commentary above about "before start". It used to use the date of the last recording:
-                #    result2 = summary_dict[SUMMARY_LAST_REC]
+            elif value2 == ND_STRING:
+                # Are there any error cases here?
                 pass
-            elif value2 == nd_string:
-                if not value1 == nd_string:
-                    log_error(
-                        f"{error_prefix}: Second date is ND, but first date is not: {target1}:{value1}, {target2}:{value2}"
-                    )
-            elif pd.isna(value2):
-                # Blank cell, should be OK if value1 is also blank
-                if pd.notna(value1):
-                    log_error(f"{error_prefix}: Found {value2} in {target2}")
-            else:  # ND, empty, or any other values are not valid here
+            else:
                 log_error(
                     f"{error_prefix}: Found {value2} in {target2}, which is invalid data"
                 )
@@ -1078,46 +1117,24 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
         if SITE not in df.columns:
             break
 
-        df_site = df[df[SITE] == site]
-
-        # used to ensure anything outside this year gets dropped
+        # Ensure anything outside this year gets dropped
         target_year = site[0:4]
+        df_site = df[df[SITE] == site]
+        df_filtered = df_site.loc[target_year]
 
-        # Sort newest to oldest (backwards) and filter to this year
-        df_site = df_site.sort_index(ascending=False)
-        original_size = df_site.shape[0]
-        df_site_filtered = df_site.query(f"date <= '{target_year}-12-31'")
-        if df_site_filtered.shape[0] != original_size:
+        if len(df_filtered) != len(df_site):
             log_error(
-                f"clean_data: Data for site {site} has the wrong year in it, newer than its year"
+                f"clean_data: Data for site {site} has the wrong year in it, expected {len(df_filtered)} rows but found {len(df_site)} rows"
             )
-            filtered_out = df_site.merge(df_site_filtered, how="left", indicator=True)
-            filtered_out = filtered_out[filtered_out["_merge"] == "left_only"].drop(
-                columns=["_merge"]
-            )
-            if FILENAME in filtered_out.columns:
-                log_error(filtered_out[FILENAME])
+            if FILENAME in df_site.columns:
+                log_error(df_site[FILENAME])
             else:
-                log_error(filtered_out.sort_values("type"))
+                log_error(df_site.sort_values("type"))
 
-        # Sort oldest to newest, and filter to this year
-        df_site = df_site.sort_index(ascending=True)
-        original_size = df_site.shape[0]
-        df_site_filtered = df_site.query(f"date >= '{target_year}-01-01'")
-        if df_site_filtered.shape[0] != original_size:
-            log_error(
-                f"clean_data: Data for site {site} has the wrong year in it, older than its year"
-            )
-            filtered_out = df_site.merge(df_site_filtered, how="left", indicator=True)
-            filtered_out = filtered_out[filtered_out["_merge"] == "left_only"].drop(
-                columns=["_merge"]
-            )
-            if FILENAME in filtered_out.columns:
-                log_error(filtered_out[FILENAME])
-            else:
-                log_error(filtered_out.sort_values("type"))
-
-        df_clean = pd.concat([df_clean, df_site])
+        df_filtered = df_filtered.sort_index(
+            ascending=True
+        )  # Sort oldest to newest, just to be sure
+        df_clean = pd.concat([df_clean, df_filtered])
 
     # We need to preserve the diff between no data and 0 tags. But, we have to also make everything
     # integers for later processing. So, we'll replace the hyphens with a special value and then just
@@ -1137,9 +1154,6 @@ def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
 # Data Analysis
 #
 #
-
-import operator as op
-
 _OPS = {
     ">": op.gt,
     ">=": op.ge,
@@ -1223,7 +1237,6 @@ def make_pivot_table(
     else:
         if not labels:
             return pd.DataFrame()
-        value_cols = df[labels].select_dtypes(include="number").columns
         date_colname = data_col[DATE]
         if df.index.name == date_colname:
             aggregate_df = df[labels].ge(1).groupby(level=date_colname).sum()
@@ -1236,20 +1249,30 @@ def make_pivot_table(
     return normalize_pt(aggregate_df, date_range_dict)
 
 
-# Pivot table for pattern matching is a little different
+def get_pmj_detection_hours(df: pd.DataFrame) -> pd.Series:
+    df_present_only = df[df["validated"] == "present"]
+    df_valid_hours_only = df_present_only[
+        (df_present_only["hour"] >= CORE_START_HOUR)
+        & (df_present_only["hour"] < CORE_END_HOUR_EXCLUSIVE)
+    ]
+    df_detection_hours = df_valid_hours_only.groupby("date")["hour"].nunique()
+    return df_detection_hours
+
+
+# Take all the PMJ data for a type of call and generate a pivot table that has the count of "detection hours" for each day during
+# "core hours" of 7a up to 8p. A detection hour is an hour in which there was a validated recording of the call, and we only
+# count one per hour to avoid biasing the data by long recording sessions.
 def make_pattern_match_pt(
-    site_df: pd.DataFrame, type_name: str, date_range_dict: dict
+    df: pd.DataFrame, type_name: str, date_range_dict: dict
 ) -> pd.DataFrame:
-    # If the value in 'validated' column is 'Present', count it.
-    present = site_df[site_df[site_columns[validated]] == "present"]
-    aggregate = present.pivot_table(
-        index=DATE, values=site_columns[validated], aggfunc="count"
-    )
-    aggregate = aggregate.rename(columns={validated: type_name})
+
+    # Filter it to be just the core hours, and then only 1 recording per hour
+    detection_hours = get_pmj_detection_hours(df)
+    aggregate = detection_hours.to_frame(name=type_name)
 
     # If the pivot table is empty, ensure all dates exist with value 0
     if aggregate.empty:
-        all_dates = site_df.index.unique()  # Get all dates from original df
+        all_dates = df.index.unique()  # Get all dates from original df
         aggregate = pd.DataFrame(
             np.nan, index=all_dates, columns=[type_name]
         )  # Fill with zeros
@@ -2214,13 +2237,16 @@ def calc_x_from_date(df, event_date) -> float:
 def add_event_date_marker(
     ax, df, date_type, event_date, first_rec_date=None, last_rec_date=None
 ):
+    if event_date == CONTINUOUS:
+        return
+
     add_arrow = False
     if event_date == convert_to_datetime("6/1/1967"):
         # This is the new special case of a hatch date prior to graph start
         add_arrow = True
         event_date = first_rec_date
 
-    graph_width = 0 if first_rec_date == None else last_rec_date - first_rec_date
+    graph_width = 0 if first_rec_date is None else last_rec_date - first_rec_date
     if event_date >= df.columns[0] and event_date <= df.columns[-1]:
         x = calc_x_from_date(df, event_date)
     else:
@@ -2368,10 +2394,12 @@ def create_graph(
         else:
             df_to_graph = df_clean.loc[[row]].copy()
 
-        # Adjust color maps to force the lowest value to white and gray for NaN data, except use white for NaN in PM graphs
-        cmap_final = sns.color_palette(
-            cmap[row] if len(cmap) > 1 else cmap[0], as_cmap=True
-        )
+        # Get the colormap names
+        cmap_name = cmap[row] if len(cmap) > 1 else cmap[0]
+
+        # Grab the map from Matplotlib and create a safe copy of it
+        cmap_final = plt.colormaps.get_cmap(cmap_name).copy()
+
         cmap_final.set_under("white")
         no_data_color = "white" if graph_type == GRAPH_PM else NO_DATA_COLOR
         cmap_final.set_bad(
@@ -2381,10 +2409,10 @@ def create_graph(
         # Normalize all the data by the number of recordings that were used per day
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 3  # 3 recordings per day
-        elif graph_type == GRAPH_MANUAL:
-            df_norm = df_to_graph / 13  # 13 recordings per day
-        elif graph_type == GRAPH_EDGE:
-            df_norm = df_to_graph / 8  # 8 recordings per day
+        # elif graph_type == GRAPH_MANUAL:
+        #     df_norm = df_to_graph / 13  # 13 recordings per day
+        # elif graph_type == GRAPH_EDGE:
+        #     df_norm = df_to_graph / 8  # 8 recordings per day
         else:
             # Align denom to the same columns (dates)
             denom = denom_by_day.reindex(df_to_graph.columns)
@@ -3127,7 +3155,7 @@ def concat_aligned_images(image_dict: dict, data_dict: dict):
         # Add decorations for Abandoned dates
         for p in data_dict[label]:
             val = data_dict[label][p]
-            if val == "ND":
+            if val == ND_STRING:
                 continue
             partial = False
             if val[-1:].lower() == "p":
@@ -3736,64 +3764,52 @@ def create_weather_graph(
 #
 
 
-# In this case, we return specific formatting based on whether the cell is zero, non-zero but not
-# a date, or a date. This is to make non-zero values that aren't dates easier to see.
+# # In this case, we return specific formatting based on whether the cell is zero, non-zero but not
+# # a date, or a date. This is to make non-zero values that aren't dates easier to see.
+# def style_cells(v):
+#     zeroprops = "background-color:WhiteSmoke;"
+#     nonzeroprops = "color:DarkBlue; background-color:White;font-size:10px;"
+#     if type(v).__name__ in ["Timestamp", "datetime", "date"]:
+#         result = ""
+#     elif pd.isna(v) or v == "":
+#         result = zeroprops
+#     else:  # it must be a non-date, non-zero value so format it to call it out
+#         result = nonzeroprops
+#     return result
+
+
 # Color options: https://www.w3schools.com/colors/colors_names.asp
-def style_cells(v):
-    zeroprops = "background-color:GhostWhite;"
-    nonzeroprops = "color:DarkBlue;background-color:Ivory"
-    if v == "":
-        result = zeroprops
-    elif isinstance(v, pd.Timestamp):  # if it's a date, do nothing
-        result = ""
-    else:  # it must be a non-date, non-zero value so format it to call it out
-        result = nonzeroprops
-    return result
+def style_columns(column):
+    # Colors for standard columns
+    default_zero = "background-color: WhiteSmoke;"
+    default_nonzero = "color: DarkBlue; background-color: White;"
 
+    # Colors for special highlighted columns
+    special_zero = "background-color: PaleGoldenrod;"
+    special_nonzero = "background-color: PaleGoldenrod;"
 
-# For pretty printing a table
-def pretty_print_table(df: pd.DataFrame, body_alignment="center"):
-    def format_date(x: object) -> str:
-        if x is None:
-            return ""
-        if x is pd.NaT:
-            return ""
-        ts = cast(pd.Timestamp, x)
-        return ts.strftime("%m-%d-%y")
+    # Define which columns get the unique color palette
+    highlight_columns = ["D-Hrs", "Edge D-Hrs"]
 
-    # Do this so that the original DF doesn't get edited, because of how Python handles parameters
-    output_df = df.copy()
+    # Don't colorize the Date column at all
+    if column.name == "Date":
+        return [""] * len(column)
 
-    # The < and > signs in the headers seems to be confusing streamlit, so need to remove them
-    for col in output_df.columns:
-        new_name = col.replace("<", " ")
-        new_name = new_name.replace(">", " ")
-        output_df.rename(columns={col: new_name}, inplace=True)
+    # Pick the right palette for the column name
+    zero_style = special_zero if column.name in highlight_columns else default_zero
+    nonzero_style = (
+        special_nonzero if column.name in highlight_columns else default_nonzero
+    )
 
-    th_props = [
-        ("font-size", "14px"),
-        ("text-align", "center"),
-        ("font-weight", "bold"),
-        ("color", "#6d6d6d"),
-        ("background-color", "#f7ffff"),
-    ]
+    # Map colors to the data rows
+    styles = []
+    for v in column:
+        if pd.isna(v) or v == "":
+            styles.append(zero_style)
+        else:
+            styles.append(nonzero_style)
 
-    td_props = [("font-size", "12px")]
-
-    th_props: Sequence[tuple[str, str]]
-    td_props: Sequence[tuple[str, str]]
-    styles = [dict(selector="th", props=th_props), dict(selector="td", props=td_props)]
-
-    # apply table formatting from above
-    # output_df=output_df.style.set_properties(**{'text-align': body_alignment}).set_table_styles(styles)
-    output_df = output_df.style.set_properties(
-        subset=None, **{"text-align": body_alignment}
-    ).set_table_styles(styles)
-    # If there is a Date column then format it correctly
-    if "Date" in output_df.columns:
-        output_df = output_df.format(formatter={"Date": format_date})
-
-    st.markdown(output_df.to_html(escape=False), unsafe_allow_html=True)
+    return styles
 
 
 def get_site_info(site_name: str, site_info_fields: list) -> dict:
@@ -3835,17 +3851,6 @@ def check_tags(df: pd.DataFrame):
         [
             bad_rows,
             filter_df_by_tags(non_zero_rows, SONG_COLS, f"=={MISSING_DATA_FLAG}"),
-        ]
-    )
-
-    # P1N, P2N throws an error if it's missing alternative song
-    non_zero_rows = filter_df_by_tags(df, EDGE_N_COLS)
-    bad_rows = pd.concat(
-        [
-            bad_rows,
-            filter_df_by_tags(
-                non_zero_rows, [data_col[ALTSONG1]], f"=={MISSING_DATA_FLAG}"
-            ),
         ]
     )
 
@@ -3957,6 +3962,7 @@ def do_pattern_matching(
     df_pattern_match = clean_data(
         df_pattern_match, [site]
     )  # THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
+
     pt_pm = pd.DataFrame()
     pm_date_range_dict = {}
 
@@ -3973,6 +3979,7 @@ def do_pattern_matching(
             for t in PM_FILE_TYPES:
                 # For each file type, get the filtered range of just that type
                 df_for_file_type = df_pattern_match[df_pattern_match["type"] == t]
+
                 # Build the pivot table for it
                 pt_for_file_type = make_pattern_match_pt(
                     df_for_file_type, t, pm_date_range_dict
@@ -4029,34 +4036,38 @@ def do_mini_manual(
     return pt_mini_manual, not df_mini_manual.empty
 
 
+def get_recs_per_edge_day(df_site: pd.DataFrame, date_range_dict: dict) -> pd.Series:
+    # Get the number of recordings per day for the edge data, this is used for normalizing the data by the number of recordings made
+    df_edge_recs = filter_df_by_tags(df_site, list(TAG_MAP.keys()))
+    unique_hours_per_day = df_edge_recs.groupby(level="date")["core_hour"].nunique()
+
+    start_date = pd.to_datetime(date_range_dict["start"])
+    end_date = pd.to_datetime(date_range_dict["end"])
+    filtered_to_date_range = unique_hours_per_day[
+        (unique_hours_per_day.index >= start_date)
+        & (unique_hours_per_day.index <= end_date)
+    ]
+    return filtered_to_date_range
+
+
 def do_edge(
     df_site: pd.DataFrame, date_range_dict: dict, site: str
 ) -> tuple[pd.DataFrame, bool]:
     pt_edge = pd.DataFrame()
     have_edge_data = False
 
-    new_pn_tag_map = {  # map of tag_pXn to ync tag
-        data_col[tag_p1n]: data_col[ALTSONG1],
-        data_col[tag_p2n]: data_col[tag_YNC_p2],
-        data_col[tag_p3n]: data_col[tag_YNC_p3],
-        data_col[tag_p4n]: data_col[tag_YNC_p4],
-    }
+    check_edge_cols_for_errors(df_site, TAG_MAP)
 
-    check_edge_cols_for_errors(df_site)
-
-    for tag in new_pn_tag_map:
+    for tag in TAG_MAP:
         df_for_tag = filter_df_by_tags(df_site, [tag])
         have_edge_data = have_edge_data or len(df_for_tag) > 0
         pt_for_tag = make_pivot_table(
             df_for_tag,
             date_range_dict,
             preserve_edges=True,
-            label_dict={tag: new_pn_tag_map[tag]},
+            label_dict={tag: TAG_MAP[tag]},
         )
         pt_edge = pd.concat([pt_edge, pt_for_tag])
-
-    else:
-        log_error(f"Site {site} has no edge tags")
 
     return pt_edge, have_edge_data
 
@@ -4155,6 +4166,65 @@ def set_up_sidebar():
     )
 
 
+CORE_START_HOUR = 7
+CORE_END_HOUR_EXCLUSIVE = 20  # includes 7 through 19, excludes 20
+
+
+def add_core_hour_column(
+    df: pd.DataFrame,
+    hour_col: str = "hour",
+    output_col: str = "core_hour",
+) -> pd.DataFrame:
+    """
+    Add an integer hour column from a string-like hour column.
+
+    Handles common formats:
+      - "07:00:00"
+      - "7:00:00"
+      - "11:20"
+      - "11"
+      - pandas/Excel-ish datetime strings, if needed
+
+    Returns a copy and leaves the original dataframe unchanged.
+    """
+    out = df.copy()
+
+    hour_str = out[hour_col].astype(str).str.strip()
+
+    # Preferred: extract a leading 1- or 2-digit hour.
+    # Examples:
+    # "07:20:00" -> 7
+    # "7:20:00"  -> 7
+    # "19:00:00" -> 19
+    leading_hour = hour_str.str.extract(r"^(\d{1,2})(?::|$)", expand=False)
+
+    out[output_col] = pd.to_numeric(leading_hour, errors="coerce").astype("Int64")
+
+    # Fallback for values that do not start with HH or HH:MM, e.g. full datetime strings.
+    missing = out[output_col].isna()
+    if missing.any():
+        parsed = pd.to_datetime(out.loc[missing, hour_col], errors="coerce")
+        out.loc[missing, output_col] = parsed.dt.hour.astype("Int64")
+
+    return out
+
+
+def filter_to_core_hours(
+    df: pd.DataFrame,
+    hour_col: str = "hour",
+    core_start: int = CORE_START_HOUR,
+    core_end_exclusive: int = CORE_END_HOUR_EXCLUSIVE,
+) -> pd.DataFrame:
+    """
+    Filter to Track B-style core hours: 07:00 <= hour < 20:00.
+    """
+    out = add_core_hour_column(df, hour_col=hour_col)
+
+    mask = out["core_hour"].between(core_start, core_end_exclusive - 1)
+
+    return out.loc[mask].copy()
+
+
 def main():
     global make_all_graphs
     global align_dates
@@ -4168,7 +4238,7 @@ def main():
         set_up_sidebar()
     )
 
-    # Load the hourly groupings for the PM graphs
+    # Load the hourly groupings for the PM graphs, this is used for normalizing the data by the number of recordings made
     parquet_path = DATA_DIR / "recordings_per_day_hour.parquet"
     recordings_df = load_recordings_hourly(
         parquet_path, "site", "date", "hour", "n_recordings"
@@ -4249,42 +4319,38 @@ def main():
         have_manual_data = False
         have_edge_data = False
         rec_norm = pd.Series(dtype=int)
+        edge_recs_per_day = pd.Series(dtype=int)
 
         if not df_site.empty:
-            # Get the data that we're going to graph
-            rec_df_site = recordings_df.loc[recordings_df["site"] == site]
+            # Only consider recordings made during the core hours of 7:00 <= hour < 20:00, and get the number of recordings made per day for the site. This is used for graphing,
+            df_core = filter_to_core_hours(df_site, hour_col="hour")
 
-            # She only wants the graphs to reflect rough daytime hours, so we need to filter
-            # the recordings data to just those hours before we do the graphing.
-            mask = (rec_df_site["hour"] >= 5) & (
-                rec_df_site["hour"] < 21
-            )  # 05:00–20:59
-
-            rec_norm = rec_df_site.loc[mask].groupby("date")["n_recordings"].sum()
+            rec_norm = df_core.groupby(level="date")["core_hour"].nunique()
 
             # Using the site of interest, get the first & last dates and give the user the option to customize the range
             date_range_dict = get_date_range(
-                df_site, make_all_graphs, align_dates, container_top
+                df_core, make_all_graphs, align_dates, container_top
             )
 
             # Get this list of days without data, for later graphing
-            missing_days = get_missing_days(df_site, date_range_dict)
+            missing_days = get_missing_days(df_core, date_range_dict)
 
             # Make the manual graphs if we're not aligning dates or we're going one-by-one
             if not do_aligned_dates:
                 # MANUAL ANALYSIS
                 with timed("Manual analysis"):
-                    pt_manual, have_manual_data = do_manual(df_site, date_range_dict)
+                    pt_manual, have_manual_data = do_manual(df_core, date_range_dict)
 
                 # MINI-MANUAL ANALYSIS
                 with timed("Mini-manual analysis"):
                     pt_mini_manual, have_mini_manual_data = do_mini_manual(
-                        df_site, date_range_dict
+                        df_core, date_range_dict
                     )
 
                 # EDGE ANALYSIS
                 with timed("Edge analysis"):
-                    pt_edge, have_edge_data = do_edge(df_site, date_range_dict, site)
+                    pt_edge, have_edge_data = do_edge(df_core, date_range_dict, site)
+                    edge_recs_per_day = get_recs_per_edge_day(df_core, date_range_dict)
 
             # PATTERN MATCHING ANALYSIS
             with timed("Pattern matching analysis"):
@@ -4352,6 +4418,8 @@ def main():
                 hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
                 fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
                 dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
+                if "abandon" in site_summary_dict[p].keys():
+                    key_dates[p][ABANDONED] = site_summary_dict[p]["abandon"]
                 if pd.notna(mc_date):
                     key_dates[p][PULSE_MC_START] = mc_date
                 if pd.notna(inc_date):
@@ -4439,6 +4507,7 @@ def main():
                     graph_type=GRAPH_MANUAL,
                     key_dates=key_dates,
                     missing_days=missing_days,
+                    denom_by_day=rec_norm,
                 )
             if month_locs == {}:
                 month_locs = get_month_locs(pt_manual.columns)
@@ -4455,9 +4524,7 @@ def main():
 
         # Edge Analysis
         if not pt_edge.empty and not do_aligned_dates:
-            cmap_edge = {
-                n: "Blues" for n in EDGE_N_COLS
-            }  # the |" is used to merge dicts
+            cmap_edge = {n: "Blues" for n in EDGE_COLS}  # the |" is used to merge dicts
             graph = create_graph(
                 site=site,
                 df=pt_edge,  # was pt_edge
@@ -4469,6 +4536,7 @@ def main():
                 graph_type=GRAPH_EDGE,
                 key_dates=key_dates,
                 missing_days=missing_days,
+                denom_by_day=edge_recs_per_day,
             )
             if month_locs == {}:
                 month_locs = get_month_locs(pt_edge.columns)
@@ -4520,15 +4588,27 @@ def main():
     if not make_all_graphs and len(df_site):
         # Show the table with all the raw data
         with st.expander("See raw data"):
-            # Used for making the overview pivot table
+            report_df = pd.DataFrame()
+
+            # Add the hrs/day normalization as the first column
+            report_df = pd.concat(
+                [
+                    report_df,
+                    rec_norm.rename("D-Hrs").to_frame(),
+                ],
+                axis=1,
+            )
+
             friendly_names = {
                 data_col[MALE_SONG]: "M-Male",
                 data_col[COURT_SONG]: "M-Chorus",
                 data_col[ALTSONG2]: "M-Female",
                 data_col[ALTSONG1]: "M-Nestling",
             }
-            overview = []
-            overview.append(make_final_pt(pt_manual, SONG_COLS, friendly_names))
+            report_df = pd.concat(
+                [report_df, make_final_pt(pt_manual, SONG_COLS, friendly_names)],
+                axis=1,
+            )
 
             friendly_names = {
                 data_col[MALE_SONG]: "MM-Male",
@@ -4536,20 +4616,41 @@ def main():
                 data_col[ALTSONG2]: "MM-Female",
                 data_col[ALTSONG1]: "MM-Nestling",
             }
-            overview.append(make_final_pt(pt_mini_manual, SONG_COLS, friendly_names))
+            report_df = pd.concat(
+                [
+                    report_df,
+                    make_final_pt(pt_mini_manual, SONG_COLS, friendly_names),
+                ],
+                axis=1,
+            )
 
+            # Pattern Matching -- to see the raw insect data too change PM_SONG_TYPES to PM_FILE_TYPES
+            report_df = pd.concat(
+                [report_df, make_final_pt(pt_pm, PM_SONG_TYPES, pm_friendly_names)],
+                axis=1,
+            )
+
+            # add number of detection hrs/day for edge tags and the tags
             friendly_names = {
-                data_col[tag_p1c]: "P1C",
-                data_col[tag_p1n]: "P1N",
-                data_col[tag_p2c]: "P2C",
-                data_col[tag_p2n]: "P2N",
-                data_col[tag_p3n]: "P3N",
-                data_col[tag_p4n]: "P4N",
+                data_col[TAG_P1N]: "P1N",
+                data_col[TAG_P2N]: "P2N",
+                data_col[TAG_P3N]: "P3N",
+                data_col[TAG_P4N]: "P4N",
             }
-            overview.append(make_final_pt(pt_edge, EDGE_COLS, friendly_names))
-
-            # Pattern Matching
-            overview.append(make_final_pt(pt_pm, PM_FILE_TYPES, pm_friendly_names))
+            # Edge detection hours per day
+            if len(edge_recs_per_day):
+                report_df = pd.concat(
+                    [
+                        report_df,
+                        edge_recs_per_day.rename("Edge D-Hrs").to_frame(),
+                    ],
+                    axis=1,
+                )
+                # Edge detections
+                report_df = pd.concat(
+                    [report_df, make_final_pt(pt_edge, EDGE_COLS, friendly_names)],
+                    axis=1,
+                )
 
             # Add weather at the end
             if len(weather_by_type):
@@ -4561,56 +4662,134 @@ def main():
                     weather_data.rename(columns={"value": t}, inplace=True)
                     if t != WEATHER_PRCP:
                         weather_data[t] = weather_data[t].fillna(0).astype(int)
-                overview.append(weather_data)
+                report_df = pd.concat([report_df, weather_data], axis=1)
 
-            # The variable overview is a list of each dataframe. Now, take all the data and concat it into
-            # a single table
-            union_pt = pd.concat(overview, axis=1)
+            ### Formatting for display
+            # Pop the index out cleanly as 'Date' right from the start
+            df_display = report_df.reset_index().rename(columns={"index": "Date"})
 
-            # enforce dtypes before index reset
-            for c in union_pt.columns:
-                if c == "prcp" or c == "PRCP":
-                    union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce")
+            # Set the Date column type once
+            df_display["Date"] = pd.to_datetime(df_display["Date"], errors="coerce")
+
+            # 1. Isolate non-date columns
+            non_date_cols = [c for c in df_display.columns if c != "Date"]
+
+            # 2. Process data types cleanly
+            for c in non_date_cols:
+                if c in ["PRCP", "prcp"]:
+                    df_display[c] = pd.to_numeric(df_display[c], errors="coerce")
                 else:
-                    union_pt[c] = pd.to_numeric(union_pt[c], errors="coerce").astype(
+                    # Step A: Coerce to numeric and force into the integer type to strip decimals
+                    int_series = pd.to_numeric(df_display[c], errors="coerce").astype(
                         "Int64"
                     )
 
-            # Pop the index out so that we can format it, do this by resetting the index so each
-            # row just gets a number index
-            union_pt = union_pt.reset_index().rename(columns={"index": "Date"})
+                    # Step B: Flip to a string and swap out <NA> for an absolute empty string ""
+                    # This bypasses Streamlit's "None" canvas text rendering bug completely!
+                    df_display[c] = int_series.astype("string").fillna("")
 
-            # Make a copy and clean it up for display
-            df_display = union_pt.copy()
-            # Keep Date readable; everything else becomes string with blanks for missing
-            for c in df_display.columns:
-                if c == "Date":
-                    # optional formatting
-                    df_display[c] = pd.to_datetime(
-                        df_display[c], errors="coerce"
-                    ).dt.strftime("%Y-%m-%d")
-                else:
-                    df_display[c] = df_display[c].astype("string").fillna("")
+            # 3. Generate column configurations dynamically using a dictionary comprehension
+            configs = {
+                col: (
+                    st.column_config.DateColumn(format="MM/DD/YY", alignment="center")
+                    if col == "Date"
+                    else st.column_config.NumberColumn(
+                        format="%.1f", alignment="center"
+                    )
+                    if col in ["PRCP", "prcp"]
+                    else st.column_config.Column(
+                        alignment="center",  # Centers text perfectly
+                        width=None,  # Keeps columns tightly packed
+                    )
+                )
+                for col in df_display.columns
+            }
 
-            sty_union = df_display.style.map(style_cells).set_properties(
-                **{"text-align": "center"}
-            )
+            sty_report = df_display.style.apply(style_columns, axis=0)
 
+            # Render main table
             st.dataframe(
-                sty_union,
-                column_config={
-                    "Date": st.column_config.DateColumn(format="MM-DD-YY"),
-                    "PRCP": st.column_config.NumberColumn(format="%.2f"),
-                    # numeric columns: right alignment is the default in Streamlit’s grid for numbers
-                },
+                sty_report,
+                column_config=configs,
                 use_container_width=True,
             )
 
-        # Put a box with first and last dates for the Song columns, with counts on that date
         with st.expander("See overview of dates"):
-            st.write("Currently hiding this, let me know if you want it")
-            # output = get_first_and_last_dates(make_pivot_table(df_site, date_range_dict, labels=song_cols))
-            # pretty_print_table(pd.DataFrame.from_dict(output))
+
+            def clean_and_substitute(val):
+                if pd.isna(val) or not isinstance(val, pd.Timestamp):
+                    return val
+                # Catch and flag the default inf date, otherwise format to MM/DD/YY
+                return (
+                    "inf"
+                    if val.date() == dt(1967, 6, 1).date()
+                    else val.strftime("%m/%d/%y")
+                )
+
+            DATE_ROW_MAPPING = {
+                PULSE_MC_START: "Prospecting/Settlement Onset",
+                PULSE_INC_START: "Incubation Onset",
+                PULSE_HATCH: "Brooding Onset",
+                PULSE_FIRST_FLDG: "Fledging Onset",
+                PULSE_LAST_FLDG: "Dispersal",
+                ABANDONED: "Abandoned",  # Always locked at the bottom
+            }
+
+            # Filter out empty profiles and convert directly to a mapped DataFrame
+            profiles = {k: v for k, v in key_dates.items() if k.startswith("p") and v}
+
+            # 2. Rebuild the data structured exactly to your rules
+            structured_data = {}
+            for p_id, p_dict in profiles.items():
+                structured_data[p_id] = {}
+
+                # Loop through your master mapping to guarantee order and catch missing data
+                for raw_key, readable_label in DATE_ROW_MAPPING.items():
+                    if raw_key in p_dict:
+                        # Format the timestamp immediately
+                        structured_data[p_id][readable_label] = clean_and_substitute(
+                            p_dict[raw_key]
+                        )
+                    else:
+                        # If the key doesn't exist, fill it with "ND"
+                        structured_data[p_id][readable_label] = (
+                            "---"
+                            if readable_label == DATE_ROW_MAPPING[ABANDONED]
+                            else "ND"
+                        )
+
+            df_dates = pd.DataFrame(structured_data)
+            df_display = df_dates.reset_index().rename(columns={"index": "Key Dates"})
+
+            # Map the formatting
+            df_display = df_display.map(clean_and_substitute)
+
+            profile_configs = {}
+            for col in df_display.columns:
+                if col == "Key Dates":
+                    profile_configs[col] = st.column_config.Column(
+                        label="",  # Keeps the top-left header cell clean/blank
+                        width="medium",  # Options: "small", "medium", "large", or a specific pixel string like "200px"
+                        alignment="left",  # Left-aligned text is much easier to read for metrics
+                    )
+                else:
+                    profile_configs[col] = st.column_config.Column(
+                        alignment="center", width=100
+                    )
+            sty_report = df_display.style.apply(style_columns, axis=0)
+
+            # Display text summaries and the formatted profile matrix
+            st.write(
+                f"**First Recording:** {clean_and_substitute(key_dates['First Recording'])}"
+            )
+            st.write(
+                f"**Last Recording:** {clean_and_substitute(key_dates['Last Recording'])}"
+            )
+            st.dataframe(
+                sty_report,
+                column_config=profile_configs,
+                use_container_width=False,
+            )
 
         # Scan the list of tags and flag any where there is "---" for the value.
         if container_mid.checkbox("Show errors", value=True):

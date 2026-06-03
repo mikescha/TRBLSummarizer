@@ -1,0 +1,6 @@
+[theme]
+# "sans-serif", "serif", or "monospace"
+#font = "sans-serif"
+
+# This adjusts the scaling engine of the canvas grid, shrinking the text inside the table
+#baseFontSize = 12
