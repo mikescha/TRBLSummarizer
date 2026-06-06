@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-#mpl.use("WebAgg")  # Have to select the backend before doing other imports
 import calendar
 
 # to force garbage collection and reduce memory use
@@ -4921,12 +4920,12 @@ def main():
             st.dataframe(
                 sty_report,
                 column_config=configs,
-                use_container_width=True,
+                width="stretch",
             )
 
         with st.expander("Detection state debug table"):
             state_debug = build_detection_state_debug_table(df_display)
-            st.dataframe(state_debug, use_container_width=True)
+            st.dataframe(state_debug, width="stretch")
 
         with st.expander("See overview of dates"):
 
@@ -5002,7 +5001,7 @@ def main():
             st.dataframe(
                 sty_report,
                 column_config=profile_configs,
-                use_container_width=False,
+                width="content",
             )
 
         # Scan the list of tags and flag any where there is "---" for the value.
