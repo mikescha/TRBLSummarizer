@@ -4885,13 +4885,11 @@ def main():
                     df_display[c] = pd.to_numeric(df_display[c], errors="coerce")
                 else:
                     # Step A: Coerce to numeric and force into the integer type to strip decimals
-                    int_series = pd.to_numeric(df_display[c], errors="coerce").astype(
-                        "Int64"
-                    )
+                    int_series = pd.to_numeric(df_display[c], errors="coerce").astype("Int64")
 
                     # Step B: Flip to a string and swap out <NA> for an absolute empty string ""
                     # This bypasses Streamlit's "None" canvas text rendering bug completely!
-                    df_display[c] = int_series.astype("string").fillna(0)
+                    df_display[c] = int_series.astype("string").fillna("0")
 
             # 3. Generate column configurations dynamically using a dictionary comprehension
             configs = {
