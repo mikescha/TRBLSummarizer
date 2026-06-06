@@ -1,14 +1,6 @@
 from __future__ import annotations
 
-import math
-from typing import Any
-
-import matplotlib as mpl
-import numpy as np
-import pandas as pd
-import streamlit as st
-
-mpl.use("WebAgg")  # Have to select the backend before doing other imports
+#mpl.use("WebAgg")  # Have to select the backend before doing other imports
 import calendar
 
 # to force garbage collection and reduce memory use
@@ -16,6 +8,7 @@ import calendar
 import cProfile
 import glob
 import io
+import math
 import operator as op
 import os
 import pstats
@@ -28,12 +21,17 @@ from contextlib import contextmanager
 from datetime import datetime as dt
 from itertools import tee
 from pathlib import Path
+from typing import Any
 
+import matplotlib as mpl
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import matplotlib.text as mtext
 import matplotlib.transforms as mtransforms
 import matplotlib.transforms as transforms
+import numpy as np
+import pandas as pd
+import streamlit as st
 from matplotlib import colors
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
