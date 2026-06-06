@@ -3885,8 +3885,8 @@ def style_detection_states(df: pd.DataFrame) -> pd.DataFrame:
 
             state, reason, threshold = classify_effort_adjusted_day(
                 song_type=song_type,
-                valid_core_hours=valid_core_hours,
-                detection_hours=detection_hours,
+                valid_core_hours=int(valid_core_hours),
+                detection_hours=int(detection_hours),
             )
 
             cell_styles.append(STATE_STYLES[state])
@@ -3900,8 +3900,14 @@ def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
 
     for idx, row in df.iterrows():
-        date_value = row["Date"] if "Date" in df.columns else idx
+        raw_date = row["Date"] if "Date" in df.columns else idx
+        parsed_date = pd.to_datetime(raw_date, errors="coerce")
 
+        date_value = (
+            parsed_date.strftime("%Y-%m-%d")
+            if pd.notna(parsed_date)
+            else str(raw_date)
+        )
         for detection_col, rule in DETECTION_COLUMN_RULES.items():
             if detection_col not in df.columns:
                 continue
@@ -3915,8 +3921,8 @@ def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
 
             state, reason, threshold = classify_effort_adjusted_day(
                 song_type=rule["song_type"],
-                valid_core_hours=valid_core_hours,
-                detection_hours=detection_hours,
+                valid_core_hours=int(valid_core_hours),
+                detection_hours=int(detection_hours),
             )
 
             rows.append(
@@ -4117,9 +4123,7 @@ def do_pattern_matching(
     global align_dates
 
     df_pattern_match = load_pm_data(site)
-    df_pattern_match = clean_data(
-        df_pattern_match, [site]
-    )  # THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
+    df_pattern_match = clean_data(df_pattern_match, [site])  # THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
 
     pt_pm = pd.DataFrame()
     pm_date_range_dict = {}
