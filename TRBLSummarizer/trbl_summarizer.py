@@ -23,6 +23,9 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib as mpl
+
+# Force Matplotlib to use the standard, non-interactive Agg backend
+mpl.use("Agg")
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import matplotlib.text as mtext
