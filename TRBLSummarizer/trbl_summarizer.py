@@ -18,6 +18,12 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib as mpl
+from common import (
+    DATA_DIR,
+    INPUT_CSV,
+    PMJ_DIR,
+    load_pmj_subset_from_parquet,
+)
 
 # Force Matplotlib to use the standard, non-interactive Agg backend
 mpl.use("Agg")
@@ -272,20 +278,14 @@ EDGE_GRAPH_BORDER_INSET = 0.02
 EDGE_GRAPH_COLOR_SCALE = 0.6  # Bigger is darker
 
 # Files, paths, etc.
-DATA_FOLDER = "Data/"
-PMJ_DATA_FOLDER = "PMJ Data/"
 FIG_FOLDER = "Figures/"
-DATA_DIR = Path(__file__).parents[0] / DATA_FOLDER
-PMJ_DATA_DIR = Path(__file__).parents[0] / PMJ_DATA_FOLDER
 FIGURE_DIR = Path(__file__).parents[0] / FIG_FOLDER
 ERROR_FILE = Path(__file__).parents[0] / "error.txt"
 WEATHER_FILE = DATA_DIR / "weather_history.csv"
 RATIOS_FILE = DATA_DIR / "nestling_to_female_ratios.csv"
-ALL_FILE = DATA_DIR / "TRBL Analysis tracking - All.csv"
-SHEET_HEADER_SIZE = 2  # number of rows to skip over in the All file
+ALL_SHEET_HEADER_SIZE = 2  # number of rows to skip over in the All file
 
 # TODO: For clarity, rename all symbols that are constants to be all caps.
-
 PULSE_COUNT = "pulse_count"
 ABANDONED = "abandon"
 PULSES = ["p1", "p2", "p3", "p4"]
@@ -307,8 +307,7 @@ PULSE_DATE_TYPES = [
     PULSE_LAST_FLDG,
     ABANDONED,
 ]
-summary_date_cols = [p + " " + d for p in PULSES for d in PULSE_DATE_TYPES]
-summary_numeric_cols = ["Site ID", "Altitude", "Number of Recordings"]
+SUMMARY_NUMERIC_COLS = ["Site ID", "Altitude", "Number of Recordings"]
 
 PHASE_MALE_CHORUS = "Settlement"
 PHASE_INC = "Incubation"
@@ -351,7 +350,6 @@ DETECTION_COLUMN_RULES = {
 
 #
 # Pattern Matching Files
-# edit this if we add/remove file types
 # Change: Color Map for Pattern Matching, Legend Text, plus File Types. Also, there are some lists
 # of column names in summarize_pm() that likely need to change
 PM_SONG_TYPES = [
@@ -476,7 +474,7 @@ def show_error(msg: str):
 #
 @st.cache_data
 def load_all_file():
-    return pd.read_csv(ALL_FILE, skiprows=SHEET_HEADER_SIZE)
+    return pd.read_csv(INPUT_CSV, skiprows=ALL_SHEET_HEADER_SIZE)
 
 
 def get_target_sites() -> list:
@@ -655,17 +653,18 @@ def load_data_for_site(site: str):
 
 
 def load_pm_data(site: str) -> pd.DataFrame:
-    # Load the pattern matching CSV files into a dataframe, validate that the columns are what we expect
-    # These are the files from all the folders named by site.
-    # If there is a missing file, we want to have the data for that type of pattern be empty, adding columns with
-    # the right headers but empty data for any missing columns. Then make the graphing code robust enough
-    # to deal with columns with zeros.
+    """Load PMJ detections for one site from the partitioned Parquet dataset.
 
-    # For each type of file for this site, try to load the file.
-    # Add a column to indicate which type it is. Then append it to the dataframe we're building. We end up with a
-    # table that has the site, date, and type columns with all the PM data in rows below. So, if there were 1000 PM
-    # events for each type, our table would have 5000 rows.
-    df = pd.DataFrame()
+    The Parquet dataset is partitioned by site and call_type. This replaces the
+    legacy CSV layout:
+
+        PMJ Data / <site> / <site> <call_type>.csv
+
+    with exact partition lookups:
+
+        site == <site>
+        call_type == <call_type>
+    """
     usecols = [
         site_columns[SITE],
         site_columns["year"],
@@ -675,53 +674,65 @@ def load_pm_data(site: str) -> pd.DataFrame:
         site_columns[VALIDATED_STR],
     ]
 
-    # Add the site name so we look into the appropriate folder
-    site_dir = PMJ_DATA_DIR / site
-    if os.path.isdir(site_dir):
-        for t in PM_FILE_TYPES:
-            fname = f"{site} {t}.csv"
-            full_file_name = site_dir / fname
+    out_cols = [*usecols, DATE, "type"]
+    frames: list[pd.DataFrame] = []
 
-            df_single_pmj_type = pd.DataFrame()
-            if os.path.isfile(full_file_name):
-                # I used to validate that all columns exist, and abandon ship if we're missing any, not doing this as data is solid
-                df_temp = pd.read_csv(full_file_name, usecols=usecols)
-                # make a new column that has the date in it, take into account that the table could be empty
-                if not df_temp.empty:
-                    date_str = (
-                        df_temp["year"].astype("int64").astype(str)
-                        + "-"
-                        + df_temp["month"].astype("int64").astype(str).str.zfill(2)
-                        + "-"
-                        + df_temp["day"].astype("int64").astype(str).str.zfill(2)
-                    )
-                    old_way = pd.to_datetime(date_str, errors="coerce")
-                    new_way = pd.to_datetime(df_temp[["year", "month", "day"]])
-                    matches = (old_way == new_way).all()
-                    if not matches:
-                        mismatches = df_temp[old_way != new_way]
-                        log_error(
-                            f"load_pm_data: Date parsing mismatch for file {full_file_name}"
-                        )
-                        log_error(f"{mismatches.head()}")
-                    # Add date column
-                    df_temp[DATE] = pd.to_datetime(df_temp[["year", "month", "day"]])
-                    df_single_pmj_type = df_temp.copy()
-                else:
-                    df_single_pmj_type[DATE] = []
+    for t in PM_FILE_TYPES:
+        df_single_pmj_type = load_pmj_subset_from_parquet(
+            site=site,
+            call_type=t,
+            columns=usecols,
+        )
 
-            else:
-                df_single_pmj_type[DATE] = []
+        if df_single_pmj_type.empty:
+            # Preserve the legacy behavior: missing/empty call types simply add
+            # no rows, but downstream code still receives a well-shaped frame.
+            continue
 
-            # Finally, add the table that we loaded to the end of the main one
-            df_single_pmj_type["type"] = t
-            # Ensure all columns in df_temp have explicit dtypes to avoid warning
-            df_single_pmj_type = df_single_pmj_type.astype("object")
-            df = pd.concat([df, df_single_pmj_type], ignore_index=True)
+        missing = set(usecols) - set(df_single_pmj_type.columns)
+        if missing:
+            raise ValueError(
+                f"Missing columns in PMJ Parquet subset for site={site!r}, "
+                f"call_type={t!r}: {sorted(missing)}"
+            )
 
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"])
-        df.set_index("date", inplace=True)
+        df_single_pmj_type = df_single_pmj_type.copy()
+
+        df_single_pmj_type[DATE] = pd.to_datetime(
+            df_single_pmj_type[
+                [
+                    site_columns["year"],
+                    site_columns["month"],
+                    site_columns["day"],
+                ]
+            ],
+            errors="coerce",
+        )
+
+        df_single_pmj_type = df_single_pmj_type[df_single_pmj_type[DATE].notna()].copy()
+
+        if df_single_pmj_type.empty:
+            continue
+
+        df_single_pmj_type["type"] = t
+
+        # Preserve the old broad dtype behavior to avoid downstream surprises.
+        df_single_pmj_type = df_single_pmj_type[out_cols].astype("object")
+
+        frames.append(df_single_pmj_type)
+
+    if frames:
+        df = pd.concat(frames, ignore_index=True)
+    else:
+        df = pd.DataFrame(columns=out_cols)
+
+    df[DATE] = pd.to_datetime(df[DATE], errors="coerce")
+    df = df[df[DATE].notna()].copy()
+
+    if not df.empty:
+        df.set_index(DATE, inplace=True)
+    else:
+        df = df.set_index(pd.DatetimeIndex([], name=DATE))
 
     return df
 
@@ -729,12 +740,12 @@ def load_pm_data(site: str) -> pd.DataFrame:
 @st.cache_data
 def load_summary_data() -> pd.DataFrame:
     # Load the summary data and prep it for graphing.
-    df = pd.read_csv(ALL_FILE, skiprows=SHEET_HEADER_SIZE)
+    df = pd.read_csv(INPUT_CSV, skiprows=ALL_SHEET_HEADER_SIZE)
 
     # Convert numeric columns to integers. As above, you have to force it this way if the types vary.
     # Empty values or strings are converted to NaN
-    df[summary_numeric_cols] = df[summary_numeric_cols].apply(pd.to_numeric, errors="coerce")
-    df[summary_numeric_cols] = df[summary_numeric_cols].astype(pd.Int64Dtype())  # Keeps NaNs
+    df[SUMMARY_NUMERIC_COLS] = df[SUMMARY_NUMERIC_COLS].apply(pd.to_numeric, errors="coerce")
+    df[SUMMARY_NUMERIC_COLS] = df[SUMMARY_NUMERIC_COLS].astype(pd.Int64Dtype())  # Keeps NaNs
 
     return df
 
@@ -1599,7 +1610,7 @@ def overlay_missing_days_hatch(
 
 def file_missing(site, graph_type, type):
     if graph_type == GRAPH_PM:
-        site_dir = PMJ_DATA_DIR / site
+        site_dir = PMJ_DIR / site
         if os.path.isdir(site_dir):
             fname = f"{site} {type}.csv"
             full_file_name = site_dir / fname
@@ -3171,7 +3182,7 @@ def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
 
     for idx, row in df.iterrows():
         raw_date = row["Date"] if "Date" in df.columns else idx
-        parsed_date = pd.to_datetime(raw_date, errors="coerce")
+        parsed_date = pd.to_datetime(str(raw_date), errors="coerce")
 
         date_value = (
             parsed_date.strftime("%Y-%m-%d")
