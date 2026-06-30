@@ -686,7 +686,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
             call_type=t,
             columns=usecols,
         )
-
+        st.write(f"{t}: {len(df_single_pmj_type)} records")
         if df_single_pmj_type.empty:
             # Preserve the legacy behavior: missing/empty call types simply add
             # no rows, but downstream code still receives a well-shaped frame.
@@ -721,7 +721,6 @@ def load_pm_data(site: str) -> pd.DataFrame:
 
         # Preserve the old broad dtype behavior to avoid downstream surprises.
         df_single_pmj_type = df_single_pmj_type[out_cols].astype("object")
-        print(df_single_pmj_type["date"][0])
         frames.append(df_single_pmj_type)
 
     if frames:
@@ -4084,7 +4083,7 @@ def main():
             }
             report_df = pd.concat(
                 [report_df, make_final_pt(pt_manual, SONG_COLS, friendly_names)],
-                axis=1,
+                axis=1, sort=True,
             )
 
             friendly_names = {
