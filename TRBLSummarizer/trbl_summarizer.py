@@ -284,18 +284,11 @@ FIG_FOLDER = "Figures/"
 DATA_DIR = Path(__file__).parents[0] / DATA_FOLDER
 PMJ_DATA_DIR = Path(__file__).parents[0] / PMJ_DATA_FOLDER
 FIGURE_DIR = Path(__file__).parents[0] / FIG_FOLDER
-ALL_FILE = "TRBL Analysis tracking - All.csv"
-SHEET_HEADER_SIZE = 2  # number of rows to skip over
-WEATHER_FILE = "weather_history.csv"
 ERROR_FILE = Path(__file__).parents[0] / "error.txt"
-DATES_FILE = "analyzed dates.csv"
-
-# This is everything except the data files, because those are auto-generated
-FILES = {
-    ALL_FILE: DATA_DIR / ALL_FILE,
-    WEATHER_FILE: DATA_DIR / WEATHER_FILE,
-    DATES_FILE: Path(__file__).parents[0] / DATES_FILE,
-}
+WEATHER_FILE = DATA_DIR / "weather_history.csv"
+RATIOS_FILE = DATA_DIR / "nestling_to_female_ratios.csv"
+ALL_FILE = DATA_DIR / "TRBL Analysis tracking - All.csv"
+SHEET_HEADER_SIZE = 2  # number of rows to skip over in the All file
 
 # TODO: For clarity, rename all symbols that are constants to be all caps.
 
@@ -575,12 +568,12 @@ def make_date(row: pd.Series) -> pd.Timestamp:
 #
 @st.cache_data
 def load_all_file():
-    return pd.read_csv(FILES[ALL_FILE], skiprows=SHEET_HEADER_SIZE)
+    return pd.read_csv(ALL_FILE, skiprows=SHEET_HEADER_SIZE)
 
 
 def get_target_sites() -> list:
     # Load the list of unique site names, keep just the 'Name' column, and then convert that to a list
-    # all_sites = pd.read_csv(FILES[ALL_FILE], usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
+    # all_sites = pd.read_csv(ALL_FILE, usecols = ["Name", "Skip Site", "Comment for Skip Site"], skiprows=SHEET_HEADER_SIZE)
     all_sites_and_cols = load_all_file()
     all_sites = all_sites_and_cols[["Name", "Skip Site", "Comment for Skip Site"]]
     # Clean it up. Only keep names that start with a 4-digit number and are not to be skipped.
@@ -741,42 +734,42 @@ def check_for_tag_errors(df: pd.DataFrame):
 
 
 # Load the main data.csv file into a dataframe, validate that the columns are what we expect
-@st.cache_data
-def load_data() -> pd.DataFrame:
-    files_to_load = [DATA_DIR / f"data {year}.csv" for year in range(2017, 2025)]
-    combined_df = pd.DataFrame()
-    for file_name in files_to_load:
-        # Validate the data file format
-        headers = pd.read_csv(file_name, nrows=0).columns.tolist()
-        missing_columns = confirm_columns(data_col, headers, file_name)
+# @st.cache_data
+# def load_data() -> pd.DataFrame:
+#     files_to_load = [DATA_DIR / f"data {year}.csv" for year in range(2017, 2025)]
+#     combined_df = pd.DataFrame()
+#     for file_name in files_to_load:
+#         # Validate the data file format
+#         headers = pd.read_csv(file_name, nrows=0).columns.tolist()
+#         missing_columns = confirm_columns(data_col, headers, file_name)
 
-        # The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-        usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
-        for song in ALL_SONGS:
-            usecols.append(data_col[song])
-        for tag in ALL_TAGS:
-            usecols.append(data_col[tag])
+#         # The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
+#         usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
+#         for song in ALL_SONGS:
+#             usecols.append(data_col[song])
+#         for tag in ALL_TAGS:
+#             usecols.append(data_col[tag])
 
-        # remove any columns that are missing from the data file, so we don't ask for them as that will cause
-        # an exception. Hopefully the rest of the code is robust enough to deal...
-        usecols = [item for item in usecols if item not in missing_columns]
+#         # remove any columns that are missing from the data file, so we don't ask for them as that will cause
+#         # an exception. Hopefully the rest of the code is robust enough to deal...
+#         usecols = [item for item in usecols if item not in missing_columns]
 
-        # 0) Read the file
-        df = pd.read_csv(file_name, usecols=usecols)
+#         # 0) Read the file
+#         df = pd.read_csv(file_name, usecols=usecols)
 
-        # 1) Convert the date column explicitly
-        df["date"] = pd.to_datetime(df["date"], format="mixed", dayfirst=False)
+#         # 1) Convert the date column explicitly
+#         df["date"] = pd.to_datetime(df["date"], format="mixed", dayfirst=False)
 
-        # 2) Make it the index
-        df = df.set_index("date")
+#         # 2) Make it the index
+#         df = df.set_index("date")
 
-        combined_df = pd.concat(
-            [combined_df, df]
-        )  # NOTE This assumes the files don't have overlapping dates
+#         combined_df = pd.concat(
+#             [combined_df, df]
+#         )  # NOTE This assumes the files don't have overlapping dates
 
-    # We've loaded all the data, let's do a quick error check
-    check_for_tag_errors(combined_df)
-    return combined_df
+#     # We've loaded all the data, let's do a quick error check
+#     check_for_tag_errors(combined_df)
+#     return combined_df
 
 
 def load_data_for_site(site: str):
@@ -907,18 +900,12 @@ def load_pm_data(site: str) -> pd.DataFrame:
 @st.cache_data
 def load_summary_data() -> pd.DataFrame:
     # Load the summary data and prep it for graphing.
-    df = load_all_file()
-    # If needed, can convert to date values as below, but it doesn't seem necessary
-    # df[date_cols] = df[date_cols].apply(pd.to_datetime, errors='coerce')
+    df = pd.read_csv(ALL_FILE, skiprows=SHEET_HEADER_SIZE)
 
     # Convert numeric columns to integers. As above, you have to force it this way if the types vary.
     # Empty values or strings are converted to NaN
-    df[summary_numeric_cols] = df[summary_numeric_cols].apply(
-        pd.to_numeric, errors="coerce"
-    )
-    df[summary_numeric_cols] = df[summary_numeric_cols].astype(
-        pd.Int64Dtype()
-    )  # Keeps NaNs
+    df[summary_numeric_cols] = df[summary_numeric_cols].apply(pd.to_numeric, errors="coerce")
+    df[summary_numeric_cols] = df[summary_numeric_cols].astype(pd.Int64Dtype())  # Keeps NaNs
 
     return df
 
@@ -1623,9 +1610,7 @@ def get_date_range(
 ) -> dict:
     date_range_dict = {}
     date_range_dict_from_sheet = {}
-    dates_from_sheet = get_site_info(
-        df["site"].iloc[0], [SUMMARY_FIRST_REC, SUMMARY_LAST_REC]
-    )
+    dates_from_sheet = get_site_info(df["site"].iloc[0], [SUMMARY_FIRST_REC, SUMMARY_LAST_REC])
     date_range_dict_from_sheet[START] = dates_from_sheet[SUMMARY_FIRST_REC]
     date_range_dict_from_sheet[END] = dates_from_sheet[SUMMARY_LAST_REC]
 
@@ -3416,7 +3401,7 @@ def output_text(text: str, make_all_graphs: bool):
 # Load weather data from file
 @st.cache_data
 def load_weather_data_from_file() -> pd.DataFrame:
-    df = pd.read_csv(FILES[WEATHER_FILE])
+    df = pd.read_csv(WEATHER_FILE)
 
     # Select and rename relevant columns
     columns_to_keep = [
@@ -4084,25 +4069,26 @@ def get_ratio(site):
     """
     Read the ratios file and retrieve the value for this site
     """
-    all_ratios = pd.read_csv(r"./TRBLSummarizer/nestling-to-female-ratios.csv")
+    all_ratios = pd.read_csv(RATIOS_FILE)
     ratio_rows = all_ratios[all_ratios["Site_Name"] == site]
     if len(ratio_rows):
         ratio_str = "Nestling-to-Female Ratios: "
         for i, (index, row) in enumerate(ratio_rows.iterrows()):
             ratio = "n/a" if pd.isna(row["ARI"]) else f"{row['ARI']:.2f}"
-            ratio_str += f"**{row['Pulse Name'][-2:].capitalize()}**: {ratio}"
-            if i < (len(ratio_rows) - 1):
+            ratio_str += f"**{row["Pulse_Name"][-2:].capitalize()}**: {ratio}"
+            if i < (len(ratio_rows) - 1): 
                 ratio_str += ",  "
 
         ratio_str2 = "Nestling-to-Female Ratios: "
         ratio_str2 += "  \n" if len(ratio_rows) > 1 else ""
         for i, (index, row) in enumerate(ratio_rows.iterrows()):
-            ratio = "n/a" if pd.isna(row["ARI"]) else f"{row['ARI']:.2f}"
+            ratio = "n/a" if pd.isna(row["ARI"]) else f"{row['ARI']:.3f}"
             ratio = ratio.replace("inf", "∞")
             ratio_str2 += (
-                f"**{row['Pulse Name'][-2:].capitalize()}**: {ratio}, "
-                + f"Inc days: {row['Incubation_Days']} ({row['Total_Female_Calls']} calls), "
-                + f"Brood days: {row['Nestling_Days']} ({row['Total_Nestling_Calls']} calls)"
+                f"**{row["Pulse_Name"][-2:].capitalize()}**: {ratio}, "
+                + f"Inc days: {row["Incubation_Days"]} ({row["Female_Detection_Recordings"]} calls), "
+                + f"Brood days: {row["Nestling_Days"]} ({row["Nestling_Detection_Recordings"]} calls), "
+                + f"Status: {row["ARI_Class"]}"
             )
             if i < (len(ratio_rows) - 1):
                 ratio_str2 += "  \n"
@@ -4462,10 +4448,6 @@ def main():
         target_sites = site_list
         # Can use this to limit sites to just a particular year
         # target_sites = [string for string in target_sites if string.startswith("2024 ")]
-
-        # This is the file where we write all the dates we extracted from the data
-        if os.path.exists(FILES[DATES_FILE]):
-            os.remove(FILES[DATES_FILE])
 
         # For now, I'm not saving all the files, only the composite because it's taking up too much space.
         # When she needs all the files, we'll bring this back
@@ -5012,7 +4994,7 @@ def main():
         if st.button("Clear cache"):
             get_target_sites().clear()
             clean_data.clear()
-            load_data.clear()
+            # load_data.clear()
             load_weather_data_from_file.clear()
 
         plt.close("all")
