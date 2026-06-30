@@ -686,7 +686,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
             call_type=t,
             columns=usecols,
         )
-        st.write(f"{t}: {len(df_single_pmj_type)} records")
+
         if df_single_pmj_type.empty:
             # Preserve the legacy behavior: missing/empty call types simply add
             # no rows, but downstream code still receives a well-shaped frame.
