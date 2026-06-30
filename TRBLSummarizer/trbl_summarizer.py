@@ -721,7 +721,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
 
         # Preserve the old broad dtype behavior to avoid downstream surprises.
         df_single_pmj_type = df_single_pmj_type[out_cols].astype("object")
-
+        print(df_single_pmj_type["date"][0])
         frames.append(df_single_pmj_type)
 
     if frames:
