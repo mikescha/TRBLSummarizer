@@ -278,6 +278,8 @@ EDGE_GRAPH_BORDER_INSET = 0.02
 EDGE_GRAPH_COLOR_SCALE = 0.6  # Bigger is darker
 
 # Files, paths, etc.
+if BEING_DEPLOYED_TO_STREAMLIT: #Must use relative paths, this will get cleaned up when we unify everything
+    DATA_DIR = Path(__file__).parents[0] / "Data"
 FIG_FOLDER = "Figures/"
 FIGURE_DIR = Path(__file__).parents[0] / FIG_FOLDER
 ERROR_FILE = Path(__file__).parents[0] / "error.txt"
