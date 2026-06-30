@@ -280,6 +280,7 @@ EDGE_GRAPH_COLOR_SCALE = 0.6  # Bigger is darker
 # Files, paths, etc.
 if BEING_DEPLOYED_TO_STREAMLIT: #Must use relative paths, this will get cleaned up when we unify everything
     DATA_DIR = Path(__file__).parents[0] / "Data"
+    INPUT_CSV = DATA_DIR / "TRBL Analysis tracking - All.csv"
 FIG_FOLDER = "Figures/"
 FIGURE_DIR = Path(__file__).parents[0] / FIG_FOLDER
 ERROR_FILE = Path(__file__).parents[0] / "error.txt"
