@@ -37,7 +37,7 @@ OUTCOME_NO_TRBL = "No TRBL"
 INPUT_CSV = Path(
     r"C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\TRBL Analysis tracking - All.csv"
 )
-DATA_ROOT = Path(r"C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer")
+DATA_ROOT = Path(__file__).parents[0] 
 DATA_DIR = DATA_ROOT / "Data"
 PMJ_DIR = DATA_DIR / "PMJ Data"
 HOURLY_PARQUET_FILES = DATA_DIR / Path("recordings_per_day_hour.parquet")
