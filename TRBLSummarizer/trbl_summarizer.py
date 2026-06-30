@@ -6,19 +6,14 @@ import calendar
 # For profiling
 import cProfile
 import glob
-import io
 import math
 import operator as op
 import os
 import pstats
-import random
 import time
 from collections import Counter
-
-# Crap that I needed to fix pylance errors
 from contextlib import contextmanager
 from datetime import datetime as dt
-from itertools import tee
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +23,6 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
-import matplotlib.text as mtext
 import matplotlib.transforms as mtransforms
 import matplotlib.transforms as transforms
 import numpy as np
@@ -48,7 +42,7 @@ BEING_DEPLOYED_TO_STREAMLIT = True
 # Dec 2025, we may or may not want to show the manual analysis graph
 SHOW_MANUAL_ANALYSIS = True
 
-INCLUDE_INSECT_AND_FROG_DATA = True
+INCLUDE_INSECT_AND_FROG_DATA = False
 PROFILING = False
 make_all_graphs = False
 align_dates = False
@@ -444,70 +438,11 @@ def timed(label: str):
     print(f"[TIMER] {label}: {dt:.3f}s")
 
 
-def count_text_artists(fig):
-    texts = [a for a in fig.findobj(mtext.Text) if a.get_visible()]
-    # Filter out empty strings (Matplotlib has a lot of empty placeholders)
-    texts = [t for t in texts if (t.get_text() or "").strip()]
-    return len(texts), texts
-
-
-def st_image_figure(fig, *, dpi=120):
-    fig_w, fig_h = fig.get_size_inches()
-
-    pos = Bbox.union([ax.get_position() for ax in fig.axes])  # figure fraction
-    fig_w, fig_h = fig.get_size_inches()
-
-    bbox_in = Bbox.from_bounds(
-        pos.x0 * fig_w,
-        pos.y0 * fig_h,
-        pos.width * fig_w,
-        pos.height * fig_h,
-    )
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=bbox_in)  # keep None
-    buf.seek(0)
-    st.image(buf)
-
-
 #
 #
 # Helper functions
 #
 #
-def append_to_csv(df, site, csv_filename):
-    # Replace <br> with \n in the DataFrame
-    df = df.replace(r"<br>", "\n", regex=True)
-
-    # Flatten the DataFrame into one row with columns prefixed by the row index
-    flat_data = {
-        f"{pulse}{category}": value
-        for pulse, category, value in df.stack().reset_index().values
-    }
-    flat_data["Site"] = site  # Add the site as a separate column
-
-    # Convert the flattened data to a DataFrame
-    flat_df = pd.DataFrame([flat_data])
-
-    # Reorder columns to make "Site" the first column
-    columns = ["Site"] + [col for col in flat_df.columns if col != "Site"]
-    flat_df = flat_df[columns]
-
-    # Append to CSV, creating it if it doesn't exist
-    with open(csv_filename, "a", newline="") as f:
-        write_header = f.tell() == 0  # Write header only if file is empty
-        flat_df.to_csv(f, index=False, header=write_header)
-
-
-def format_timestamp(ts):
-    if pd.notna(ts):
-        if isinstance(ts, pd.Timestamp):
-            return ts.strftime("%m/%d")
-        elif isinstance(ts, str):
-            return ts
-    else:
-        return "None"
-
-
 def my_time():
     return dt.now().strftime("%d-%b-%y %H:%M:%S")
 
@@ -532,33 +467,6 @@ def show_error(msg: str):
     if not make_all_graphs:
         st.error(msg)
     log_error(msg)
-
-
-def pairwise(iterable):
-    a, b = tee(iterable)  # Note that tee is from itertools
-    next(b, None)
-    return zip(a, b)
-
-
-def is_non_zero_file(fpath):
-    return (
-        os.path.isfile(fpath) and os.path.getsize(fpath) > 10
-    )  # the 'empty' files seem to have a few bytes, so just being safe by using 10 as a min length
-
-
-def count_files_in_folder(fpath):
-    i = 0
-    for item in os.scandir(fpath):
-        if item.is_file():
-            i += 1
-    return i
-
-
-def make_date(row: pd.Series) -> pd.Timestamp:
-    y = int(row["year"])
-    m = int(row["month"])
-    d = int(row["day"])
-    return pd.Timestamp(year=y, month=m, day=d)
 
 
 #
@@ -588,21 +496,6 @@ def get_target_sites() -> list:
         show_error("No site files found")
 
     return filtered_sites
-
-
-# TODO Remove this, all the inputs are automatically generated
-# Used by the two functions that follow to do file format validation
-def confirm_columns(target_cols: dict, file_cols: list, file: Path) -> list:
-    errors_found = []
-    #    if len(target_cols) != len(file_cols):
-    #        log_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
-    #        show_error(f"confirm_columns: File {file} has an unexpected number of columns, {len(file_cols)} instead of {len(target_cols)}")
-    for col in target_cols:
-        if target_cols[col] not in file_cols:
-            errors_found.append(target_cols[col])
-    #            show_error(f"confirm_columns: Column {target_cols[col]} missing from file {file}")
-
-    return errors_found
 
 
 def fix_bad_values(df: pd.DataFrame):
@@ -733,45 +626,7 @@ def check_for_tag_errors(df: pd.DataFrame):
     return
 
 
-# Load the main data.csv file into a dataframe, validate that the columns are what we expect
-# @st.cache_data
-# def load_data() -> pd.DataFrame:
-#     files_to_load = [DATA_DIR / f"data {year}.csv" for year in range(2017, 2025)]
-#     combined_df = pd.DataFrame()
-#     for file_name in files_to_load:
-#         # Validate the data file format
-#         headers = pd.read_csv(file_name, nrows=0).columns.tolist()
-#         missing_columns = confirm_columns(data_col, headers, file_name)
-
-#         # The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-#         usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
-#         for song in ALL_SONGS:
-#             usecols.append(data_col[song])
-#         for tag in ALL_TAGS:
-#             usecols.append(data_col[tag])
-
-#         # remove any columns that are missing from the data file, so we don't ask for them as that will cause
-#         # an exception. Hopefully the rest of the code is robust enough to deal...
-#         usecols = [item for item in usecols if item not in missing_columns]
-
-#         # 0) Read the file
-#         df = pd.read_csv(file_name, usecols=usecols)
-
-#         # 1) Convert the date column explicitly
-#         df["date"] = pd.to_datetime(df["date"], format="mixed", dayfirst=False)
-
-#         # 2) Make it the index
-#         df = df.set_index("date")
-
-#         combined_df = pd.concat(
-#             [combined_df, df]
-#         )  # NOTE This assumes the files don't have overlapping dates
-
-#     # We've loaded all the data, let's do a quick error check
-#     check_for_tag_errors(combined_df)
-#     return combined_df
-
-
+@st.cache_data
 def load_data_for_site(site: str):
     """
     Given a site, retrieve the data set for that
@@ -779,33 +634,7 @@ def load_data_for_site(site: str):
     :param site: Description
     :type site: str
     """
-    # df = pd.DataFrame()
-
-    # #Figure out which data file we need
     year = site[0:4]
-    # file_name = DATA_DIR / f"data {year}.csv"
-    # headers = pd.read_csv(file_name, nrows=0).columns.tolist()
-    # missing_columns = confirm_columns(data_col, headers, file_name)
-
-    # #The set of columns we want to use are the basic info (filename, site, date), all songs, and all tags
-    # usecols = [data_col[FILENAME], data_col[SITE], data_col[DATE]]
-    # for song in ALL_SONGS:
-    #     usecols.append(data_col[song])
-    # for tag in ALL_TAGS:
-    #     usecols.append(data_col[tag])
-    # #remove any columns that are missing from the data file, so we don't ask for them as that will cause
-    # #an exception. Hopefully the rest of the code is robust enough to deal...
-    # usecols = [item for item in usecols if item not in missing_columns]
-
-    # # 0) Read the file
-    # df = pd.read_csv(file_name, usecols=usecols)
-    # df = df[df[SITE] == site]
-    # # 1) Convert the date column explicitly
-    # df['date'] = pd.to_datetime(df['date'], format='mixed', dayfirst=False)
-
-    # # 2) Make it the index
-    # df = df.set_index('date')
-
     pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE], data_col[HOUR]]
     for song in ALL_SONGS:
         pusecols.append(data_col[song])
@@ -854,7 +683,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
             full_file_name = site_dir / fname
 
             df_single_pmj_type = pd.DataFrame()
-            if is_non_zero_file(full_file_name):
+            if os.path.isfile(full_file_name):
                 # I used to validate that all columns exist, and abandon ship if we're missing any, not doing this as data is solid
                 df_temp = pd.read_csv(full_file_name, usecols=usecols)
                 # make a new column that has the date in it, take into account that the table could be empty
@@ -1107,9 +936,6 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
     p_count = max(1, count_valid_pulses(summary_dict))
     summary_dict[PULSE_COUNT] = p_count
 
-    # Save our abandoned dates, if any
-    #    summary_dict[abandoned] = abandoned_dates
-
     return summary_dict
 
 
@@ -1122,7 +948,6 @@ def get_pretty_name_for_site(site: str) -> str:
 # Perform the following operations to clean up the data:
 #   - Drop sites that aren't needed, so we're passing around less data
 #   - Exclude any data where the year of the data doesn't match the target year
-#   - Exclude any data where there aren't recordings on consecutive days  ##SEP2025 no longer doing this
 @st.cache_data
 def clean_data(df: pd.DataFrame, site_list: list) -> pd.DataFrame:
     # Drop sites we don't need
@@ -1295,89 +1120,6 @@ def make_pattern_match_pt(
     return normalize_pt(aggregate, date_range_dict)
 
 
-def song_count_sufficient(value, threshold):
-    return pd.notna(value) and value >= threshold
-
-
-def find_pm_dates(row: pd.Series, pulse_gap: int, threshold: int) -> dict:
-    # Scan through a row of pattern matching data and return pairs of dates such that the first date is preceeded by
-    # NA values and is greater than threshold, while the second date is after the first date and there is no more than
-    # one value less than the threshold or NA between it and the first date
-
-    # Example:
-    # If the row is: 0 0 1 5 6 1 7 0 0 8 1 9 0 10
-    # Then the date pairs to be returned are the dates for 5, 7, 8, and 10
-
-    dates = {}
-    last_column = 0
-    looking_for_first = True
-    consecutive_dates_below_threshold = 0
-    skip_ahead = False
-    col = 0
-    pulse = 1
-    CONSECUTIVE_THRESHOLD = 2
-    while col < len(row):
-        if looking_for_first:
-            if song_count_sufficient(row.iloc[col], threshold):
-                column_date = row.index[col]
-                dates[pulse] = {
-                    FIRST: column_date,
-                    # If we're at the very beginning, then we don't actually know when it started, so note this
-                    BEFORE_FIRST: col == 0,
-                }
-                last_column = col
-                looking_for_first = False
-        else:
-            # We're looking for two consecutive NA or less than threshold
-            if song_count_sufficient(row.iloc[col], threshold):
-                last_column = col
-                consecutive_dates_below_threshold = 0
-            else:  # No data, or at least there wasn't enough calls
-                consecutive_dates_below_threshold += 1
-                if consecutive_dates_below_threshold >= CONSECUTIVE_THRESHOLD:
-                    # Found enough consecutive dates below threshold to consider that the pulse ended
-                    column_date = row.index[last_column]
-                    dates[pulse].update({LAST: column_date, AFTER_LAST: False})
-                    consecutive_dates_below_threshold = 0
-                    looking_for_first = True  # Now that we found the end, we're looking for the first date in the next pulse
-                    skip_ahead = True  # Now that we've found a pair, skip forward by the pulse gap and start over
-
-        # Either skip ahead by 1 for a normal case, or the pulse gap if we just found a pair
-        if skip_ahead:
-            col += pulse_gap
-            skip_ahead = False
-            pulse += 1
-        else:
-            col += 1
-
-    # Detect the case where the last phase ended on or after the recorder was pulled
-    if dates and len(dates[len(dates)]) == 2:
-        # We want to capture the last date in the row. Because of "pulse_gap", col could be beyond the end
-        # of the table, so we'll use the value we know is good
-        dates[len(dates)].update({LAST: row.index[len(row) - 1], AFTER_LAST: True})
-
-    return dates
-
-
-def make_empty_summary_row() -> dict:
-    # Create an empty row for a single pulse
-    phases = PM_FILE_TYPES[1:]  # Creates a new list except it drops "Male Song"
-    base_dict = {}
-    for phase in phases:
-        # NOTE Dec 2024: added this if statement to limit the summarizing to just the bird songs
-        if phase in PM_SONG_TYPES:
-            base_dict[f"{phase}"] = {}
-    return base_dict
-
-
-def make_empty_summary_dict() -> dict:
-    # Create the entire empty summary dict, so we don't get key errors
-    base_dict = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}}
-    for k in base_dict:
-        base_dict[k] = make_empty_summary_row()
-    return base_dict
-
-
 def find_last_non_empty_key(d):
     # Walk through a dictionary backwards and return the first non-empty key
     # Used to find the last key with data
@@ -1385,191 +1127,6 @@ def find_last_non_empty_key(d):
         if d[key]:  # Check if the value is non-empty
             return key
     return None  # Return None if all values are empty
-
-
-def find_first_non_empty_key(d):
-    # Walk through a dictionary forwards and return the first non-empty key
-    # Used to find the first key with data
-    for key in d.keys():
-        if d[key]:  # Check if the value is non-empty
-            return key
-    return None  # Return None if all values are empty
-
-
-# NOTE Dec 2024: this used to use "pm_file_types" and it attempted to auto-analyze all the types of calls
-#       in the same way. However, now that we're adding insects, et al, I changed it to specifically look
-#       only at the bird vocalizations by changing "pm_file_types" to "pm_song_types"
-def find_correct_pulse(
-    target_phase: str,
-    target_date: pd.Timestamp,
-    proposed_pulse: int,
-    current_dates: dict,
-):
-    # Check to see if a pulse already has a date for a phase that is later than the current one.
-    correct_pulse = proposed_pulse
-    all_phases = PM_SONG_TYPES[1:]  # Creates a new list except it drops "Male Song"
-    target_position = all_phases.index(target_phase)
-
-    while True:
-        current_latest_phase = find_last_non_empty_key(current_dates[correct_pulse])
-
-        if current_latest_phase in all_phases:
-            latest_position = all_phases.index(current_latest_phase)
-            if target_position <= latest_position:
-                # The one we want to add is earlier or in the same position in the sequence as
-                # something already there, this means it's in the wrong pulse
-
-                # BUT, if it's a Hatchling and the one that's after it is a Nestling, that's OK if the dates are close
-                if target_phase == "Hatchling" and current_latest_phase == "Nestling":
-                    if abs(
-                        current_dates[correct_pulse]["Nestling"][FIRST] - target_date
-                    ) <= pd.Timedelta(days=6):
-                        break
-
-                correct_pulse += 1
-            else:
-                break
-        else:
-            # The result was "None", so pulse is currently empty and it's OK to add to it
-            break
-
-    return correct_pulse
-
-
-def correct_pulse_has_date_collision(
-    target_phase: str, target_date: pd.Timestamp, target_pulse: dict
-):
-    result = False
-    if target_phase == "Fledgling":
-        # This is the one that is problematic
-        earlier_phase = find_last_non_empty_key(target_pulse)
-        if earlier_phase is not None:
-            # Any phase will be earlier than Nestling
-            assert earlier_phase != "Fledgling", (
-                "Should never get a matching phase at this point"
-            )
-
-            # Check that the start date is no closer that it should be
-            earlier_phase_start = target_pulse[earlier_phase][FIRST]
-            min_delta = 0
-            start_adding = False
-
-            for item in PM_SONG_TYPES:
-                if item == earlier_phase:
-                    start_adding = True
-                min_delta += valid_pm_date_deltas[item] if start_adding else 0
-
-            if (target_date - earlier_phase_start) <= pd.Timedelta(days=min_delta):
-                # we have a problem!
-                result = True
-
-    return result
-
-
-def clean_pm_dates(dates: dict):
-    # Don't want Male Song in our results
-    del dates["Male Song"]
-
-    first_dates = []
-    for phases, pulses in dates.items():
-        for pulse, date in pulses.items():
-            if "First" in date:
-                first_dates.append((date[FIRST], f"{phases}{pulse}"))
-
-    # TODO I'm not sure if this sorting is sufficient. Multiple sort passes may be necessary to get the pulses
-    #   in the right order
-    first_dates.sort(key=lambda x: x[0])
-
-    # Generate a blank dictionary so that we don't end up with any key errors
-    temp_dict = make_empty_summary_dict()
-
-    # We're now going to fill out the summary dict by walking through the dates in order and placing them where appropriate.
-    # Note that this might require moving a key to a different pulse!
-    for date in first_dates:
-        proposed_pulse = int(
-            date[1][-1:]
-        )  # Last digit off the value we built above, convert to int for easy comparison
-        phase = date[1][:-1]
-
-        # We need to ensure that everything is coming in the right order. If we go to add a phase and there is
-        # a phase already present in that pulse that's AFTER the one we're working on, then we need to move the
-        # new phase to the next pulse.
-        correct_pulse = find_correct_pulse(phase, date[0], proposed_pulse, temp_dict)
-
-        # We know which pulse it should go into, but need to check whether there is anything EARLIER...
-        # If there is, it's in the wrong pulse and needs to move to the next pulse.
-        if correct_pulse_has_date_collision(phase, date[0], temp_dict[correct_pulse]):
-            # Copy the current pulse into the next one
-            # TODO: Need to worry about exceeding the valid number of pulses?
-            temp_dict[correct_pulse + 1] = temp_dict[correct_pulse]
-            # Reset the current pulse to blank
-            temp_dict[correct_pulse] = make_empty_summary_row()
-
-        temp_dict[correct_pulse][phase] = dates[phase][proposed_pulse]
-
-    # Create a new dict by selecting any keys where the subkeys have a value
-    result = {k: v for k, v in temp_dict.items() if v for k2, v2 in v.items() if v2}
-    return result
-
-
-def format_pm_dates(pm_dates: dict):
-    # Convert the timestamp to a string
-    formatted_dict = {}
-    for pulse in pm_dates:
-        pulse_str = f"Pulse {pulse}"
-        formatted_dict[pulse_str] = {}
-
-        for phase in pm_dates[pulse]:
-            formatted_dict[pulse_str][phase] = {}
-            if len(pm_dates[pulse][phase]):  # Keys could be empty
-                first_date = format_timestamp(pm_dates[pulse][phase][FIRST])
-                last_date = format_timestamp(pm_dates[pulse][phase][LAST])
-                message = ""
-
-                message += "First: "
-                if pm_dates[pulse][phase][BEFORE_FIRST]:
-                    message += f"On or before {first_date}"
-                else:
-                    message += f"{first_date}"
-
-                message += "<br>"
-                message += "Last: "
-                if pm_dates[pulse][phase][AFTER_LAST]:
-                    message += f"On or after {last_date}"
-                else:
-                    message += f"{last_date}"
-
-                formatted_dict[pulse_str][phase] = message
-            else:
-                # Empty key, put an appropriate message for display purposes
-                formatted_dict[pulse_str][phase] = "No data"
-
-    return formatted_dict
-
-
-# NOTE Dec 2024: this used to analyze all the data, but since we're adding insects now and don't want
-#       them analyzed, it's changed to only work on bird vocalizations. Changed two things:
-#       1) Below, added "if idx in pm_song_types" to limit analysis to only songs
-#       2) In make_empty_summary_row(), added the same if statement
-def summarize_pm(pt_pm: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    # From pt_pm, get the first date that has a song count >= 4
-    threshold = 4
-    pulse_gap = 14
-
-    # Get all the date pairs
-    dates = {}
-    for idx, row in pt_pm.iterrows():
-        if idx in PM_SONG_TYPES:
-            dates[idx] = find_pm_dates(row, pulse_gap=pulse_gap, threshold=threshold)
-
-    # Sanity check the data
-    summary_dict = clean_pm_dates(dates)
-    summary_dict = format_pm_dates(summary_dict)
-
-    # Now format this for display. Make a new table where the "1" becomes "Pulse 1"
-    result = pd.DataFrame.from_dict(summary_dict, orient="index")
-
-    return result, dates
 
 
 #
@@ -1705,9 +1262,7 @@ AXIS_FONT_SIZE = 8
 LEGEND_FONT_SIZE = 8
 
 
-# Set up base theme
-# See https://seaborn.pydata.org/generated/seaborn.set_theme.html#seaborn.set_theme
-#
+# Set up base theme#
 # See here for color options: https://matplotlib.org/3.5.0/tutorials/colors/colormaps.html
 def set_global_theme():
     # https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
@@ -2014,58 +1569,6 @@ def plot_title(fig: Figure, title: str, x: float = 0.0, y: float = 1.0):
     )
 
 
-def draw_missing_day_boxes(
-    fig,
-    ax,
-    missing_days: pd.DatetimeIndex,
-    bottom: float,
-    top: float,
-    start_day: pd.Timestamp,  # first day of the heatmap
-    last_day: pd.Timestamp,  # last day of the heatmap
-    color="white",
-    alpha=0.5,
-):
-    """
-    Draw boxes for missing days on an index-based (heatmap) x-axis.
-    """
-
-    fig.canvas.draw()
-
-    for day in missing_days:
-        if day >= start_day and day <= last_day:
-            # Map date -> column index
-            i = (day - start_day).days
-            x_start = i
-            x_end = i + 1
-
-            # data -> display
-            x0_disp, _ = ax.transData.transform((x_start, 0))
-            x1_disp, _ = ax.transData.transform((x_end, 0))
-
-            # display -> figure
-            x0_fig, _ = fig.transFigure.inverted().transform((x0_disp, 0))
-            x1_fig, _ = fig.transFigure.inverted().transform((x1_disp, 0))
-
-            # Safety guard (optional but wise)
-            if not (-1 <= x0_fig <= 2):
-                assert False
-                continue
-
-            rect = Rectangle(
-                (x0_fig, bottom),
-                x1_fig - x0_fig,
-                top - bottom,
-                transform=fig.transFigure,
-                facecolor=HATCH_BG_COLOR,
-                edgecolor=HATCH_DARK_COLOR,
-                alpha=alpha,
-                zorder=10,
-                hatch=HATCH_PATTERN,
-            )
-
-            fig.add_artist(rect)
-
-
 def overlay_missing_days_hatch(
     axs,
     missing_days,
@@ -2086,11 +1589,11 @@ def overlay_missing_days_hatch(
                     i + 1,
                     ymin=0,
                     ymax=1,
-                    facecolor=HATCH_BG_COLOR,
-                    edgecolor=HATCH_DARK_COLOR,
-                    hatch=HATCH_PATTERN,
+                    facecolor=facecolor,
+                    edgecolor=color,
+                    hatch=hatch,
                     linewidth=0,
-                    zorder=10,
+                    zorder=zorder,
                 )
 
 
@@ -2100,7 +1603,7 @@ def file_missing(site, graph_type, type):
         if os.path.isdir(site_dir):
             fname = f"{site} {type}.csv"
             full_file_name = site_dir / fname
-            if is_non_zero_file(full_file_name):
+            if os.path.isfile(full_file_name):
                 return False
 
     return True
@@ -2130,25 +1633,6 @@ def draw_event_date_marker(
         PULSE_FIRST_FLDG: "F",
         PULSE_LAST_FLDG: "D",
     }
-
-    # # Cell center
-    # cx = x + 0.25
-    # cy = 0.45
-
-    # # Draw the right letter centered in the circle
-    # txt = ax.text(
-    #     cx, cy,
-    #     date_markers[date_type],
-    #     ha="center", va="center",
-    #     fontsize=8,
-    #     color="black",
-    #     zorder=16,
-    # )
-    # txt.set_in_layout(False)
-
-    # cell center
-    cx = x
-    cy = 0.41
 
     # Draw circular outline marker (no fill)
     if x == 0:
@@ -2211,30 +1695,7 @@ def draw_event_date_marker(
             zorder=18,
             annotation_clip=False,
         )
-
-        # # Arrow parameters
-        # # arrow_end_x   = x          # how far arrow points
-        # # arrow_start_x = arrow_end_x + 1.5        # right edge of rectangle
-        # arrow_y = 0.15              # vertical center of the rect
-        # arrow_x = x
-        # arrow = FancyArrowPatch(
-        #     # (arrow_x, arrow_y),     # start inside the axes
-        #     # (-0.003, arrow_y),   # end exactly at the left border
-        #     # transform=ax.transAxes,
-        #     (arrow_x+1, 0.85),     # x, y to start
-        #     (arrow_x+1-1, 0.85), # x, y to end (pointing left)
-        #     transform=ax.transData,
-        #     arrowstyle="->",
-        #     linewidth=0.5,
-        #     color="black",
-        #     mutation_scale=8,            # arrowhead size
-        #     antialiased=True,
-        #     zorder=18,
-        #     clip_on=False,
-        # )
-        # arrow.set_in_layout(False)
-        # ax.add_patch(arrow)
-
+        
     return
 
 
@@ -2421,18 +1882,9 @@ def create_graph(
         # Normalize all the data by the number of recordings that were used per day
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 3  # 3 recordings per day
-        # elif graph_type == GRAPH_MANUAL:
-        #     df_norm = df_to_graph / 13  # 13 recordings per day
-        # elif graph_type == GRAPH_EDGE:
-        #     df_norm = df_to_graph / 8  # 8 recordings per day
         else:
             # Align denom to the same columns (dates)
             denom = denom_by_day.reindex(df_to_graph.columns)
-
-            # Assume that columns are normalized Timestamps to match denom_by_day index, and are numeric
-            # otherwise we need these two lines
-            # df_to_graph.columns = pd.to_datetime(df_to_graph.columns, errors="raise").normalize()
-            # df_to_graph.iloc[0] = pd.to_numeric(df_to_graph.iloc[0], errors="coerce")
             df_norm = df_to_graph.div(
                 denom, axis="columns"
             )  # normalize by count of recordings per day
@@ -2472,7 +1924,6 @@ def create_graph(
             # The conundrum: at least for edge, it's possible that a row we drew is blank, but the actual
             # row is going to get some boxes and lines. In this case, there will be -100s in the data,
             # and if we find those, we should NOT draw the text that says there is no data
-            # THIS IS NOT WORKING?
             if graph_type == GRAPH_EDGE and df.loc[row].lt(0).any():
                 pass
             else:
@@ -2607,38 +2058,6 @@ def create_graph(
         else:
             i += 1
 
-    # For mini-manual: Add a rect around each day that has some data
-    if graph_type == GRAPH_MINIMAN and len(raw_data) > 0 and False:
-        if draw_vert_rects:
-            tagged_rows = filter_df_by_tags(raw_data, MINI_MANUAL_COLS)
-            if len(tagged_rows):
-                date_list = tagged_rows.index.unique()
-                # I'm using df.columns[0] because it represents the date of the first day in the date range.
-                # This accounts for the scenario where the user changed the Start Month.
-                first = df.columns[0]
-                box_pos = [(i - first) / pd.Timedelta(days=1) for i in date_list]
-
-                _, top = fig.transFigure.inverted().transform(
-                    axs[0].transAxes.transform([0, 1])
-                )
-                _, bottom = fig.transFigure.inverted().transform(
-                    axs[row_count - 1].transAxes.transform([0, 0])
-                )
-                trans = transforms.blended_transform_factory(
-                    axs[0].transData, fig.transFigure
-                )
-                for px in box_pos:
-                    rect = Rectangle(
-                        xy=(px, bottom),
-                        width=1,
-                        height=top - bottom,
-                        transform=trans,
-                        fc="none",
-                        ec="C0",
-                        lw=0.5,
-                    )
-                    fig.add_artist(rect)
-
     # Draw shading over every missing date
     start_day = pd.Timestamp(df.columns.min()).normalize()
     last_day = pd.Timestamp(df.columns.max()).normalize()
@@ -2663,7 +2082,6 @@ def create_graph(
     )
 
     # Draw a bounding rectangle around everything except the caption
-    # b = axes_union_bbox(fig, "i") #Get the dimensions of the plot area
     b = Bbox.union([ax.get_position() for ax in fig.axes])
 
     border = Rectangle(
@@ -2677,9 +2095,6 @@ def create_graph(
         zorder=8,
     )
     fig.add_artist(border)
-
-    # if we want to add anything on top of the images, the time to do it is at the end
-    # add_watermark(title)
 
     # return the final plotted heatmap
     return fig
@@ -2710,58 +2125,6 @@ def axes_union_bbox(fig):
         h_in + top_pad_in + bottom_pad_in,
     )
     return bbox_in
-
-
-def add_pulse_overlays(graph, summarized_data: dict, date_range: dict):
-    #
-    #
-    # CURRENTLY UNUSED
-    #
-    #
-    # For each of the derived summary dates, draw a line on the graph
-    # Top row of graph is Male Song, nothing goes there
-
-    # For each of the other rows, we want to draw a bar to the left of the start date, a line to the end date, and then a line just
-    # after the end dates
-
-    graph_start_date = pd.to_datetime(date_range["start"])
-    for idx, phase_type in enumerate(PM_FILE_TYPES):
-        if phase_type in summarized_data:
-            for pulse in summarized_data[phase_type]:
-                pulse_dates = summarized_data[phase_type][pulse]
-                assert FIRST in pulse_dates
-                assert LAST in pulse_dates
-
-                overlay_start = (pulse_dates[FIRST] - graph_start_date).days
-                overlay_end = (pulse_dates[LAST] - graph_start_date).days + 1
-                target_ax = graph.axes[idx]
-                # graph.axes[idx].axvspan(
-                #     xmin=overlay_start,
-                #     xmax=overlay_end,
-                #     color="yellow",
-                #     alpha=0.3  # Transparency
-                # )
-
-                # Get y-axis limits
-                ymin, ymax = target_ax.get_ylim()
-
-                # Create a rectangle spanning the range
-                rect = Rectangle(
-                    (overlay_start, ymin),  # Bottom-left corner (x, y)
-                    overlay_end - overlay_start,  # Width (difference in dates)
-                    ymax - ymin,  # Height
-                    edgecolor="yellow",  # Outline color
-                    facecolor="none",  # Transparent fill
-                    linewidth=2,  # Outline width
-                )
-
-                # Add the rectangle to the axis
-                target_ax.add_patch(rect)
-        else:
-            # do anything for missing rows?
-            pass
-
-    return
 
 
 # Helper to ensure we make the filename consistently because this is done from multiple places
@@ -2834,24 +2197,6 @@ def save_figure(
                         text.remove()
             bbox_inches = None
 
-            # # We no longer have labels, so need to move up the legend if appropriate
-            # if graph_type == GRAPH_WEATHER:
-            #     ax = graph.get_axes()[0]
-
-            #     # Get the legend and it's coordinates
-            #     legend = ax.get_legend()
-            #     bb = legend.get_bbox_to_anchor().transformed(ax.transAxes.inverted())
-
-            #     # Shift the coords
-            #     yOffset = 0.1
-            #     new_bb = Bbox.from_bounds(
-            #         bb.x0,
-            #         bb.y0 + yOffset,
-            #         bb.width,
-            #         bb.height,
-            #     )
-            #     legend.set_bbox_to_anchor(new_bb, transform = ax.transAxes)
-
         # Now, need to trim off the bottom of the image that we don't need any more
         fig_w, fig_h = graph.get_size_inches()
         fig_w += 1 / DPI  # Round up to prevent clipping on the right
@@ -2871,40 +2216,9 @@ def save_figure(
 
     else:
         # TODO If there is no data, what to do? The line below saves an empty image.
-        # Image.new(mode="RGB", size=(1, 1)).save(figure_path)
         pass
 
     plt.close()
-
-
-def save_with_reserved_margin(
-    fig,
-    path,
-    left_pad_in=GRAPH_LEFT_PADDING,
-    right_pad_in=0.0,
-    top_pad_in=0.0,
-    bottom_pad_in=0.0,
-    dpi="figure",
-):
-    fig_w, fig_h = fig.get_size_inches()
-
-    b = axes_union_bbox(fig)  # figure fraction
-
-    # Convert axes bbox (fraction) -> inches
-    x0_in = b.x0 * fig_w
-    y0_in = b.y0 * fig_h
-    w_in = b.width * fig_w
-    h_in = b.height * fig_h
-
-    # Expand by reserved margins (inches)
-    bbox_in = Bbox.from_bounds(
-        x0_in - left_pad_in,
-        y0_in - bottom_pad_in,
-        w_in + left_pad_in + right_pad_in,
-        h_in + top_pad_in + bottom_pad_in,
-    )
-
-    fig.savefig(path, dpi=dpi, bbox_inches=bbox_in)
 
 
 def concat_images(*images: Image.Image, is_legend: bool = False) -> Image.Image:
@@ -3154,7 +2468,6 @@ def concat_aligned_images(image_dict: dict, data_dict: dict):
     graph_start = dt.strptime(f"2024/{STANDARD_START}", "%Y/%m/%d")
     graph_end = dt.strptime(f"2024/{STANDARD_END}", "%Y/%m/%d")
     width_in_days = (graph_end - graph_start).days + 1
-    pixels_per_day = img_width / width_in_days
 
     for label, image in image_dict.items():
         x = 0  # left edge of text
@@ -3368,20 +2681,9 @@ def output_graph(
     else:
         # No data, so show a message instead.
         save_figure(site, graph_type, graph, delete_only=True)
-        site_name_text = f'<p style="font-family:sans-serif; font-size: 16px;"><b>{graph_type}</b></p>'  # used to also have color:Black;
+        site_name_text = f'<p style="font-family:sans-serif; font-size: 16px;"><b>{graph_type}</b></p>'
         st.write(site_name_text, unsafe_allow_html=True)
-
-        # https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
-        emoji = [
-            ":woman-shrugging:",
-            ":crying_cat_face:",
-            ":slightly_frowning_face:",
-            ":see_no_evil:",
-            ":no_entry_sign:",
-            ":cry:",
-            ":thumbsdown:",
-        ]
-        st.write("No data available " + random.choice(emoji))
+        st.write("No data available")
 
 
 def output_text(text: str, make_all_graphs: bool):
@@ -3676,8 +2978,6 @@ def create_weather_graph(
     # Plot the data in the proper format on the correct axis.
     wg_colors = {"high": "#ff0000", "low": "#ff8080", "prcp": "blue", "wspd": "gray"}
     line_width = TEMP_LINES  # For how thick the red lines are
-    marker_size = 0  # For whether a little dot shows on the graph or not
-    marker = ""  # If we want a marker, a "." gives a point
     for wt in WEATHER_COLS:
         w = weather_by_type[wt]
         x = (w.index.normalize() - w.index[0]).days  # Convert our dates to a series
@@ -3772,23 +3072,8 @@ def create_weather_graph(
 
 
 #
-# Bonus functions
+# Functions for output of raw data
 #
-
-
-# # In this case, we return specific formatting based on whether the cell is zero, non-zero but not
-# # a date, or a date. This is to make non-zero values that aren't dates easier to see.
-# def style_cells(v):
-#     zeroprops = "background-color:WhiteSmoke;"
-#     nonzeroprops = "color:DarkBlue; background-color:White;font-size:10px;"
-#     if type(v).__name__ in ["Timestamp", "datetime", "date"]:
-#         result = ""
-#     elif pd.isna(v) or v == "":
-#         result = zeroprops
-#     else:  # it must be a non-date, non-zero value so format it to call it out
-#         result = nonzeroprops
-#     return result
-
 
 def to_number(value, default=0.0) -> float:
     value = pd.to_numeric(value, errors="coerce")
@@ -4141,14 +3426,6 @@ def do_pattern_matching(
         )
 
     return pt_pm, pm_date_range_dict, not df_pattern_match.empty
-
-
-def assert_df_equal(old_df: pd.DataFrame, new_df: pd.DataFrame, context: str):
-    return pd.testing.assert_frame_equal(
-        old_df.sort_index().sort_index(axis=1),
-        new_df.sort_index().sort_index(axis=1),
-        check_like=True,  # allows column order differences
-    ), f"{context}: New and old pivot table results do not match"
 
 
 def do_manual(
@@ -4771,7 +4048,6 @@ def main():
         ):
             combine_unaligned_images(site, month_locs, show_weather_checkbox)
 
-    # If site_df is empty, then there were no recordings at all for the site and so we can skip all the summarizing
     if not make_all_graphs and len(df_site):
         # Show the table with all the raw data
         with st.expander("See raw data"):
@@ -4911,7 +4187,6 @@ def main():
             st.dataframe(state_debug, width="stretch")
 
         with st.expander("See overview of dates"):
-
             def clean_and_substitute(val):
                 if pd.isna(val) or not isinstance(val, pd.Timestamp):
                     return val
@@ -5003,19 +4278,6 @@ def main():
         combine_aligned_images()
 
     return
-
-
-# def profile_main():
-#     prof = cProfile.Profile()
-#     prof.enable()
-#     main()  # or whatever generates your graphs
-#     prof.disable()
-
-#     out = Path("profile_main.prof")
-#     prof.dump_stats(out)
-
-#     stats = pstats.Stats(prof).sort_stats("cumtime")
-#     stats.print_stats(40)  # top 40 by cumulative time
 
 
 def profile_main():
