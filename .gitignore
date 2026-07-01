@@ -1,9 +1,5 @@
-.devcontainer/
 .venv/
-__pycache__/
-/.vscode
 *.pyc
 TRBLSummarizer/__pycache__/
-TRBLSummarizer/.vscode/
 TRBLSummarizer/Figures/
 TRBLSummarizer/For Chat/
