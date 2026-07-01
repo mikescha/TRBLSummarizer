@@ -14,6 +14,7 @@ import time
 from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime as dt
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +45,7 @@ from matplotlib.transforms import Bbox
 from PIL import Image, ImageDraw, ImageFont
 
 # Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = True
+BEING_DEPLOYED_TO_STREAMLIT = False
 # Dec 2025, we may or may not want to show the manual analysis graph
 SHOW_MANUAL_ANALYSIS = True
 
@@ -627,7 +628,7 @@ def check_for_tag_errors(df: pd.DataFrame):
     return
 
 
-@st.cache_data
+@lru_cache
 def load_data_for_site(site: str):
     """
     Given a site, retrieve the data set for that
@@ -2625,7 +2626,7 @@ def combine_unaligned_images(
     remove_file(composite_path)
 
     # Get all the files that match
-    pattern = f"{site}*clean.png"
+    pattern = f"{site}_*clean.png"
     matching_files = glob.glob(os.path.join(FIGURE_DIR, pattern))
 
     # Drop files we don't want
