@@ -63,7 +63,7 @@ GRAPH_LEFT_PADDING = 0.1
 BAD_FILES = "bad"
 FILENAME = "filename"
 SITE = "site"
-DATE = "date"
+DATE_COL = "date"
 HOUR = "hour"
 tag_wse = "tag_edge"
 tag_wsm = "tag_wsm"
@@ -109,7 +109,7 @@ data_col = {
     "month": "month",
     "year": "year",
     HOUR: "hour",
-    DATE: "date",
+    DATE_COL: "date",
     TAG_YNC_P2: "tag<YNC-p2>",  # Young nestling call pulse 2
     TAG_YNC_P3: "tag<YNC-p3>",  # Young nestling call pulse 3
     TAG_YNC_P4: "tag<YNC-p4>",  # Young nestling call pulse 4
@@ -636,7 +636,7 @@ def load_data_for_site(site: str):
     :type site: str
     """
     year = site[0:4]
-    pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE], data_col[HOUR]]
+    pusecols = [data_col[FILENAME], data_col[SITE], data_col[DATE_COL], data_col[HOUR]]
     for song in ALL_SONGS:
         pusecols.append(data_col[song])
     for tag in ALL_TAGS:
@@ -650,9 +650,18 @@ def load_data_for_site(site: str):
     pdf = pdf.set_index("dt")
     pdf.index = pd.DatetimeIndex(pdf.index).normalize()
     df = clean_data(pdf, [site])
-    df = df.rename_axis("date")
+    df = df.rename_axis(DATE_COL)
 
     return df
+
+def empty_pm_data_frame() -> pd.DataFrame:
+    """Return the legacy empty PM data shape with a true DatetimeIndex."""
+    return pd.DataFrame(
+        {
+            "type": pd.Series([], dtype="object"),
+        },
+        index=pd.DatetimeIndex([], name=DATE_COL),
+    )
 
 
 def load_pm_data(site: str) -> pd.DataFrame:
@@ -677,7 +686,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
         site_columns[VALIDATED_STR],
     ]
 
-    out_cols = [*usecols, DATE, "type"]
+    out_cols = [*usecols, DATE_COL, "type"]
     frames: list[pd.DataFrame] = []
 
     for t in PM_FILE_TYPES:
@@ -701,7 +710,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
 
         df_single_pmj_type = df_single_pmj_type.copy()
 
-        df_single_pmj_type[DATE] = pd.to_datetime(
+        df_single_pmj_type[DATE_COL] = pd.to_datetime(
             df_single_pmj_type[
                 [
                     site_columns["year"],
@@ -712,7 +721,7 @@ def load_pm_data(site: str) -> pd.DataFrame:
             errors="coerce",
         )
 
-        df_single_pmj_type = df_single_pmj_type[df_single_pmj_type[DATE].notna()].copy()
+        df_single_pmj_type = df_single_pmj_type[df_single_pmj_type[DATE_COL].notna()].copy()
 
         if df_single_pmj_type.empty:
             continue
@@ -723,18 +732,18 @@ def load_pm_data(site: str) -> pd.DataFrame:
         df_single_pmj_type = df_single_pmj_type[out_cols].astype("object")
         frames.append(df_single_pmj_type)
 
-    if frames:
-        df = pd.concat(frames, ignore_index=True)
-    else:
-        df = pd.DataFrame(columns=out_cols)
+    if not frames:
+        return empty_pm_data_frame()
 
-    df[DATE] = pd.to_datetime(df[DATE], errors="coerce")
-    df = df[df[DATE].notna()].copy()
+    df = pd.concat(frames, ignore_index=True)
 
-    if not df.empty:
-        df.set_index(DATE, inplace=True)
-    else:
-        df = df.set_index(pd.DatetimeIndex([], name=DATE))
+    df[DATE_COL] = pd.to_datetime(df[DATE_COL], errors="coerce")
+    df = df[df[DATE_COL].notna()].copy()
+
+    if df.empty:
+        return empty_pm_data_frame()
+
+    df.set_index(DATE_COL, inplace=True)
 
     return df
 
@@ -1066,7 +1075,7 @@ def make_pivot_table(
         # some columns are missing, so get out
         return pd.DataFrame()
 
-    date_colname = data_col[DATE]
+    date_colname = data_col[DATE_COL]
 
     if label_dict:
         out = {}
@@ -1089,7 +1098,7 @@ def make_pivot_table(
     else:
         if not labels:
             return pd.DataFrame()
-        date_colname = data_col[DATE]
+        date_colname = data_col[DATE_COL]
         if df.index.name == date_colname:
             aggregate_df = df[labels].ge(1).groupby(level=date_colname).sum()
         else:
@@ -1107,7 +1116,7 @@ def get_pmj_detection_hours(df: pd.DataFrame) -> pd.Series:
         (df_present_only["hour"] >= CORE_START_HOUR)
         & (df_present_only["hour"] < CORE_END_HOUR_EXCLUSIVE)
     ]
-    df_detection_hours = df_valid_hours_only.groupby("date")["hour"].nunique()
+    df_detection_hours = df_valid_hours_only.groupby(DATE_COL)["hour"].nunique()
     return df_detection_hours
 
 
@@ -1128,7 +1137,7 @@ def make_pattern_match_pt(
         aggregate = pd.DataFrame(
             np.nan, index=all_dates, columns=[type_name]
         )  # Fill with zeros
-        aggregate.index.name = DATE  # Set the index name properly
+        aggregate.index.name = DATE_COL  # Set the index name properly
 
     return normalize_pt(aggregate, date_range_dict)
 
@@ -1191,15 +1200,15 @@ def get_date_range(
         date_range_dict[END] = f"{STANDARD_END}/{date_range_dict_from_sheet[END][-4:]}"
         return date_range_dict
 
-    if df.index.name == "date":
+    if df.index.name == DATE_COL:
         date_range_dict_from_file = {
             START: df.index.min().strftime("%m-%d-%Y"),
             END: df.index.max().strftime("%m-%d-%Y"),
         }
     else:
         date_range_dict_from_file = {
-            START: df["date"].min().strftime("%m-%d-%Y"),
-            END: df["date"].max().strftime("%m-%d-%Y"),
+            START: df[DATE_COL].min().strftime("%m-%d-%Y"),
+            END: df[DATE_COL].max().strftime("%m-%d-%Y"),
         }
 
     # Normalize the dates and then confirm that they are the same
@@ -2674,7 +2683,6 @@ def output_graph(
 ):
     if data_to_graph:
         if make_all_graphs:  # Don't write the graphs to the screen if we're doing them all to speed it up
-            # st.write(f"Saving {graph_type} for {site}")
             pass
         else:
             # If there is data in the graph, then write it to the screen if we are doing one graphic at a time
@@ -2721,7 +2729,7 @@ def load_weather_data_from_file() -> pd.DataFrame:
     # Select and rename relevant columns
     columns_to_keep = [
         "Name",
-        "date",
+        DATE_COL,
         "tmax_F",
         "tmin_F",
         "precip_in",
@@ -2737,7 +2745,7 @@ def load_weather_data_from_file() -> pd.DataFrame:
     df = df[columns_to_keep].rename(columns=new_names)
 
     # Convert 'date' column to datetime format
-    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
+    df[DATE_COL] = pd.to_datetime(df[DATE_COL], format="%Y-%m-%d")
 
     # Convert strings to numeric
     for col in ["tmax", "tmin", "prcp"]:
@@ -2745,7 +2753,7 @@ def load_weather_data_from_file() -> pd.DataFrame:
 
     # Transform the data to long format
     df_melted = df.melt(
-        id_vars=["site", "date"],
+        id_vars=["site", DATE_COL],
         value_vars=["tmax", "tmin", "prcp", "wspd"],
         var_name="datatype",
         value_name="value",
@@ -2764,8 +2772,8 @@ def get_weather_data(site_name: str, date_range_dict: dict) -> dict:
     if site_name in df.index:
         site_weather = df.loc[[site_name]]
         # select only rows that are in our date range
-        mask = (site_weather["date"] >= date_range_dict[START]) & (
-            site_weather["date"] <= date_range_dict[END]
+        mask = (site_weather[DATE_COL] >= date_range_dict[START]) & (
+            site_weather[DATE_COL] <= date_range_dict[END]
         )
         site_weather = site_weather.loc[mask]
 
@@ -2779,7 +2787,7 @@ def get_weather_data(site_name: str, date_range_dict: dict) -> dict:
                     site_weather["datatype"] == w
                 ]
                 # reindex the table to match our date range and fill in empty values
-                site_weather_by_type[w] = site_weather_by_type[w].set_index("date")
+                site_weather_by_type[w] = site_weather_by_type[w].set_index(DATE_COL)
                 site_weather_by_type[w] = site_weather_by_type[w].reindex(
                     date_range, fill_value=0
                 )
@@ -3117,8 +3125,8 @@ def style_detection_states(df: pd.DataFrame) -> pd.DataFrame:
     styles = pd.DataFrame("", index=df.index, columns=df.columns)
 
     # Date: no color.
-    if "Date" in styles.columns:
-        styles["Date"] = ""
+    if DATE_COL in styles.columns:
+        styles[DATE_COL] = ""
 
     # Effort columns: highlight, but do not classify as C/B/X.
     for effort_col in ["D-Hrs", "Edge D-Hrs"]:
@@ -3135,7 +3143,7 @@ def style_detection_states(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         if col in DETECTION_COLUMN_RULES:
             continue
-        if col in ["Date", "D-Hrs", "Edge D-Hrs", "prcp", "tmax", "tmin", "wspd"]:
+        if col in [DATE_COL, "D-Hrs", "Edge D-Hrs", "prcp", "tmax", "tmin", "wspd"]:
             continue
 
         col_styles = []
@@ -3183,7 +3191,7 @@ def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
 
     for idx, row in df.iterrows():
-        raw_date = row["Date"] if "Date" in df.columns else idx
+        raw_date = row[DATE_COL] if DATE_COL in df.columns else idx
         parsed_date = pd.to_datetime(str(raw_date), errors="coerce")
 
         date_value = (
@@ -3210,7 +3218,7 @@ def build_detection_state_debug_table(df: pd.DataFrame) -> pd.DataFrame:
 
             rows.append(
                 {
-                    "Date": date_value,
+                    DATE_COL: date_value,
                     "column": detection_col,
                     "song_type": rule["song_type"],
                     "effort_col": effort_col,
@@ -3239,7 +3247,7 @@ def style_columns(column):
     highlight_columns = ["D-Hrs", "Edge D-Hrs"]
 
     # Don't colorize the Date column at all
-    if column.name == "Date":
+    if column.name == DATE_COL:
         return [""] * len(column)
 
     # Pick the right palette for the column name
@@ -3477,7 +3485,7 @@ def do_mini_manual(
 def get_recs_per_edge_day(df_site: pd.DataFrame, date_range_dict: dict) -> pd.Series:
     # Get the number of recordings per day for the edge data, this is used for normalizing the data by the number of recordings made
     df_edge_recs = filter_df_by_tags(df_site, list(TAG_MAP.keys()))
-    unique_hours_per_day = df_edge_recs.groupby(level="date")["core_hour"].nunique()
+    unique_hours_per_day = df_edge_recs.groupby(level=DATE_COL)["core_hour"].nunique()
 
     start_date = pd.to_datetime(date_range_dict["start"])
     end_date = pd.to_datetime(date_range_dict["end"])
@@ -3802,7 +3810,7 @@ def main():
         if not df_site.empty:
             # Only consider recordings made during the core hours of 7:00 <= hour < 20:00, and get the number of recordings made per day for the site. This is used for graphing,
             df_core = filter_to_core_hours(df_site, hour_col="hour")
-            rec_norm = df_core.groupby(level="date")["core_hour"].nunique()
+            rec_norm = df_core.groupby(level=DATE_COL)["core_hour"].nunique()
 
             # Using the site of interest, get the first & last dates and give the user the option to customize the range
             date_range_dict = get_date_range(
@@ -3927,9 +3935,9 @@ def main():
         # at the top of the composite. So, try to pull out the month positions for each graph as we don't
         # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
         # to accidentally delete our list
-
-        if month_locs == {}:
-            month_locs = get_month_locs(pt_pm.columns)
+        if not pt_pm.empty and not do_aligned_dates:
+            if month_locs == {}:
+                month_locs = get_month_locs(pt_pm.columns)
 
         output_graph(
             site,
@@ -4142,13 +4150,13 @@ def main():
 
             ### Formatting for display
             # Pop the index out cleanly as 'Date' right from the start
-            df_display = report_df.reset_index().rename(columns={"index": "Date"})
+            df_display = report_df.reset_index().rename(columns={"index": DATE_COL})
 
             # Set the Date column type once
-            df_display["Date"] = pd.to_datetime(df_display["Date"], errors="coerce")
+            df_display[DATE_COL] = pd.to_datetime(df_display[DATE_COL], errors="coerce")
 
             # 1. Isolate non-date columns
-            non_date_cols = [c for c in df_display.columns if c != "Date"]
+            non_date_cols = [c for c in df_display.columns if c != DATE_COL]
 
             # 2. Process data types cleanly
             for c in non_date_cols:
@@ -4166,7 +4174,7 @@ def main():
             configs = {
                 col: (
                     st.column_config.DateColumn(format="MM/DD/YY", alignment="center")
-                    if col == "Date"
+                    if col == DATE_COL
                     else st.column_config.NumberColumn(
                         format="%.1f", alignment="center"
                     )
