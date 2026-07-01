@@ -1,1 +1,41 @@
-Logging started 01-Jul-26 12:51:59
+Logging started 01-Jul-26 13:13:49
+01-Jul-26 13:13:49: check_edge_cols_for_errors: Found 37 rows with -100 values in edge columns, which indicates missing data that should have been cleaned up. See log for details.
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_10-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_11-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_12-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_13-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_14-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_15-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-02_16-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_09-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_10-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_11-00.WAV: val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_12-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_13-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_14-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_15-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-03_16-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_09-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_10-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_11-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_12-00.WAV: val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_13-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_14-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_15-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-23_16-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_10-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_11-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_12-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_13-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_14-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100, val<Agelaius tricolor/Simple Call 2>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_15-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-24_16-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_09-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_10-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_11-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_12-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_13-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_14-00.WAV: val<Agelaius tricolor/Common Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49:    > LMRam-2024-05-25_16-00.WAV: val<Agelaius tricolor/Courtship Song>=-100, val<Agelaius tricolor/Alternative Song 2>=-100, val<Agelaius tricolor/Alternative Song>=-100
+01-Jul-26 13:13:49: check_edge_cols_for_errors: Found recordings where tag<YNC-p3> is >= 1 but the corresponding tag<p3n> tag is not 1
+01-Jul-26 13:13:49:    > LMRam-2024-06-21_09-00.WAV: tag<YNC-p3>=1, tag<p3n>=0
