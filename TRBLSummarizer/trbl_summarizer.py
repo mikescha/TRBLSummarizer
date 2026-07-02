@@ -45,7 +45,7 @@ from matplotlib.transforms import Bbox
 from PIL import Image, ImageDraw, ImageFont
 
 # Set appropriately before I deploy
-BEING_DEPLOYED_TO_STREAMLIT = False
+BEING_DEPLOYED_TO_STREAMLIT = True
 # Dec 2025, we may or may not want to show the manual analysis graph
 SHOW_MANUAL_ANALYSIS = True
 
