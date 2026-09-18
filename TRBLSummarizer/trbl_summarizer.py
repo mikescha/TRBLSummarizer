@@ -31,11 +31,10 @@ mpl.use("Agg")
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
-import matplotlib.transforms as transforms
 import numpy as np
 import pandas as pd
 import streamlit as st
-from matplotlib import colors
+from matplotlib import colors, transforms
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
@@ -599,8 +598,7 @@ def find_invalid_rows(
 
         # Save to file
         with open(output_file, "w") as f:
-            for filename in invalid_filenames:
-                f.write(f"{filename}\n")
+            f.writelines(f"{filename}\n" for filename in invalid_filenames)
 
         log_error(
             f"Saved {len(invalid_filenames)} invalid filenames to '{output_file}'"
@@ -608,7 +606,6 @@ def find_invalid_rows(
     else:
         log_error("No invalid rows found!")
 
-    return
 
 
 def check_for_tag_errors(df: pd.DataFrame):
@@ -625,7 +622,6 @@ def check_for_tag_errors(df: pd.DataFrame):
 
     find_invalid_rows(df, cols_to_filter, cols_to_check)
 
-    return
 
 
 @lru_cache
@@ -811,7 +807,7 @@ def count_valid_pulses(pulse_data: dict) -> int:
         result = False
         for phase in pulse_data[p]:
             if (
-                phase in PULSE_PHASES.keys()
+                phase in PULSE_PHASES
             ):  # Need to skip Abandoned, as it doesn't have a pair of dates
                 if is_valid_date_pair(pulse_data[p][phase]):
                     result = True
@@ -849,7 +845,7 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
 
     for pulse in PULSES:
         pulse_result = {}
-        error_prefix = f"process_site: {str(summary_row.iloc[0]['Name'])} at {pulse}"
+        error_prefix = f"process_site: {summary_row.iloc[0]['Name']!s} at {pulse}"
 
         # Make our list of abandoned dates for later graphing purposes
         abandoned_date = convert_to_datetime(
@@ -859,9 +855,8 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
             pulse_result[ABANDONED] = abandoned_date
 
         check_for_continuous = False  # flag to track if we see "continuous" in either date for this pulse, so we can check for errors
-        for phase in PULSE_PHASES:
-            start, end = PULSE_PHASES[phase]
-
+        for phase, date_pairs in PULSE_PHASES.items():
+            start, end = date_pairs
             target1 = f"{pulse}{start}"
             value1 = get_val_from_df(summary_row, target1)
             result1 = pd.NaT
@@ -877,9 +872,10 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                 if value2.lower() not in [
                     ND_STRING.lower(),
                     CONTINUOUS,
+                    "missed",
                 ] and not is_valid_date(value2):
                     log_error(
-                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, Continuous, or a date"
+                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, Continuous, missed, or a date"
                     )
 
             elif pd.notna(value1) and value1.startswith(ABANDONED):
@@ -901,7 +897,7 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                         log_error(
                             f"{error_prefix}: Found 'continuous' in {pulse} without it in the prior pulse"
                         )
-                        check_for_continuous = False  # reset the flag for the next phase, as continuous should only be valid for one phase per pulse
+                        check_for_continuous = True  # reset the flag for the next phase, as continuous should only be valid for one phase per pulse
             elif value1 == ND_STRING:
                 # this is OK, we aren't going to draw anything in this case
                 pass
@@ -914,9 +910,10 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                     "inf",
                     CONTINUOUS,
                     ND_STRING.lower(),
+                    "missed"
                 ] and not is_valid_date_string(value1):
                     log_error(
-                        f"{error_prefix}: {target2} is a valid date, but {target1} is '{value1}' not ND, inf, continuous, or a valid date"
+                        f"{error_prefix}: {target2} is a valid date, but {target1} is '{value1}' not ND, inf, continuous, missed, or a valid date"
                     )
                 # It's a good date, so format it
                 if phase == PHASE_FLDG:
@@ -1483,7 +1480,6 @@ def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
     if save_files:
         output_cmap()
 
-    return
 
 
 def get_days_per_month(date_list: list) -> dict:
@@ -1719,7 +1715,6 @@ def draw_event_date_marker(
             annotation_clip=False,
         )
         
-    return
 
 
 def calc_x_from_date(df, event_date) -> float:
@@ -1951,13 +1946,13 @@ def create_graph(
                 pass
             else:
                 if file_missing(site, graph_type, row):
-                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES.keys() else row
+                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES else row
                     display_label = (
-                        tag_name_map[label] if label in tag_name_map.keys() else label
+                        tag_name_map[label] if label in tag_name_map else label
                     )
                     x = (key_dates[SUMMARY_FIRST_REC] - df.columns[0]).days
                     add_text(axs[i], x, f"No data for {display_label}", "gray")
-        elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES.keys():
+        elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES:
             x = (key_dates[SUMMARY_FIRST_REC] - df.columns[0]).days
             add_text(ax, x, f"{PM_OTHER_TYPES[row]}", "black")
         elif graph_type == GRAPH_EDGE:
@@ -2605,7 +2600,6 @@ def combine_aligned_images(by_group: bool = False):
         final = concat_aligned_images(images, data_dict)
         final.save(final_path)
 
-    return
 
 
 # Load all the images that match the site name, combine them into a single composite,
@@ -2662,7 +2656,7 @@ def combine_unaligned_images(
             image_list.append(im.copy())
 
         # add the weather graph at the end, if it's there
-        if GRAPH_WEATHER in site_fig_dict.keys() and include_weather:
+        if GRAPH_WEATHER in site_fig_dict and include_weather:
             with Image.open(site_fig_dict[GRAPH_WEATHER]) as im:
                 image_list.append(im.copy())
 
@@ -2943,7 +2937,6 @@ def add_weather_graph_ticks(
         labelright=False,
     )  # labels on the Y are off
 
-    return
 
 
 # Used below to get min temp that isn't zero
@@ -3320,7 +3313,6 @@ def check_tags(df: pd.DataFrame):
     else:
         st.write("No data errors found")
 
-    return
 
 
 def make_final_pt(
@@ -3869,7 +3861,7 @@ def main():
         pretty_site_name = get_pretty_name_for_site(site)
         if make_all_graphs:
             st.subheader(
-                f"{pretty_site_name} [{str(site_counter)} of {str(len(target_sites))}]"
+                f"{pretty_site_name} [{site_counter!s} of {len(target_sites)!s}]"
             )
         else:
             st.subheader(f"{pretty_site_name}")
@@ -4299,7 +4291,6 @@ def main():
     if do_aligned_dates:
         combine_aligned_images()
 
-    return
 
 
 def profile_main():
