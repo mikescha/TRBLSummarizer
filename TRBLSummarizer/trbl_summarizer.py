@@ -3878,8 +3878,10 @@ def main():
         if not make_all_graphs:
             if show_station_info_checkbox:
                 show_station_info(summary_row)
-            ratio_str = get_ratio(site)
-            st.success(f"{ratio_str}")
+            
+            #TODO Re-enable this when the ratio calculation is fully implemented
+            # ratio_str = get_ratio(site)
+            # st.success(f"{ratio_str}")
 
         # list of month positions in the graphs
         month_locs = {}
