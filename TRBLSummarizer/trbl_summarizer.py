@@ -323,6 +323,8 @@ PULSE_PHASES = {
     PHASE_FLDG: [PULSE_FIRST_FLDG, PULSE_LAST_FLDG],
 }
 CONTINUOUS = "continuous"
+MISSED = "missed"
+INF = "inf"
 
 # Core hours, these are the only ones we check for presences
 CORE_START_HOUR = 7
@@ -477,7 +479,7 @@ def show_error(msg: str):
 #
 @st.cache_data
 def load_all_file():
-    return pd.read_csv(INPUT_CSV, skiprows=ALL_SHEET_HEADER_SIZE)
+    return pd.read_csv(INPUT_CSV, skiprows=ALL_SHEET_HEADER_SIZE, encoding="utf-8-sig")
 
 
 def get_target_sites() -> list:
@@ -806,10 +808,8 @@ def count_valid_pulses(pulse_data: dict) -> int:
     for p in PULSES:
         result = False
         for phase in pulse_data[p]:
-            if (
-                phase in PULSE_PHASES
-            ):  # Need to skip Abandoned, as it doesn't have a pair of dates
-                if is_valid_date_pair(pulse_data[p][phase]):
+            # Need to skip Abandoned, as it doesn't have a pair of dates
+            if phase in PULSE_PHASES and is_valid_date_pair(pulse_data[p][phase]):
                     result = True
                     break
         count += 1 if result else 0
@@ -836,13 +836,12 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
     }
 
     valid_descriptors = [
-        "inf",
-        "before start, hbc present",
-        "before start, hbc absent",
+        INF,
         CONTINUOUS,
-        "missed",
+        MISSED,
     ]
 
+    prior_pulse_mcend = ""
     for pulse in PULSES:
         pulse_result = {}
         error_prefix = f"process_site: {summary_row.iloc[0]['Name']!s} at {pulse}"
@@ -868,14 +867,14 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
             if is_valid_date_string(value1):
                 # It's a good date, so format it
                 result1 = convert_to_datetime(value1)
-
-                if value2.lower() not in [
-                    ND_STRING.lower(),
+                if value2 not in [
+                    ND_STRING,
                     CONTINUOUS,
-                    "missed",
+                    MISSED,
                 ] and not is_valid_date(value2):
                     log_error(
-                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not ND, Continuous, missed, or a date"
+                        f"{error_prefix}: {target1} is a valid date {value1}, but {target2} is {value2} and not "\
+                         f"{ND_STRING}, {CONTINUOUS}, {MISSED}, or a date"
                     )
 
             elif pd.notna(value1) and value1.startswith(ABANDONED):
@@ -888,15 +887,20 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
             # Check: if the phase = brooding and it is one of the strings that indicated the process started before
             # the date of the first recording, then we want to draw a left-pointing arrow on the graph. So, if we find this,
             #  save it with a signal we can pass along to the graph maker (signal=Wendy's bday)
-            elif value1.lower() in valid_descriptors:
-                if value1.lower() != CONTINUOUS:
+            elif value1 in valid_descriptors:
+                if value1 != CONTINUOUS:
                     result1 = convert_to_datetime("6/1/1967")
                 else:
                     result1 = CONTINUOUS
                     if not check_for_continuous:
-                        log_error(
-                            f"{error_prefix}: Found 'continuous' in {pulse} without it in the prior pulse"
-                        )
+                        if target1 == f"{pulse}mcstart" and prior_pulse_mcend == CONTINUOUS:
+                            # This is a weird case because we don't use mcend for anything else. So, if mcstart == Continuous
+                            # and mcend from the prior pulse is Continuous, we allow this case without logging an error
+                            pass
+                        else:
+                            log_error(
+                                f"{error_prefix}: Found {CONTINUOUS} in {pulse} without it in the prior pulse"
+                            )
                         check_for_continuous = True  # reset the flag for the next phase, as continuous should only be valid for one phase per pulse
             elif value1 == ND_STRING:
                 # this is OK, we aren't going to draw anything in this case
@@ -906,14 +910,15 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                 log_error(f"{error_prefix}: Found invalid data in {target1}: {value1}")
 
             if is_valid_date_string(value2):
-                if value1.lower() not in [
-                    "inf",
+                if value1 not in [
+                    INF,
                     CONTINUOUS,
-                    ND_STRING.lower(),
-                    "missed"
+                    ND_STRING,
+                    MISSED
                 ] and not is_valid_date_string(value1):
                     log_error(
-                        f"{error_prefix}: {target2} is a valid date, but {target1} is '{value1}' not ND, inf, continuous, missed, or a valid date"
+                        f"{error_prefix}: {target2} is a valid date, but {target1} is '{value1}' "
+                        f"not {ND_STRING}, {INF}, {CONTINUOUS}, {MISSED}, or a valid date"
                     )
                 # It's a good date, so format it
                 if phase == PHASE_FLDG:
@@ -929,12 +934,12 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
                     )
                 else:
                     result2 = abandoned_date - pd.Timedelta(days=1)
-            elif value2.lower() in valid_descriptors:
-                if value2.lower() == CONTINUOUS:
+            elif value2 in valid_descriptors:
+                if value2 == CONTINUOUS:
                     result2 = CONTINUOUS
                     check_for_continuous = True  # set the flag so we can check that the next phase doesn't also have continuous, which would be an error
                 elif (
-                    value2.lower() == "inf" and value1.lower() not in valid_descriptors
+                    value2 == INF and value1 not in valid_descriptors
                 ):
                     log_error(
                         f"{error_prefix}: In {target2} end date is 'inf' but start date is not 'inf'"
@@ -951,6 +956,7 @@ def process_site_summary_data(summary_row: pd.DataFrame) -> dict:
 
         # Add the sets of dates to our master dictionary
         summary_dict[pulse] = pulse_result
+        prior_pulse_mcend =  get_val_from_df(summary_row, f"{pulse}mcend")
 
     # Calculate count of valid pulses. If there were zero, then set the count to 1 else we won't get a graph
     p_count = max(1, count_valid_pulses(summary_dict))
