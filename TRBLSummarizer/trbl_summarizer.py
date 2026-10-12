@@ -138,7 +138,7 @@ data_col = {
     "val<sp22/Simple Call>": "val<sp22/Simple Call>",
 }
 
-tag_name_map = {
+tag_name_map: dict[str,str] = {
     "val<Agelaius tricolor/Common Song>": "Male Song",
     "val<Agelaius tricolor/Courtship Song>": "Male Chorus",
     "val<Agelaius tricolor/Alternative Song 2>": "Female Chatter",
@@ -1773,7 +1773,7 @@ def add_text(ax, x, text, color):
 def create_graph(
     site: str,
     df: pd.DataFrame,
-    row_names: list,
+    row_names: list[str],
     cmap: dict,
     raw_data=pd.DataFrame(),
     draw_vert_rects: bool = False,
@@ -1903,7 +1903,7 @@ def create_graph(
             no_data_color
         )  # light gray representing the days where analysis was not done
 
-        # Normalize all the data by the number of recordings that were used per day
+        # Normalize all the data by the number of core hours that had at least one recording. 
         if graph_type == GRAPH_MINIMAN:
             df_norm = df_to_graph / 3  # 3 recordings per day
         else:
@@ -1911,7 +1911,7 @@ def create_graph(
             denom = denom_by_day.reindex(df_to_graph.columns)
             df_norm = df_to_graph.div(
                 denom, axis="columns"
-            )  # normalize by count of recordings per day
+            )  # normalize by the number of core hours actually recorded
 
         # Adjust colors so that lighter values are more visible
         # gamma < 1 brightens lows, closer to 0 is more extreme
@@ -1923,7 +1923,7 @@ def create_graph(
         norm = colors.PowerNorm(gamma=gamma, vmin=vmin, vmax=vmax)
 
         arr = np.ma.masked_invalid(df_norm.to_numpy(dtype=float))
-        n_rows, n_cols = arr.shape
+        _, n_cols = arr.shape
 
         ax = axs[i]
         ax.imshow(
@@ -1944,18 +1944,16 @@ def create_graph(
 
         # If we drew an empty graph, write text on top to indicate that it is supposed to be empty
         # and not that it's just hard to read!
-        if df_clean.loc[row].sum() == 0:
+        if df_clean.loc[[row]].sum(axis=1).eq(0).all():
             # The conundrum: at least for edge, it's possible that a row we drew is blank, but the actual
             # row is going to get some boxes and lines. In this case, there will be -100s in the data,
             # and if we find those, we should NOT draw the text that says there is no data
-            if graph_type == GRAPH_EDGE and df.loc[row].lt(0).any():
+            if graph_type == GRAPH_EDGE and bool(df.loc[[row]].lt(0).to_numpy().any()):
                 pass
             else:
                 if file_missing(site, graph_type, row):
-                    label = PM_OTHER_TYPES[row] if row in PM_OTHER_TYPES else row
-                    display_label = (
-                        tag_name_map[label] if label in tag_name_map else label
-                    )
+                    label = PM_OTHER_TYPES.get(row, row)
+                    display_label = tag_name_map.get(label, label)
                     x = (key_dates[SUMMARY_FIRST_REC] - df.columns[0]).days
                     add_text(axs[i], x, f"No data for {display_label}", "gray")
         elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES:
