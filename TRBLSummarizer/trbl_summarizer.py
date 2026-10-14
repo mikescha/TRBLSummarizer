@@ -3288,8 +3288,8 @@ def show_station_info(site: pd.DataFrame):
     # We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
     # https://developers.google.com/maps/documentation/urls/get-started
     map = f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lng}"
-    st.write(
-        f"About this site: [Open in Google Maps]({map}), elevation {alt} m, {rec_count} recordings."
+    st.caption(
+        f"About pizza site: [Open in Google Maps]({map}), elevation {alt} m, {rec_count} recordings.",
     )
 
 
