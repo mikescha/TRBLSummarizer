@@ -6,6 +6,7 @@ import calendar
 # For profiling
 import cProfile
 import glob
+import itertools
 import math
 import operator as op
 import os
@@ -772,10 +773,7 @@ def is_valid_date_string(date_string):
         potential_date = potential_date.lstrip("~").rstrip("*").strip()
 
     result = pd.to_datetime(potential_date, format=DATE_FORMAT, errors="coerce")
-    if pd.isna(result):
-        return False
-    else:
-        return True
+    return not pd.isna(result)
 
 
 def convert_to_datetime(date_string):
@@ -1223,13 +1221,12 @@ def get_date_range(
         k: parse_date(v) for k, v in date_range_dict_from_file.items()
     }
 
-    if normalized_from_sheet != normalized_from_data:
+    if normalized_from_sheet != normalized_from_data and df.index[1].date() != normalized_from_sheet["start"]:
         # it's OK for the very first recording to have a different date, but we should log it
         # if the second one is also different.
-        if df.index[1].date() != normalized_from_sheet["start"]:
-            log_error(
-                f"Date for {df['site'].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}"
-            )
+        log_error(
+            f"Date for {df['site'].iloc[0]} in sheet and from data are different. From sheet: {normalized_from_sheet}; From data: {normalized_from_data}"
+        )
 
     # For now, use the sheet data
     date_range_dict = date_range_dict_from_sheet
@@ -1285,7 +1282,7 @@ else:
 
 TITLE_FONT_SIZE = 13
 AXIS_FONT_SIZE = 8
-LEGEND_FONT_SIZE = 8
+LEGEND_FONT_SIZE = 6
 
 
 # Set up base theme#
@@ -1299,7 +1296,7 @@ def set_global_theme():
         "font.family": GRAPH_FONT,
         "font.size": AXIS_FONT_SIZE,
         "font.stretch": "normal",
-        "font.weight": "light",
+        "font.weight": "normal",
         "xtick.bottom": "False",
         "xtick.labelbottom": "False",
         "ytick.left": "False",
@@ -1322,11 +1319,13 @@ def set_global_theme():
 
 
 def output_cmap():
-    # Save the legend if one doesn't exist; if I update the code, need to delete the file to regenerate it
+    # Because we generate only one graph at a time, we don't need the optimization of not writing the legend
+    # each time. So, go ahead and erase the old one and rewrite. If we ever got back to building everything 
+    # through this code, then I'll want to optimize that by not rewriting the legend each time.
     figure_path = FIGURE_DIR / LEGEND_NAME
-    if not os.path.exists(figure_path):
-        # os.remove(figure_path)
-        plt.savefig(figure_path, dpi="figure", bbox_inches="tight", pad_inches=0)
+    if os.path.exists(figure_path):
+        os.remove(figure_path)
+    plt.savefig(figure_path, dpi="figure", bbox_inches="tight", pad_inches=0)
 
 
 def draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
@@ -1582,17 +1581,15 @@ def draw_axis_labels(
 
 
 # For ensuring the title in the graph looks the same between weather and data graphs.
-def plot_title(fig: Figure, title: str, x: float = 0.0, y: float = 1.0):
-    fig.suptitle(
-        " " + title,
-        x=x,
-        y=y,
+def plot_title(axs: Axes, title: str, x: float = 0.0, y: float = 1.0):
+    axs.set_title(
+        title,
+        loc="left",
+        pad=4,  # Distance in points above the top edge of the plot
         fontsize=TITLE_FONT_SIZE,
         fontfamily=GRAPH_FONT,
-        horizontalalignment="left",
-        verticalalignment="top",
+        fontweight="normal",  # Ensures no 'light' font fallback warnings
     )
-
 
 def overlay_missing_days_hatch(
     axs,
@@ -1716,7 +1713,7 @@ def draw_event_date_marker(
             xycoords="data",
             xytext=(ARROW_LEN_PT, 0),
             textcoords="offset points",
-            arrowprops=dict(arrowstyle="->", lw=0.5, color="black", mutation_scale=7),
+            arrowprops={"arrowstyle": "->", "lw": 0.5, "color": "black", "mutation_scale": 7},
             zorder=18,
             annotation_clip=False,
         )
@@ -1726,7 +1723,7 @@ def draw_event_date_marker(
 def calc_x_from_date(df, event_date) -> float:
     loc = df.columns.get_loc(event_date)
     if not isinstance(loc, int):
-        raise ValueError(f"Expected unique column for {event_date}, got {type(loc)}")
+        raise TypeError(f"Expected unique column for {event_date}, got {type(loc)}")
     x = float(loc)
     return x
 
@@ -1761,9 +1758,9 @@ def add_text(ax, x, text, color):
         x + 0.5,
         0.5,
         text,
-        font=GRAPH_FONT,
-        fontsize=8,
-        fontstyle="italic",
+        fontfamily=GRAPH_FONT,
+        fontsize=6,
+        fontstyle="oblique",
         color=color,
         verticalalignment="center",
     )
@@ -1775,26 +1772,27 @@ def create_graph(
     df: pd.DataFrame,
     row_names: list[str],
     cmap: dict,
-    raw_data=pd.DataFrame(),
-    draw_vert_rects: bool = False,
     draw_horiz_rects: bool = False,
     title="",
     graph_type="",
-    draw_connectors: bool = False,
-    key_dates={},
-    missing_days=pd.DatetimeIndex([]),
-    denom_by_day: pd.Series = pd.Series(),
+    key_dates: dict | None = None,
+    missing_days: pd.DatetimeIndex | None = None,
+    denom_by_day: pd.Series | None = None,
     do_aligned_dates: bool = False,
 ) -> Figure:
     plt.close()  # close any prior graph that was open
 
+    if missing_days is None:
+        missing_days = pd.DatetimeIndex([])
+
     # data cleanup -- for scenarios where the incubation date was calculated, we could have an actual number
     # although the number is earlier than the date of the first recording. To ensure this gets graphed correctly,
     # we need to update the date
-    if key_dates:
-        if "p1" in key_dates.keys() and PULSE_INC_START in key_dates["p1"].keys():
-            if key_dates["p1"][PULSE_INC_START] < key_dates[SUMMARY_FIRST_REC]:
-                key_dates["p1"][PULSE_INC_START] = convert_to_datetime("6/1/1967")
+    if (key_dates and 
+        "p1" in key_dates and 
+        PULSE_INC_START in key_dates["p1"] and
+        key_dates["p1"][PULSE_INC_START] < key_dates[SUMMARY_FIRST_REC]):
+            key_dates["p1"][PULSE_INC_START] = convert_to_datetime("6/1/1967")
 
     if len(df) == 0:
         # return an empty plot if nothing to graph
@@ -1870,7 +1868,7 @@ def create_graph(
     # If we have one, add the title for the graph and set appropriate formatting
     if len(title) and not do_aligned_dates:
         title_y = 1.0 - (top_pad_in / fig_h)
-        plot_title(fig, title, y=title_y)
+        plot_title(axs[0], title, y=title_y)
 
     # Ensure that we have a row for each index. If a row is missing, add it with NaN values
     for row in row_names:
@@ -1908,10 +1906,13 @@ def create_graph(
             df_norm = df_to_graph / 3  # 3 recordings per day
         else:
             # Align denom to the same columns (dates)
-            denom = denom_by_day.reindex(df_to_graph.columns)
-            df_norm = df_to_graph.div(
-                denom, axis="columns"
-            )  # normalize by the number of core hours actually recorded
+            if denom_by_day is not None:
+                denom = denom_by_day.reindex(df_to_graph.columns)
+                df_norm = df_to_graph.div(
+                    denom, axis="columns"
+                )  # normalize by the number of core hours actually recorded
+            else:
+                df_norm = df_to_graph.copy()
 
         # Adjust colors so that lighter values are more visible
         # gamma < 1 brightens lows, closer to 0 is more extreme
@@ -1954,11 +1955,21 @@ def create_graph(
                 if file_missing(site, graph_type, row):
                     label = PM_OTHER_TYPES.get(row, row)
                     display_label = tag_name_map.get(label, label)
-                    x = (key_dates[SUMMARY_FIRST_REC] - df.columns[0]).days
-                    add_text(axs[i], x, f"No data for {display_label}", "gray")
+                    first_rec = (
+                        key_dates.get(SUMMARY_FIRST_REC)
+                        if key_dates is not None
+                        else None
+                    )
+                    if first_rec is not None:
+                        x = (first_rec - df.columns[0]).days
+                        add_text(axs[i], x, f"No data for {display_label}", "gray")
         elif graph_type == GRAPH_PM and row in PM_OTHER_TYPES:
-            x = (key_dates[SUMMARY_FIRST_REC] - df.columns[0]).days
-            add_text(ax, x, f"{PM_OTHER_TYPES[row]}", "black")
+            first_date = (key_dates.get(SUMMARY_FIRST_REC)
+                          if key_dates is not None
+                          else None)
+            if first_date is not None:
+                x = (first_date - df.columns[0]).days
+                add_text(ax, x, f"{PM_OTHER_TYPES[row]}", "black")
         elif graph_type == GRAPH_EDGE:
             pass
 
@@ -1966,30 +1977,31 @@ def create_graph(
         graph_drawn.append(i)
         if graph_type == GRAPH_PM and not do_aligned_dates:
             # Add the event markers if available
-            for pulse in key_dates:
-                if pulse in PULSES:  # Do this to skip the start/end recording dates
-                    for date_type, event_date in key_dates[pulse].items():
-                        if (
-                            row == "Male Chorus"
-                            and date_type == PULSE_MC_START
-                            or row == "Female"
-                            and date_type == PULSE_INC_START
-                            or row == "Hatchling"
-                            and date_type == PULSE_HATCH
-                            or row == "Fledgling"
-                            and (
-                                date_type == PULSE_FIRST_FLDG
-                                or date_type == PULSE_LAST_FLDG
-                            )
-                        ):
-                            add_event_date_marker(
-                                ax,
-                                df,
-                                date_type,
-                                event_date,
-                                first_rec_date=key_dates[SUMMARY_FIRST_REC],
-                                last_rec_date=key_dates[SUMMARY_LAST_REC],
-                            )
+            if key_dates is not None:
+                for pulse in key_dates:
+                    if pulse in PULSES:  # Do this to skip the start/end recording dates
+                        for date_type, event_date in key_dates[pulse].items():
+                            if (
+                                row == "Male Chorus"
+                                and date_type == PULSE_MC_START
+                                or row == "Female"
+                                and date_type == PULSE_INC_START
+                                or row == "Hatchling"
+                                and date_type == PULSE_HATCH
+                                or row == "Fledgling"
+                                and (
+                                    date_type == PULSE_FIRST_FLDG
+                                    or date_type == PULSE_LAST_FLDG
+                                )
+                            ):
+                                add_event_date_marker(
+                                    ax,
+                                    df,
+                                    date_type,
+                                    event_date,
+                                    first_rec_date=key_dates[SUMMARY_FIRST_REC],
+                                    last_rec_date=key_dates[SUMMARY_LAST_REC],
+                                )
 
             # NOTE Dec 2024: Added extra lines to separate insects
             if row == PM_CHIRPER:
@@ -2053,7 +2065,7 @@ def create_graph(
                 # For each pair of rects, draw a line between them.
                 gaps = [
                     (end1 + 1, start2 - 1)
-                    for (start1, end1), (start2, end2) in zip(borders, borders[1:])
+                    for (start1, end1), (start2, end2) in itertools.pairwise(borders)
                 ]
                 for start_gap, end_gap in gaps:
                     left = start_gap
@@ -2517,7 +2529,7 @@ def concat_aligned_images(image_dict: dict, data_dict: dict):
             # Pixel edges: length = width_in_days + 1
             # Using floor is usually the closest match to how raster bins “own” pixels
             edges = [
-                int(math.floor(i * image.width / width_in_days))
+                math.floor(i * image.width / width_in_days)
                 for i in range(width_in_days + 1)
             ]
 
@@ -2558,7 +2570,7 @@ def sort_by_latitude(files: list) -> list:
         for filename in files:
             site = Path(filename).name.split("_", 1)[0]
             lat = get_site_info(site, ["Latitude"])
-            if "Latitude" in lat.keys():
+            if "Latitude" in lat:
                 if pd.notna(pd.to_numeric(lat["Latitude"], errors="coerce")):
                     file_list[float(lat["Latitude"])] = filename
             else:
@@ -2629,7 +2641,7 @@ def combine_unaligned_images(
 
     # Drop files we don't want
     if not SHOW_MANUAL_ANALYSIS:
-        matching_files = [f for f in matching_files if not f == GRAPH_MANUAL]
+        matching_files = [f for f in matching_files if f != GRAPH_MANUAL]
 
     if align_dates:
         matching_files = [f for f in matching_files if "aligned" in f]
@@ -2949,7 +2961,7 @@ def min_above_zero(s: pd.Series):
 
     try:
         min_temp = min(temps)
-    except Exception:
+    except ValueError:
         min_temp = 0
 
     return min_temp
@@ -2988,7 +3000,7 @@ def create_weather_graph(
 
     # Place title at the top of the title band
     title_y = 1.0 - (top_pad_in / fig_h)
-    plot_title(fig, GRAPH_WEATHER, y=title_y)
+    plot_title(ax1, GRAPH_WEATHER, y=title_y)
 
     ax2 = ax1.twinx()  # makes a second y axis on the same x axis
     ax3 = ax1.twinx()  # makes a third y axis on the same x axis for wind
@@ -3168,11 +3180,11 @@ def style_detection_states(df: pd.DataFrame) -> pd.DataFrame:
 
         cell_styles = []
 
-        for idx, row in df.iterrows():
+        for _, row in df.iterrows():
             detection_hours = to_number(row[detection_col], default=0)
             valid_core_hours = to_number(row[effort_col], default=0)
 
-            state, reason, threshold = classify_effort_adjusted_day(
+            state, _, _ = classify_effort_adjusted_day(
                 song_type=song_type,
                 valid_core_hours=int(valid_core_hours),
                 detection_hours=int(detection_hours),
@@ -3288,9 +3300,14 @@ def show_station_info(site: pd.DataFrame):
     # We can either open the map to a spot with a pin, or to a view with zoom + map type but no pin. Here's more documentation:
     # https://developers.google.com/maps/documentation/urls/get-started
     map = f"https://www.google.com/maps/search/?api=1&query={lat}%2C{lng}"
-    st.caption(
-        f"About pizza site: [Open in Google Maps]({map}), elevation {alt} m, {rec_count} recordings.",
-    )
+
+    # Create a 2% left padding column and a 98% content column
+    _, col = st.columns([0.0005, 0.9995])
+
+    with col:
+        st.caption(
+            f"About this site: [Open in Google Maps]({map}), elevation {alt} m, {rec_count} recordings.",
+        )
 
 
 # If any tag column has "reviewed" in the title AND the value for a row (a recording) is 1, then
@@ -3409,8 +3426,6 @@ def do_pattern_matching(
     # PATTERN MATCHING ANALYSIS
     #
     # Load all the PM files, any errors will return an empty table. For later graphing purposes,
-    global align_dates
-
     df_pattern_match = load_pm_data(site)
     df_pattern_match = clean_data(df_pattern_match, [site])  # THIS NEEDS TO GET CHANGED BECAUSE FOR SITES THAT WERE MERGED, THEY DON'T HAVE THE SAME SITE
 
@@ -3501,14 +3516,14 @@ def do_edge(
 
     check_edge_cols_for_errors(df_site, TAG_MAP)
 
-    for tag in TAG_MAP:
+    for tag, label in TAG_MAP.items():
         df_for_tag = filter_df_by_tags(df_site, [tag])
         have_edge_data = have_edge_data or len(df_for_tag) > 0
         pt_for_tag = make_pivot_table(
             df_for_tag,
             date_range_dict,
             preserve_edges=True,
-            label_dict={tag: TAG_MAP[tag]},
+            label_dict={tag: label},
         )
         pt_edge = pd.concat([pt_edge, pt_for_tag])
 
@@ -3575,7 +3590,7 @@ def set_up_sidebar():
     container_top.title("TRBL Graphs")
 
     with container_mid:
-        gamma = st.slider(
+        st.slider(
             "Heatmap contrast",
             min_value=0.1,
             max_value=1.0,
@@ -3674,7 +3689,7 @@ def safe_num(value: Any, default: float = 0.0) -> float:
         if pd.isna(out):
             return default
         return float(out)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return default
 
 
@@ -3719,7 +3734,6 @@ def classify_effort_adjusted_day(
 # ===========================================================================================================
 
 def main():
-    global make_all_graphs
     global align_dates
     init_logging()
 
@@ -3772,6 +3786,7 @@ def main():
     pt_edge = pd.DataFrame()
     pt_pm = pd.DataFrame()
     weather_by_type = {}
+    rec_norm = pd.Series(dtype=int)
 
     # Only generate the aligned dates if we are also generating all the graphs, otherwise some graphs
     # make not exist and it doesn't make sense.
@@ -3780,6 +3795,8 @@ def main():
     # if do_aligned_dates:
     #         combine_aligned_images()
     #         return
+    key_dates = {}
+    edge_recs_per_day = pd.Series(dtype=int)
 
     for idx, site in enumerate(target_sites):
         if PROFILING and idx > 5:
@@ -3859,13 +3876,43 @@ def main():
 
         # ------------------------------------------------------------------------------------------------
         # DISPLAY
+
+        import base64
+        @st.cache_data
+        def get_dejavu_font_b64() -> str:
+            # pathlib handles OS-specific directory separators across Windows/Linux
+            font_path = Path(mpl.get_data_path()) / "fonts" / "ttf" / "DejaVuSans.ttf"
+            with open(font_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        font_b64 = get_dejavu_font_b64()
+
         pretty_site_name = get_pretty_name_for_site(site)
         if make_all_graphs:
             st.subheader(
                 f"{pretty_site_name} [{idx!s} of {len(target_sites)!s}]"
             )
         else:
-            st.subheader(f"{pretty_site_name}")
+            st.markdown(
+                f"""
+                <style>
+                @font-face {{
+                    font-family: 'DejaVuSansMatplotlib';
+                    src: url('data:font/ttf;charset=utf-8;base64,{font_b64}') format('truetype');
+                }}
+
+                .site-title {{
+                    font-family: 'DejaVuSansMatplotlib', sans-serif !important;
+                    font-size: 26px;
+                    font-weight: 400;
+                    color: #262730;
+                    margin-bottom: 4px;
+                    padding-left: 12px; /* Aligns with Matplotlib axis spine */
+                }}
+                </style>
+                <div class="site-title">{pretty_site_name}</div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         if not pd.isna(summary_row["Skip Site"].item()):
             st.write(
@@ -3887,7 +3934,6 @@ def main():
         month_locs = {}
 
         # Generate key dates from the pattern matching data
-        key_dates = {}
         key_dates[SUMMARY_FIRST_REC] = site_summary_dict[SUMMARY_FIRST_REC]
         key_dates[SUMMARY_LAST_REC] = site_summary_dict[SUMMARY_LAST_REC]
         for p in PULSES:
@@ -3898,7 +3944,7 @@ def main():
                 hatch_date = site_summary_dict[p][PHASE_BROOD]["start"]
                 fledge_start_date = site_summary_dict[p][PHASE_FLDG]["start"]
                 dispersal = site_summary_dict[p][PHASE_FLDG]["end"]
-                if "abandon" in site_summary_dict[p].keys():
+                if "abandon" in site_summary_dict[p]:
                     key_dates[p][ABANDONED] = site_summary_dict[p]["abandon"]
                 if pd.notna(mc_date):
                     key_dates[p][PULSE_MC_START] = mc_date
@@ -3930,9 +3976,8 @@ def main():
         # at the top of the composite. So, try to pull out the month positions for each graph as we don't
         # know which graph will be non-empty. Once we have them, we don't need to get again (as we don't want)
         # to accidentally delete our list
-        if not pt_pm.empty and not do_aligned_dates:
-            if month_locs == {}:
-                month_locs = get_month_locs(pt_pm.columns)
+        if not pt_pm.empty and not do_aligned_dates and month_locs == {}:
+            month_locs = get_month_locs(pt_pm.columns)
 
         output_graph(
             site,
@@ -3952,8 +3997,6 @@ def main():
                     df=pt_mini_manual,
                     row_names=SONG_COLS,
                     cmap=CMAP,
-                    raw_data=df_site,
-                    draw_vert_rects=True,
                     title="Manual Analysis (Periodic)",
                     graph_type=GRAPH_MINIMAN,
                     key_dates=key_dates,
@@ -4010,7 +4053,6 @@ def main():
                 df=pt_edge,  # was pt_edge
                 row_names=pt_edge.index.to_list(),  # was EDGE_N_COLS, #was EDGE_COLS,
                 cmap=cmap_edge,
-                raw_data=df_site,
                 draw_horiz_rects=True,
                 title="Manual Analysis (Hatchlings Only)",  # was GRAPH_EDGE,
                 graph_type=GRAPH_EDGE,
@@ -4033,21 +4075,20 @@ def main():
 
         if not do_aligned_dates:
             # Draw the single legend for the rest of the charts and save to a file if needed
-            draw_legend(CMAP, make_all_graphs, save_composite)
+            draw_legend(CMAP, make_all_graphs, True)
 
             # Show weather, as needed and if available
             weather_by_type = {}
-            if show_weather_checkbox:
+            if show_weather_checkbox and (pm_date_range_dict or date_range_dict):
                 # If date_range_dict and pm_date_range dict are both defined, they will be the same. However, it's
                 # possible that there is only one of them.
-                if pm_date_range_dict or date_range_dict:
                     date_to_use = (
                         date_range_dict if date_range_dict else pm_date_range_dict
                     )
                     # Load and parse weather data
                     weather_by_type = get_weather_data(site, date_to_use)
                     if weather_by_type:
-                        graph, axs = create_weather_graph(weather_by_type, site)
+                        graph, _ = create_weather_graph(weather_by_type, site)
                         output_graph(
                             site,
                             graph,
