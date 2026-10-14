@@ -3767,7 +3767,6 @@ def main():
 
     # All our main storage variables
     df_site = pd.DataFrame()
-    site_counter = 0
     pt_manual = pd.DataFrame()
     pt_mini_manual = pd.DataFrame()
     pt_edge = pd.DataFrame()
@@ -3783,11 +3782,9 @@ def main():
     #         return
 
     for idx, site in enumerate(target_sites):
-        if PROFILING:
-            if idx > 5:
-                break
+        if PROFILING and idx > 5:
+            break
         error_msgs = []
-        site_counter += 1
         # Select the site matching the one of interest
         # df_site = df[df[data_col[SITE]] == site]
 
@@ -3865,7 +3862,7 @@ def main():
         pretty_site_name = get_pretty_name_for_site(site)
         if make_all_graphs:
             st.subheader(
-                f"{pretty_site_name} [{site_counter!s} of {len(target_sites)!s}]"
+                f"{pretty_site_name} [{idx!s} of {len(target_sites)!s}]"
             )
         else:
             st.subheader(f"{pretty_site_name}")
@@ -3879,8 +3876,7 @@ def main():
             for error_msg in error_msgs:
                 st.write(f":red-background[{error_msg}]")
 
-        if not make_all_graphs:
-            if show_station_info_checkbox:
+        if not make_all_graphs and show_station_info_checkbox:
                 show_station_info(summary_row)
             
             #TODO Re-enable this when the ratio calculation is fully implemented
