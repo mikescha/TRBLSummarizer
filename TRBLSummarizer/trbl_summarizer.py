@@ -1290,32 +1290,33 @@ LEGEND_FONT_SIZE = 6
 def set_global_theme():
     # https://matplotlib.org/stable/tutorials/introductory/customizing.html#matplotlib-rcparams
     line_color = "black"
-    line_width = "1.5"
-    custom_params = {
+    line_width = 1.5
+    custom_params: dict[str, Any] = {
         "figure.dpi": DPI,
         "font.family": GRAPH_FONT,
         "font.size": AXIS_FONT_SIZE,
         "font.stretch": "normal",
         "font.weight": "normal",
-        "xtick.bottom": "False",
-        "xtick.labelbottom": "False",
-        "ytick.left": "False",
-        "ytick.labelleft": "False",
-        "figure.frameon": "False",
-        "axes.spines.left": "False",
-        "axes.spines.right": "False",
-        "axes.spines.top": "False",
-        "axes.spines.bottom": "False",
+        "xtick.bottom": False,
+        "xtick.labelbottom": False,
+        "ytick.left": False,
+        "ytick.labelleft": False,
+        "figure.frameon": False,
+        "axes.spines.left": False,
+        "axes.spines.right": False,
+        "axes.spines.top": False,
+        "axes.spines.bottom": False,
         "axes.edgecolor": line_color,
-        "axes.xmargin": 0,
-        "axes.ymargin": 0,
+        "axes.xmargin": 0.0,
+        "axes.ymargin": 0.0,
         "lines.color": line_color,
         "lines.linewidth": line_width,
         "patch.edgecolor": line_color,
         "patch.linewidth": line_width,
         "savefig.facecolor": "white",
     }
-    mpl.rcParams.update(custom_params)
+    from matplotlib import style
+    style.use(custom_params)
 
 
 def output_cmap():
