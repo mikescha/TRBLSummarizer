@@ -4076,7 +4076,7 @@ def main():
 
         if not do_aligned_dates:
             # Draw the single legend for the rest of the charts and save to a file if needed
-            draw_legend(CMAP, make_all_graphs, True)
+            draw_legend(CMAP, make_all_graphs, save_composite)
 
             # Show weather, as needed and if available
             weather_by_type = {}
