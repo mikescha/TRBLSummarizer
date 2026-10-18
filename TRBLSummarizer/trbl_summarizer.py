@@ -1281,8 +1281,8 @@ def get_date_range(
 #
 #
 if BEING_DEPLOYED_TO_STREAMLIT:
-    GRAPH_FONT = "sans serif"
-    GRAPH_FONT_TTF = "comic.ttf"  # never used in this case
+    GRAPH_FONT = C.GRAPH_FONT
+    GRAPH_FONT_TTF = C.GRAPH_FONT_TTF  # never used in this case
 else:
     GRAPH_FONT = "Franklin Gothic Book"
     GRAPH_FONT_TTF = "FRABK.TTF"  # used for output to the file using PIL
@@ -1562,7 +1562,7 @@ def old_draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
             transform=ax.transAxes,
             va="center",
             ha="left",
-            fontfamily=GRAPH_FONT,
+            fontfamily=C.GRAPH_FONT,
             fontsize=LEGEND_FONT_SIZE,
         )
         ax.set_axis_off()
@@ -1594,7 +1594,7 @@ def old_draw_legend(cmap: dict, make_all_graphs: bool, save_files: bool):
             transform=ax.transAxes,
             va="center",
             ha="left",
-            fontfamily=GRAPH_FONT,
+            fontfamily=C.GRAPH_FONT,
             fontsize=LEGEND_FONT_SIZE,
         )
         ax.set_axis_off()
@@ -1768,7 +1768,7 @@ def old_draw_axis_labels(
         y_axes: float,
         *,
         fontsize=AXIS_FONT_SIZE,
-        fontfamily=GRAPH_FONT,
+        fontfamily=C.GRAPH_FONT,
         pad_px=4,
         **text_kwargs,
     ):
@@ -1835,7 +1835,7 @@ def plot_title(axs: Axes, title: str, x: float = 0.0, y: float = 1.0):
         loc="left",
         pad=4,  # Distance in points above the top edge of the plot
         fontsize=TITLE_FONT_SIZE,
-        fontfamily=GRAPH_FONT,
+        fontfamily=C.GRAPH_FONT,
         fontweight="normal",  # Ensures no 'light' font fallback warnings
     )
 
@@ -1875,7 +1875,7 @@ def add_no_data_message(ax, x, text):
         x + 0.5,
         0.5,
         text,
-        font=C.GRAPH_FONT,
+        fontfamily=C.GRAPH_FONT,
         fontsize=C.AXIS_FONT_SIZE,
         fontstyle="italic",
         color="gray",
@@ -2174,7 +2174,7 @@ def add_text(ax, x, text, color):
         x + 0.5,
         0.5,
         text,
-        fontfamily=GRAPH_FONT,
+        fontfamily=C.GRAPH_FONT,
         fontsize=6,
         fontstyle="oblique",
         color=color,
@@ -3804,7 +3804,7 @@ def create_weather_graph(
         bbox_to_anchor=(0.12, legend_y_frac, 0.8, legend_height_frac),
         mode="expand",
         ncol=4,
-        prop={"family": GRAPH_FONT, "size": LEGEND_FONT_SIZE},
+        prop={"family": C.GRAPH_FONT, "size": C.LEGEND_FONT_SIZE},
         frameon=False,
     )
 
