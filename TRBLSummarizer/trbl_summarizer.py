@@ -3448,6 +3448,12 @@ def output_text(text: str, make_all_graphs: bool):
 def load_weather_data_from_file() -> pd.DataFrame:
     df = pd.read_csv(WEATHER_FILE)
 
+    # Cached weather labels may predate the canonical names; site IDs are stable.
+    site_names = load_all_file().set_index("Site ID")["Name"]
+    site_names.index = pd.to_numeric(site_names.index, errors="raise")
+    df["Name"] = pd.to_numeric(df["Site Id"], errors="raise").map(site_names)
+    df = df.loc[df["Name"].notna()].copy()
+
     # Select and rename relevant columns
     columns_to_keep = [
         "Name",

@@ -35,7 +35,7 @@ OUTCOME_NO_TRBL = "No TRBL"
 
 # File locations
 INPUT_CSV = Path(
-    r"C:\Users\mikes\OneDrive\Documents\GitHub\TRBLSummarizer\TRBLSummarizer\Data\TRBL Analysis tracking - All.csv"
+    r"C:\Users\mikes\GitHub\TRBLSummarizer\TRBLSummarizer\Data\TRBL Analysis tracking - All.csv"
 )
 DATA_ROOT = Path(__file__).parents[0] 
 DATA_DIR = DATA_ROOT / "Data"
